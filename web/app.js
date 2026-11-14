@@ -39,6 +39,16 @@ function renderStatic() {
   $('title').textContent = t('title');
   $('subtitle').textContent = t('subtitle');
   $('modes').setAttribute('aria-label', t('modesLabel'));
+  $('modes-caption').textContent = t('modesLabel') + ':';
+  $('label-a').textContent = LETTER.A;
+  $('label-b').textContent = LETTER.B;
+  for (const [id, key] of [['from', 'from'], ['to', 'to']]) {
+    $(id).setAttribute('aria-label', t(key + 'Label'));
+    $(id).placeholder = t(key + 'Placeholder');
+  }
+  $('locate').textContent = t('locate');
+  $('swap').setAttribute('aria-label', t('swap'));
+  $('swap').title = t('swap');
   $('mode-route').textContent = t('modeRoute');
   $('mode-inspect').textContent = t('modeInspect');
   $('reset').textContent = t('reset');
@@ -68,6 +78,11 @@ map.on('overlayadd', () => routeLayer.bringToFront());
 
 let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
 const markers = { A: null, B: null };
+const labels = { A: '', B: '' };
+const box = {
+  A: AddressBox($('from'), $('from-list'), r => choose('A', r)),
+  B: AddressBox($('to'), $('to-list'), r => choose('B', r)),
+};
 
 // ---------- the covered area (outline; the share of known status when zoomed out) ----------
 function buildArea(s) {
@@ -149,14 +164,18 @@ function letterIcon(which) {
   return L.divIcon({ className: 'pin', html: `<span>${LETTER[which]}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] });
 }
 
-function setPoint(which, latlng) {
+function setPoint(which, latlng, label) {
   const pt = L.latLng(latlng);
   if (which === 'A') A = pt; else B = pt;
+  labels[which] = label || t('pointOnMap');
+  box[which].set(labels[which]);
   if (!markers[which]) {
     markers[which] = L.marker(pt, { icon: letterIcon(which), draggable: true, keyboard: true, title: t('point', { p: LETTER[which] }) })
       .addTo(map)
       .on('dragend', ev => {
         if (which === 'A') A = ev.target.getLatLng(); else B = ev.target.getLatLng();
+        labels[which] = t('pointOnMap');
+        box[which].set(labels[which]);
         if (A && B) compute();
       });
   } else {
@@ -164,16 +183,61 @@ function setPoint(which, latlng) {
   }
 }
 
+function clearPoint(which) {
+  if (which === 'A') A = null; else B = null;
+  if (markers[which]) { markers[which].remove(); markers[which] = null; }
+  labels[which] = '';
+  box[which].clear();
+}
+
+// both points known: show them and compute; one point: show it and ask for the other
+function pointsChanged() {
+  if (A && B) {
+    map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
+    compute();
+  } else {
+    const p = A || B;
+    if (p) map.setView(p, Math.max(map.getZoom(), 16));
+    say(A ? t('hintB', LETTER) : t('hintStart', LETTER));
+  }
+}
+
+// a suggestion was picked in the "from" (A) or "to" (B) box
+function choose(which, r) {
+  setPoint(which, [r.lat, r.lon], r.name);
+  pointsChanged();
+}
+
+function locate() {
+  if (!navigator.geolocation) { say(`<span class="error">${esc(t('geoError', { msg: 'navigator.geolocation' }))}</span>`); return; }
+  say(esc(t('locating')));
+  navigator.geolocation.getCurrentPosition(
+    pos => { setPoint('A', [pos.coords.latitude, pos.coords.longitude], t('myLocation')); pointsChanged(); },
+    err => say(`<span class="error">${esc(t('geoError', { msg: err.message }))}</span>`),
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+
+function swap() {
+  if (!A && !B) return;
+  const old = { A, B, la: labels.A, lb: labels.B };
+  clearPoint('A');
+  clearPoint('B');
+  if (old.B) setPoint('A', old.B, old.lb);
+  if (old.A) setPoint('B', old.A, old.la);
+  if (A && B) compute(); else { routeLayer.clearLayers(); $('cards').innerHTML = ''; }
+}
+
 function onMapClick(e) {
   if (mode !== 'route' || !summary) return;
   if (A && B) reset();
-  if (!A) { setPoint('A', e.latlng); say(t('hintB', LETTER)); }
-  else { setPoint('B', e.latlng); compute(); }
+  if (!A) setPoint('A', e.latlng); else setPoint('B', e.latlng);
+  if (A && B) compute(); else say(A ? t('hintB', LETTER) : t('hintStart', LETTER));
 }
 
 function reset() {
-  A = B = plan = null;
-  for (const k of ['A', 'B']) if (markers[k]) { markers[k].remove(); markers[k] = null; }
+  plan = null;
+  clearPoint('A');
+  clearPoint('B');
   routeLayer.clearLayers();
   $('cards').innerHTML = '';
   history.replaceState(null, '', location.pathname + location.search);
@@ -182,7 +246,8 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
-  history.replaceState(null, '', `${location.search}#a=${f(A)}&b=${f(B)}`);
+  const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B });
+  history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',')}`);
   say(esc(t('computing')));
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}`)
     .then(d => {
@@ -273,10 +338,12 @@ function select(kind) {
 }
 
 function readHash() {
-  const m = /a=(-?[\d.]+),(-?[\d.]+)&b=(-?[\d.]+),(-?[\d.]+)/.exec(location.hash);
-  if (!m) return false;
-  setPoint('A', [+m[1], +m[2]]);
-  setPoint('B', [+m[3], +m[4]]);
+  const h = new URLSearchParams(location.hash.slice(1));
+  const point = v => { const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(v || ''); return m ? [+m[1], +m[2]] : null; };
+  const a = point(h.get('a')), b = point(h.get('b'));
+  if (!a || !b) return false;
+  setPoint('A', a, h.get('an'));
+  setPoint('B', b, h.get('bn'));
   map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
   compute();
   return true;
@@ -302,6 +369,8 @@ getJSON('/api/summary')
     map.on('moveend', debounce(refresh, 200));
     map.on('click', onMapClick);
     $('reset').addEventListener('click', reset);
+    $('locate').addEventListener('click', locate);
+    $('swap').addEventListener('click', swap);
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {

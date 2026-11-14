@@ -92,6 +92,7 @@ case "$cmd" in
     need_venv
     need_files "$data" mapillary_street_lights.geojson sesizari_iluminat.geojson
     "$PY" -I "$ROOT/backend/build_city.py" --data "$data"
+    "$PY" -I "$ROOT/backend/build_places.py" --data "$data"   # search index for the address boxes
     echo "Дальше: $0 api"
     ;;
 
