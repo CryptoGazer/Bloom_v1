@@ -59,8 +59,13 @@ class Timetable:
         # [route_id, headsign, [stop_id, ...]] or, with the line's shape,
         # [route_id, headsign, [stop_id, ...], [[lon, lat], ...], [metres along that shape for each stop]]
         self.patterns = data["patterns"]
-        self.days = data["days"]              # "YYYY-MM-DD" -> [[pattern, [departure seconds per stop]], ...]
+        # "YYYY-MM-DD" -> [(pattern, [departure seconds per stop], (trip_id, GTFS stop_sequence of its first stop) or None)];
+        # files built before live transit have no trip ids
+        self.days = {day: [(e[0], e[1], (e[2], e[3]) if len(e) >= 4 else None) for e in trips]
+                     for day, trips in data["days"].items()}
         self.feed_of_day = data.get("feed_of_day", {})
+        # feed version -> {trip_id: [block_id, first departure, last departure]}: which trips one vehicle runs in turn
+        self.blocks = data.get("blocks", {})
         self.meta = data.get("meta", {})
 
     @classmethod
@@ -75,7 +80,7 @@ class Timetable:
         """Trips running on calendar day `day`, in seconds since that day's midnight: the day's own service
         plus the after-midnight part of the previous day's service."""
         prev = self.service(day - dt.timedelta(days=1))
-        return list(self.service(day)) + [(p, [t - 86400 for t in times]) for p, times in prev if times[-1] >= 86400]
+        return list(self.service(day)) + [(p, [t - 86400 for t in times], ref) for p, times, ref in prev if times[-1] >= 86400]
 
 
 class Transit:
@@ -117,7 +122,7 @@ class Transit:
         """The last departure of tonight's service for these stop pairs (optionally one line from one stop)."""
         service_day = day if when.hour >= TRANSIT["night_ends_h"] else day - dt.timedelta(days=1)
         last = None
-        for p, times in self.tt.service(service_day):
+        for p, times, _ in self.tt.service(service_day):
             rid, _, stops = self.tt.patterns[p][:3]
             if route_id is not None and rid != route_id:
                 continue
@@ -144,9 +149,9 @@ class Transit:
 
         walk = SETTINGS["walk_mps"]
         day, t0 = when.date(), when.hour * 3600 + when.minute * 60 + when.second
-        tomorrow = [(p, [t + 86400 for t in times]) for p, times in self.tt.trips(day + dt.timedelta(days=1))]
+        tomorrow = [(p, [t + 86400 for t in times], ref) for p, times, ref in self.tt.trips(day + dt.timedelta(days=1))]
         best = nxt = None
-        for p, times in self.tt.trips(day) + tomorrow:
+        for p, times, ref in self.tt.trips(day) + tomorrow:
             stops = self.tt.patterns[p][2]
             for i, j in pairs.get(p, ()):
                 o, d = stops[i], stops[j]
@@ -159,12 +164,12 @@ class Transit:
                     continue
                 key = (times[j] + dest[d][1] / walk, origin[o][0] + dest[d][0])  # arrival at B, then less unlit walking
                 if best is None or key < best[0]:
-                    best = (key, p, i, j, times)
+                    best = (key, p, i, j, times, ref)
         if best is None:
             return {"kind": "none", "reason": "no_trip_soon", "last": self._last(pairs, day, when),
                     "next": self._departure(nxt[1], nxt[2], nxt[0]) if nxt else None}
 
-        _, p, i, j, times = best
+        _, p, i, j, times, ref = best
         rid, headsign, stops = self.tt.patterns[p][:3]
         o, d = stops[i], stops[j]
         factors = SETTINGS["factor_better_lit"]
@@ -178,7 +183,11 @@ class Transit:
         ride = {"type": "ride", "line": line, "route_type": ROUTE_TYPES.get(route_type, "bus"), "color": "#" + colour,
                 "headsign": headsign, "from": self._stop(o), "to": self._stop(d), "dep": clock(times[i]), "arr": clock(times[j]),
                 "stops": j - i, "minutes": round((times[j] - times[i]) / 60, 1),
-                "coords": self._ride_line(p, i, j)}
+                "coords": self._ride_line(p, i, j),
+                # for live tracking (backend/live.py): which trip, the boarding stop's GTFS stop_sequence, and the
+                # scheduled departure as seconds since midnight of `day` (past 86400 for tomorrow's early trips)
+                "route_id": rid, "trip_id": ref[0] if ref else None, "board_seq": ref[1] + i if ref else None,
+                "day": day.isoformat(), "dep_s": times[i]}
         leave, arrive = times[i] - seconds[0], times[j] + seconds[1]
         return {
             "kind": "ok", "leave_at": clock(leave), "arrive_at": clock(arrive), "minutes": round((arrive - leave) / 60, 1),

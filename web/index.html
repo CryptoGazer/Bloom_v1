@@ -82,6 +82,22 @@
   .ask-row button:disabled { opacity: .5; cursor: default; }
   #ask-mic[aria-pressed="true"] { background: #b3261e; border-color: #b3261e; color: #fff; }
   .ask p { margin: 6px 0 0; }
+  /* live public transport: the box under the transit card and the vehicle markers */
+  .live-box { margin: -4px 0 10px; padding: 8px 10px; background: #f3f6fd; border-left: 4px solid #2b4fb3; border-radius: 0 8px 8px 0; font-size: 13px; }
+  .live-box p { margin: 0 0 4px; }
+  .live-box .live-main { font-size: 15px; font-weight: 600; }
+  .live-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+  .live-tag.on { color: #006b4f; } .live-tag.on::before { content: "\25CF "; } .live-tag.off { color: #555; }
+  .live-box button { font: inherit; padding: 4px 10px; border: 1px solid #555; border-radius: 6px; background: #fff; cursor: pointer; }
+  .veh { position: relative; }
+  .veh-num { position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%; border: 2px solid #fff;
+             box-shadow: 0 1px 4px rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; font: 700 11px/1 system-ui, sans-serif; }
+  .veh-arrow { position: absolute; left: 0; top: 0; width: 30px; height: 30px; }
+  .veh-arrow::before { content: ""; position: absolute; left: 10px; top: -5px; border: 5px solid transparent; border-top: 0; border-bottom: 8px solid #111; }
+  .veh.mine .veh-num { left: -1px; top: -1px; width: 32px; height: 32px; border-width: 3px; font-size: 13px; outline: 2px solid #111; }
+  .veh.old .veh-num { background: #9a9a9a !important; color: #111 !important; border-style: dashed; border-color: #333; }
+  .veh.old .veh-arrow { display: none; }
+  .veh.dim { opacity: .5; }
   @media (max-width: 800px) {
     #app { flex-direction: column; }
     #map { flex: 0 0 55vh; }
@@ -130,6 +146,7 @@
     <div class="controls">
       <button id="reset" type="button"></button>
       <label><input type="checkbox" id="net" checked> <span id="net-label"></span></label>
+      <label><input type="checkbox" id="live-net"> <span id="live-net-label"></span></label>
     </div>
     <details>
       <summary id="legend-title"></summary>

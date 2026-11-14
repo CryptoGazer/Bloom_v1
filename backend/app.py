@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from backend.ask import LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
 from backend.geocode import Places
+from backend.live import LIVE, Live, Vehicles, epoch, fetch_city
 from backend.liveliness import LIVELY, Signs
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
@@ -79,14 +80,15 @@ class AskIn(BaseModel):
                                                       "picked next to it. Stays on this server, never goes to Gemini")
 
 
-def create_app(segments_path=None, gemini=None):
-    """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment."""
+def create_app(segments_path=None, gemini=None, live_fetch=None):
+    """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment.
+    live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city."""
     load_env(ROOT / ".env")
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
 
-    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None}
+    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -96,6 +98,7 @@ def create_app(segments_path=None, gemini=None):
             state["places"] = Places.load(places_path)
         if state["net"] is not None and transit_path.exists():
             state["transit"] = Transit(state["net"], Timetable.load(transit_path))
+            state["live"] = Live(Vehicles(live_fetch or fetch_city), state["transit"].tt)
         ai = gemini or Gemini.from_env()
         if ai is not None and state["places"] is not None:
             state["asker"] = Asker(ai, state["places"])
@@ -219,8 +222,26 @@ def create_app(segments_path=None, gemini=None):
             if state["transit"] is None:
                 raise HTTPException(503, detail={"code": "no_timetable", "message": f"{transit_path} not found. Build it: backend/build_transit.py"})
             extra["transit"] = state["transit"].plan(snapped["from"][2], snapped["to"][2], when)
+            for leg in extra["transit"].get("legs", []):
+                if leg["type"] == "ride":  # the scheduled departure as unix time: what /api/transit/live compares with
+                    leg["dep_ts"] = round(epoch(leg["day"], leg["dep_s"], LOCAL_TZ))
         return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
-                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY}, "data_as_of": net.meta.get("as_of")}
+                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE}, "data_as_of": net.meta.get("as_of")}
+
+    @app.get("/api/transit/live")
+    def transit_live(route: str = Query("", max_length=40, description="only this line, GTFS route_id such as R_AB_16; empty = every line in the area"),
+                     trip: str = Query("", max_length=80, description="a planned trip to follow: its GTFS trip_id (from /api/route, mode=transit)"),
+                     seq: int | None = Query(None, ge=0, description="GTFS stop_sequence of the boarding stop of that trip"),
+                     dep: float | None = Query(None, description="scheduled departure at the boarding stop, unix seconds"),
+                     day: str = Query("", max_length=10, description="the plan's day YYYY-MM-DD (ride.day), to pick the GTFS feed")):
+        """Vehicles of the city's public transport now, inside the map area, and the live state of one planned trip.
+        One shared copy of the city's answer, refreshed at most every LIVE.refresh_s. Each vehicle has the age of its
+        GPS point; older than LIVE.stale_s is not live. trip.status: later, previous_trip (its vehicle still runs an
+        earlier trip of its block), no_vehicle, stale, passed, no_forecast, live (expected = timetable + reported delay,
+        an estimate), or no_data when the city server has not answered yet."""
+        if state["live"] is None:
+            raise HTTPException(503, detail={"code": "no_timetable", "message": f"{transit_path} not found. Build it: backend/build_transit.py"})
+        return state["live"].answer(route=route, trip=trip, seq=seq, dep=dep, day=day or None)
 
     # The city page (web/) at "/", the older demos under /demo and /data/out. Only these folders are exposed.
     # "/" must be mounted last: it catches every path the API routes above did not.
