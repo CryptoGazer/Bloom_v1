@@ -38,6 +38,7 @@
 | `web/search.js` | поле адреса с подсказками (combobox по ARIA), запросы к `/api/geocode` |
 | `web/ask.js` | ввод маршрута естественным языком, запись/преобразование голоса, вызов `/api/ask`, локализованные ответы и применение результата к карте |
 | `web/vendor/leaflet/` | Leaflet 1.9.4 с лицензией (BSD-2-Clause): страница не зависит от CDN |
+| `web/favicon.ico`, `web/favicon.png`, `web/apple-touch-icon.png` | иконка вкладки (16/32/48 px), большая иконка (192 px) и иконка для экрана iPhone (180 px, на белом фоне). Исходник — [Street light icons created by Magnific - Flaticon](https://www.flaticon.com/free-icons/street-light); бесплатная лицензия требует указывать автора, ссылка стоит в подписи карты (`web/app.js`) |
 
 Сервер раздаёт `web/` по адресу `/`, а ссылки на API лежат на `/links`.
 

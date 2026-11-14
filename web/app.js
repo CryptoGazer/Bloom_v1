@@ -77,7 +77,8 @@ renderStatic();
 // ---------- map ----------
 const map = L.map('map', { preferCanvas: true, renderer: L.canvas({ tolerance: 6 }) }).setView([45.7500, 21.2270], 14);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'gray-tiles',
-  attribution: '&copy; OpenStreetMap contributors · Mapillary · Primăria Timișoara, Sesizări' }).addTo(map);
+  attribution: '&copy; OpenStreetMap contributors · Mapillary · Primăria Timișoara, Sesizări · ' +
+    '<a href="https://www.flaticon.com/free-icons/street-light" title="street light icons" target="_blank" rel="noopener">Icon: Magnific – Flaticon</a>' }).addTo(map);
 const areaLayer = L.layerGroup().addTo(map);
 const areaLabel = L.layerGroup();
 const segLayer = L.layerGroup().addTo(map);
