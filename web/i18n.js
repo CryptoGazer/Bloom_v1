@@ -24,7 +24,7 @@ const I18N = {
     noStopNear: 'Nicio stație la mai puțin de {m} m de plecare sau de destinație.',
     noLine: 'Nicio linie directă între aceste locuri.',
     noTripSoon: 'Nicio cursă potrivită în următoarele {min} minute.',
-    lastWas: 'Ultima: linia {line} din {stop} la {time}.', nextIs: 'Următoarea: linia {line} din {stop} la {time}.',
+    lastWas: 'Ultima: linia {line} din {stop} la {time}.', lastMissed: 'Ultima, linia {line} din {stop} la {time}, pleacă înainte să ajungeți în stație.', nextIs: 'Următoarea: linia {line} din {stop} la {time}.',
     walkInstead: 'Mai jos: traseele pe jos.',
     transitSource: 'Orar: GTFS SMTT, versiunea {feed}.',
     live: {
@@ -149,7 +149,7 @@ const I18N = {
     noStopNear: 'No stop within {m} m of the start or the destination.',
     noLine: 'No direct line between these places.',
     noTripSoon: 'No suitable trip in the next {min} minutes.',
-    lastWas: 'The last one: {line} from {stop} at {time}.', nextIs: 'The next one: {line} from {stop} at {time}.',
+    lastWas: 'The last one: {line} from {stop} at {time}.', lastMissed: 'The last one, {line} from {stop} at {time}, leaves before you can reach the stop.', nextIs: 'The next one: {line} from {stop} at {time}.',
     walkInstead: 'Walking routes below.',
     transitSource: 'Timetable: SMTT GTFS, version {feed}.',
     live: {
@@ -274,7 +274,7 @@ const I18N = {
     noStopNear: 'Нет остановки ближе {m} м к началу или концу пути.',
     noLine: 'Прямой линии между этими местами нет.',
     noTripSoon: 'Подходящих рейсов в ближайшие {min} минут нет.',
-    lastWas: 'Последний: {line} от остановки {stop} в {time}.', nextIs: 'Следующий: {line} от остановки {stop} в {time}.',
+    lastWas: 'Последний: {line} от остановки {stop} в {time}.', lastMissed: 'Последний, {line} от остановки {stop} в {time}, уйдёт раньше, чем вы дойдёте до остановки.', nextIs: 'Следующий: {line} от остановки {stop} в {time}.',
     walkInstead: 'Ниже — пешие маршруты.',
     transitSource: 'Расписание: GTFS SMTT, версия {feed}.',
     live: {

@@ -264,6 +264,31 @@ details[open] .chev { transform: rotate(90deg); }
 .side { position: absolute; right: 12px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
 .side .round { width: 48px; height: 48px; }
 
+.menu { position: absolute; top: 64px; right: 12px; z-index: 1160; width: 210px; padding: 6px; border-radius: var(--bz-r-card); background: var(--bz-panel);
+        border: 1px solid var(--bz-edge); display: flex; flex-direction: column; gap: 2px; box-shadow: 0 12px 32px rgba(0,0,0,.5); }
+.menu button { height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; display: flex; align-items: center; gap: 10px; font-size: 15px; text-align: left; }
+.menu button[aria-checked="true"] { background: var(--bz-raised-2); font-weight: 600; }
+.menu button:hover { background: var(--bz-raised); }
+/* leaving time: drums */
+.tp-back { position: absolute; inset: 0; z-index: 1250; background: rgba(0,0,0,.55); }
+.tp { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1260; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: var(--bz-r-sheet) var(--bz-r-sheet) 0 0;
+      background: var(--bz-panel); border-top: 1px solid var(--bz-line); display: flex; flex-direction: column; gap: 12px; animation: tpup .28s var(--bz-ease-out) both; }
+@keyframes tpup { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.tp-wheels { position: relative; display: flex; justify-content: center; align-items: center; gap: 18px; height: 220px; }
+.tp-band { position: absolute; left: 50%; width: 260px; margin-left: -130px; top: 88px; height: 44px; border-top: 2px solid var(--bz-edge); border-bottom: 2px solid var(--bz-edge); pointer-events: none; }
+.tp-col { position: relative; width: 96px; height: 220px; overflow-y: scroll; scroll-snap-type: y mandatory; overscroll-behavior: contain; padding: 88px 0;
+          scrollbar-width: none; touch-action: pan-y; cursor: grab; user-select: none; outline-offset: -2px;
+          -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 38%, #000 62%, transparent 100%);
+                  mask-image: linear-gradient(to bottom, transparent 0, #000 38%, #000 62%, transparent 100%); }
+.tp-col::-webkit-scrollbar { display: none; }
+.tp-col:focus-visible { outline: none; }
+.tp-col:focus-visible .tp-i.on { text-decoration: underline 2px; text-underline-offset: 7px; }
+.tp-col:active { cursor: grabbing; }
+.tp-i { height: 44px; scroll-snap-align: center; display: flex; align-items: center; justify-content: center; font: 500 22px/1 var(--bz-display); color: var(--bz-ink-3);
+        transition: color .12s, font-size .12s; }
+.tp-i.on { color: var(--bz-ink); font-size: 30px; font-weight: 600; }
+.tp-colon { font: 600 28px/1 var(--bz-display); color: var(--bz-ink-2); }
+@media (prefers-reduced-motion: reduce) { .tp { animation: none; } .tp-i { transition: none; } }
 .toast { position: absolute; left: 12px; right: 12px; top: 68px; z-index: 1300; padding: 12px 14px; border-radius: var(--bz-r-card); background: var(--bz-panel);
          border: 1px dashed var(--bz-ink-2); font-size: 14px; line-height: 1.45; display: flex; gap: 10px; align-items: flex-start; }
 .toast button { margin-left: auto; }

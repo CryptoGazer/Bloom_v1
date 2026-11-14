@@ -53,6 +53,7 @@ const I = {
   bus: (s = 18) => SV('<rect x="5" y="4" width="14" height="13" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', s),
   clock: (s = 16) => SV('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', s),
   down: () => SV('<path d="m6 9 6 6 6-6"/>', 12, 2.4),
+  check: () => SV('<path d="m5 12 5 5 9-10"/>', 16, 2.2),
   chev: (s = 14, cls = '') => SV('<path d="m9 6 6 6-6 6"/>', s, 2.2, cls ? ` class="${cls}"` : ''),
   locate: () => SV('<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 18),
   swap: () => SV('<path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/>', 18),
@@ -125,9 +126,9 @@ const shares = r => {
 let A = null, B = null;                       // L.LatLng; globals for ../ask.js
 const labels = { A: '', B: '' };
 let mode = 'walk', at = '', plan = null, sel = 'better_lit', screen = 'home', summary = null;
-let routeReq = 0, legendOpen = false, timeOpen = false, pickMode = null, searchFor = 'B', part = null;
+let routeReq = 0, legendOpen = false, langOpen = false, timeOpen = false, pickMode = null, searchFor = 'B', part = null;
 let live = null, liveAt = 0, liveOff = 0, liveTimer = null, liveReq = 0;
-let anim = null;
+let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back from a language switch, no replay
 const seen = new Set();
 const prefs = { net: true, livenet: false };
 
@@ -142,6 +143,7 @@ const netR = L.canvas({ padding: 0.3, tolerance: 6 });
 const areaLayer = L.layerGroup().addTo(map);
 const netLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
+const fadeLayer = L.layerGroup().addTo(map);   // a drawing that is fading out, above the new one
 const lifeLayer = L.layerGroup().addTo(map);
 const markLayer = L.layerGroup().addTo(map);
 const abLayer = L.layerGroup().addTo(map);
@@ -287,9 +289,24 @@ function onAct(e) {
 }
 $('screen').addEventListener('click', onAct);
 $('overlay').addEventListener('click', onAct);
+document.addEventListener('click', e => {
+  if (langOpen && !e.target.closest('.menu, #lang-btn')) { langOpen = false; renderOverlay(); }
+}, true);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && (langOpen || legendOpen || tip || aboutOpen || $('tp'))) { closeOverlays(); }
+});
 
 ACT.home = () => { stopLive(); go('home'); };
-ACT.lang = () => { const i = LANGS.indexOf(LANG); saveHash(); switchLang(LANGS[(i + 1) % LANGS.length]); };
+ACT.lang = () => { langOpen = !langOpen; renderOverlay(); };
+ACT.setLang = el => {
+  const code = el.dataset.lang;
+  langOpen = false;
+  if (code === LANG) { renderOverlay(); return; }
+  // the page reloads in the new language: come back to the same screen, without replaying the animation
+  try { sessionStorage.setItem('bz.back', JSON.stringify({ screen: screen === 'search' ? 'home' : screen, sel })); } catch (e) { /* storage blocked */ }
+  saveHash();
+  switchLang(code);
+};
 ACT.legend = () => { legendOpen = !legendOpen; renderOverlay(); };
 ACT.about = () => { openAbout(); };
 ACT.closeOverlay = () => closeOverlays();
@@ -306,8 +323,10 @@ ACT.mode = el => {
   mode = el.dataset.mode;
   if (screen === 'home') renderHome(); else if (A && B) compute();
 };
-ACT.time = () => { timeOpen = !timeOpen; renderHome(); if (timeOpen) setTimeout(() => $('at-input') && $('at-input').focus(), 0); };
-ACT.timeNow = () => { at = ''; timeOpen = false; renderHome(); };
+ACT.time = () => openTimePicker();
+ACT.tpNow = () => { at = ''; closeTimePicker(true); };
+ACT.tpDone = () => { const v = tpValue(); at = `${pad2(v.h)}:${pad2(v.m)}`; closeTimePicker(true); };
+ACT.tpCancel = () => closeTimePicker(false);
 ACT.net = el => { prefs.net = el.checked; refreshNet(); };
 ACT.livenet = el => { prefs.livenet = el.checked; liveTick(); };
 
@@ -321,7 +340,7 @@ function renderHome() {
   <div class="top" style="justify-content: space-between">
     <div class="brand">${WORDMARK}<span class="sec">${esc(t('m.tagline'))}</span></div>
     <div style="display: flex; gap: 8px">
-      <button type="button" class="round mono" data-act="lang" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; font-weight: 500; letter-spacing: .04em">${LANG.toUpperCase()}</button>
+      <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
       <button type="button" class="round" data-act="legend" aria-expanded="${legendOpen}" aria-label="${esc(t('m.legendLayers'))}">${I.legend()}</button>
     </div>
   </div>
@@ -341,15 +360,11 @@ function renderHome() {
     </div>
     ${modeSeg('')}
     <div class="row">
-      ${timeOpen
-    ? `<div class="time-pop"><label class="sr" for="at-input">${esc(t('atLabel'))}</label><input type="time" id="at-input" value="${esc(at.includes('T') ? at.slice(11, 16) : at)}"><button type="button" class="chip-btn" data-act="timeNow">${esc(t('m.now'))}</button></div>`
-    : `<button type="button" class="chip-btn" data-act="time" aria-expanded="false">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(timeLabel)}</strong></span>${I.down()}</button>`}
+      <button type="button" class="chip-btn" data-act="time" aria-haspopup="dialog">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(timeLabel)}</strong></span>${I.down()}</button>
       <button type="button" class="link-btn" data-act="about">${esc(t('m.aboutData'))}</button>
     </div>
     <p class="small" style="margin-top: auto">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
   </section>`;
-  const inp = $('at-input');
-  if (inp) inp.addEventListener('change', () => { at = inp.value; timeOpen = false; renderHome(); if (A && B) saveHash(); });
 }
 
 function modeSeg(cls) {
@@ -477,6 +492,12 @@ function compute() {
       plan = d; live = null;
       if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', false); }
       else { if (screen !== 'results') go('results', false); reveal(false); }
+      const rt = restoreTo;
+      restoreTo = null;
+      if (rt && ['details', 'stop'].includes(rt.screen)) {
+        if (rt.sel && plan.routes[rt.sel]) sel = rt.sel;
+        if (rt.screen === 'details' || ride()) go(rt.screen);
+      } else if (rt && rt.screen === 'results' && rt.sel && plan.routes[rt.sel] && rt.sel !== sel) pick(rt.sel);
     })
     .catch(err => {
       if (req !== routeReq) return;
@@ -507,7 +528,7 @@ const arriveHM = r => fmtHM(hm(leaveHM()) + r.minutes);
 const routeTitle = kind => (plan && plan.verdict.kind === 'same' ? t(plan.verdict.pick === 'better_lit' ? 'm.litSame' : 'm.fastestOne') : t(kind === 'fastest' ? 'm.fastest' : 'm.litter'));
 
 // ---------- drawing routes ----------
-function drawMain(r, kind, layer = routeLayer, hit = true) {
+function drawMain(r, kind, layer = routeLayer, hit = true) {  // eslint-disable-line no-unused-vars
   const lines = r.geometry.features.map(f => ll(f.geometry.coordinates));
   L.polyline(lines, { renderer: svgR, color: '#F2F2F2', weight: 10, opacity: 0.32, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
   L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: 12, opacity: 1, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
@@ -536,8 +557,9 @@ function drawWarnings(routes) {
     if (f.properties.status === 'dark_reported') L.marker(midOf(f), { icon: MK.warn(), interactive: false, keyboard: false }).addTo(markLayer);
   }
 }
-function drawRoutes() {
-  routeLayer.clearLayers(); markLayer.clearLayers();
+function drawRoutes(keepOld) {
+  if (!keepOld) routeLayer.clearLayers();
+  markLayer.clearLayers();
   const v = plan.verdict, r = plan.routes[sel], otherKind = sel === 'fastest' ? 'better_lit' : 'fastest';
   const other = v.kind === 'same' ? null : plan.routes[otherKind];
   if (other) drawAlt(other, otherKind);
@@ -591,22 +613,45 @@ function branches(fast, lit) {
 }
 const calcKey = () => [plan.from.lat, plan.from.lon, plan.to.lat, plan.to.lon, plan.mode, plan.at, plan.routes.fastest.length_m, plan.routes.better_lit.length_m].join('|');
 
+// cumulative distance along a point list, so a frame cuts the line with a binary search instead of re-measuring it
+function cumOf(ps) { const c = [0]; for (let i = 1; i < ps.length; i++) c.push(c[i - 1] + meters(ps[i - 1], ps[i])); return c; }
+function cutC(ps, cum, len) {
+  if (len <= 0) return ps.slice(0, 1);
+  if (len >= cum[cum.length - 1]) return ps.slice();
+  let lo = 0, hi = cum.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= len) lo = m; else hi = m; }
+  const k = (len - cum[lo]) / ((cum[hi] - cum[lo]) || 1), a = ps[lo], b = ps[hi];
+  return ps.slice(0, lo + 1).concat([L.latLng(a.lat + (b.lat - a.lat) * k, a.lng + (b.lng - a.lng) * k)]);
+}
+// a light trail while it moves: a wide translucent stroke instead of the blur filter, which is too slow to redraw every frame
+const trail = () => ({
+  glow: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 16, opacity: 0.12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+  cas: L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+  line: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 6, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+});
+const setTrail = (g, ll) => { g.glow.setLatLngs(ll); g.cas.setLatLngs(ll); g.line.setLatLngs(ll); };
+// the old drawing fades away on top of the new one, so a stage change never flashes
+function fadeOut(layers, ms = 300) {
+  for (const l of layers) { routeLayer.removeLayer(l); l.addTo(fadeLayer); }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    for (const l of layers) if (l._path) { l._path.style.transition = `opacity ${ms}ms cubic-bezier(.33,1,.68,1)`; l._path.style.opacity = '0'; }
+  }));
+  setTimeout(() => layers.forEach(l => fadeLayer.removeLayer(l)), ms + 80);
+}
+
 function reveal(force) {
   stopAnim();
   const v = plan.verdict, final = v.kind === 'same' ? (v.pick || 'fastest') : v.kind === 'too_long' ? 'fastest' : 'better_lit', key = calcKey();
-  if ((!force && seen.has(key)) || reduced()) { seen.add(key); sel = final; finishReveal(); fitPlan(); return; }
+  if ((!force && (seen.has(key) || quietReveal)) || reduced()) { seen.add(key); quietReveal = false; sel = final; finishReveal(); fitPlan(); return; }
   seen.add(key);
-  const fast = plan.routes.fastest, fastPts = pts(fast), morph = v.kind === 'show';
-  const g = { glow: null, cas: null, line: null };
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers();
-  g.glow = L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 10, opacity: 0.32, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
-  g.cas = L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
-  g.line = L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 6, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
+  const fast = plan.routes.fastest, fastPts = pts(fast), morph = v.kind === 'show', cum = cumOf(fastPts);
+  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers();
+  const g = trail();
   const head = L.marker(fastPts[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
-  anim = { t0: performance.now(), raf: 0, final, morph, fastPts, L: lenOf(fastPts), g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
+  anim = { t0: performance.now(), raf: 0, final, morph, fastPts, cum, L: cum[cum.length - 1], g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
   if (morph) {
-    const br = branches(fastPts, pts(plan.routes.better_lit)), N = 48;
-    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N });
+    const br = branches(fastPts, pts(plan.routes.better_lit)), N = 64;
+    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1) });
   }
   sel = null;
   renderResults();
@@ -623,32 +668,34 @@ function reveal(force) {
 function frame(t) {
   const a = anim, fast = plan.routes.fastest, lit = plan.routes.better_lit;
   if (t < MOTION.draw) {
-    const vis = cut(a.fastPts, easeDraw(clamp(t / MOTION.draw)) * a.L);
-    a.g.glow.setLatLngs(vis); a.g.cas.setLatLngs(vis); a.g.line.setLatLngs(vis);
+    const vis = cutC(a.fastPts, a.cum, easeDraw(clamp(t / MOTION.draw)) * a.L);
+    setTrail(a.g, vis);
     a.head.setLatLng(vis[vis.length - 1]);
   } else if (a.stage === 0) {
     a.stage = 1;
+    setTrail(a.g, a.fastPts);
     a.head.remove();
-    routeLayer.clearLayers();
-    drawMain(fast, 'fastest', routeLayer, false);
+    const old = [a.g.glow, a.g.cas, a.g.line];
+    drawMain(fast, 'fastest', routeLayer, false, true);
     drawWarnings([fast]);
+    fadeOut(old, MOTION.pause);
   }
   if (a.morph && t >= MOTION.draw + MOTION.pause) {
     const tm = t - MOTION.draw - MOTION.pause, u = clamp(tm / MOTION.morph);
     if (a.stage === 1) {
       a.stage = 2;
-      routeLayer.clearLayers();
+      const old = [];
+      routeLayer.eachLayer(l => old.push(l));
       a.alt = drawAlt(fast, 'fastest', routeLayer, 0);
-      a.mg = L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 10, opacity: 0.32, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
-      a.mc = L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
-      a.ml = L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 6, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer);
+      a.m = trail();
+      setTrail(a.m, a.fastPts);
+      fadeOut(old, 200);
     }
     const mid = a.rf.map((p, i) => {
       const k = easeMorph(clamp((tm - MOTION.spread * i / (a.N - 1)) / MOTION.morph)), q = a.rl[i];
       return L.latLng(p.lat + (q.lat - p.lat) * k, p.lng + (q.lng - p.lng) * k);
     });
-    const line = a.br.head.slice(0, -1).concat(mid, a.br.tail.slice(1));
-    a.mg.setLatLngs(line); a.mc.setLatLngs(line); a.ml.setLatLngs(line);
+    setTrail(a.m, a.headPts.concat(mid, a.tailPts));
     const altOp = 0.8 * easeOut(u);
     a.alt.forEach((p, i) => p.setStyle({ opacity: i === 0 ? altOp / 0.8 : altOp }));
     // the cards follow the line
@@ -670,8 +717,11 @@ function frame(t) {
 function setOp(id, x) { const el = $(id); if (el) { el.style.opacity = x.toFixed(3); el.style.visibility = x > 0 ? 'visible' : 'hidden'; } }
 function stopAnim() { if (anim) { cancelAnimationFrame(anim.raf); anim = null; } }
 function finishReveal() {
+  const old = [];
+  routeLayer.eachLayer(l => old.push(l));
   renderResults();
-  drawRoutes();
+  drawRoutes(true);
+  fadeOut(old, 260);
 }
 function pick(kind) {
   if (!plan || !plan.routes[kind]) return;
@@ -769,7 +819,7 @@ function placePlusChip() {
 function transitWhyNot() {
   const tr = plan.transit, s = plan.settings.transit;
   const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m }) : tr.reason === 'no_line' ? t('noLine') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
-  const more = [tr.last ? t('lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
+  const more = [tr.last ? t(tr.last.missed ? 'lastMissed' : 'lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
   return `<div class="warnbox"><span style="font-size: 14px; font-weight: 600">${esc(t('m.noTransit'))}</span><span class="sec">${esc(why + (more ? ' ' + more : ''))}</span><span class="small">${esc(t('m.walkBelow'))}</span></div>`;
 }
 
@@ -801,6 +851,7 @@ function openTip(f, kind, latlng) {
 
 // ---------- overlays: legend, segment, about the data ----------
 function closeOverlays() {
+  langOpen = false;
   legendOpen = false; tip = null; aboutOpen = false;
   markLayer.eachLayer(l => { if (l.options.ring) markLayer.removeLayer(l); });
   $('overlay').innerHTML = '';
@@ -811,6 +862,16 @@ function openAbout() { legendOpen = false; tip = null; aboutOpen = true; renderO
 function renderOverlay() {
   for (const b of document.querySelectorAll('#screen [data-act="legend"]')) b.setAttribute('aria-expanded', String(legendOpen));
   const close = `<button type="button" class="close" data-act="closeOverlay" aria-label="${esc(t('m.close'))}">${I.close()}</button>`;
+  const lb = $('lang-btn');
+  if (lb) lb.setAttribute('aria-expanded', String(langOpen));
+  if (langOpen) {
+    const names = { ro: 'Română', en: 'English', ru: 'Русский' };
+    $('overlay').innerHTML = `<div class="menu" role="menu" aria-label="${esc(t('langLabel'))}">` +
+      LANGS.map(l => `<button type="button" role="menuitemradio" aria-checked="${l === LANG}" data-act="setLang" data-lang="${l}" lang="${l}"><span class="mono" style="width: 26px; font-size: 12px">${l.toUpperCase()}</span><span class="grow">${names[l]}</span>${l === LANG ? I.check() : ''}</button>`).join('') + '</div>';
+    const first = $('overlay').querySelector('[aria-checked="true"]');
+    if (first) first.focus();
+    return;
+  }
   if (legendOpen) {
     const row = k => `${sample(k)}<span>${esc(t('m.st.' + k))}</span>`;
     $('overlay').innerHTML = `<section class="panel" aria-label="${esc(t('m.legend'))}">${close}
@@ -1348,6 +1409,115 @@ function updateNav() {
   placeSide();
 }
 
+// ---------- leaving time: two drums that spin with inertia, as on a phone ----------
+// Touch scrolls natively (momentum + scroll snap); a mouse can drag and throw the drum too; arrows and Page keys step it.
+const ROW = 44, COPIES = 9;                       // the 24 hours and 60 minutes repeat, so the drum turns round
+const pad2 = n => String(n).padStart(2, '0');
+let tpPrevFocus = null;
+function openTimePicker() {
+  closeOverlays();
+  tpPrevFocus = document.activeElement;
+  const now = new Date();
+  let h = now.getHours(), m = now.getMinutes();
+  if (at) { const v = at.includes('T') ? at.slice(11, 16) : at; [h, m] = v.split(':').map(Number); }
+  const drum = (id, n, label) => `<div class="tp-col" id="tp-${id}" tabindex="0" role="spinbutton" aria-label="${esc(label)}" aria-valuemin="0" aria-valuemax="${n - 1}">` +
+    Array.from({ length: n * COPIES }, (_, k) => `<div class="tp-i" data-k="${k}">${pad2(k % n)}</div>`).join('') + '</div>';
+  $('overlay').innerHTML = `<div class="tp-back" data-act="tpCancel"></div>
+    <section class="tp" id="tp" role="dialog" aria-modal="true" aria-labelledby="tp-title">
+      <div class="handle"></div>
+      <div class="row"><h2 id="tp-title" style="font-size: 17px; font-weight: 600">${esc(t('m.leaveTime'))}</h2><span class="label" id="tp-day" aria-live="polite"></span></div>
+      <div class="tp-wheels"><div class="tp-band" aria-hidden="true"></div>${drum('h', 24, t('m.hours'))}<span class="tp-colon" aria-hidden="true">:</span>${drum('m', 60, t('m.minutes'))}</div>
+      <div class="actions"><button type="button" class="secondary" data-act="tpNow" style="width: 112px">${esc(t('m.nowBtn'))}</button><button type="button" class="primary" data-act="tpDone">${esc(t('m.done'))}</button></div>
+    </section>`;
+  setupDrum($('tp-h'), 24, h);
+  setupDrum($('tp-m'), 60, m);
+  tpDay();
+  $('tp-h').focus({ preventScroll: true });
+}
+function tpValue() {
+  const v = el => Math.round(el.scrollTop / ROW) % el._n;
+  return { h: v($('tp-h')), m: v($('tp-m')) };
+}
+// the server reads a clock time more than an hour ago as tomorrow (backend/app.py, leaving_time): say so here
+function tpDay() {
+  const el = $('tp-day');
+  if (!el || !$('tp-h')._n || !$('tp-m')._n) return;
+  const { h, m } = tpValue(), now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  el.textContent = h * 60 + m < mins - 60 ? t('m.tomorrow') : t('m.today');
+}
+function closeTimePicker(changed) {
+  closeOverlays();
+  if (tpPrevFocus && tpPrevFocus.focus) tpPrevFocus.focus({ preventScroll: true });
+  if (!changed) return;
+  if (screen === 'home') renderHome();
+  if (A && B) { saveHash(); if (screen !== 'home') compute(); }
+}
+function setupDrum(el, n, value) {
+  const total = n * COPIES, middle = Math.floor(COPIES / 2) * n;
+  el._n = n;
+  el.scrollTop = (middle + value) * ROW;
+  let raf = 0, idle = 0, on = null;
+  const index = () => Math.round(el.scrollTop / ROW);
+  const mark = () => {
+    raf = 0;
+    const k = index(), item = el.children[k];
+    if (on !== item) { if (on) on.classList.remove('on'); if (item) item.classList.add('on'); on = item; }
+    el.setAttribute('aria-valuenow', k % n);
+    el.setAttribute('aria-valuetext', pad2(k % n));
+    tpDay();
+  };
+  // keep the drum near its middle copy, so it never reaches an end
+  const recentre = () => { const k = index(); if (k < n || k >= total - n) el.scrollTop = (middle + (k % n)) * ROW; };
+  el.addEventListener('scroll', () => {
+    if (!raf) raf = requestAnimationFrame(mark);
+    clearTimeout(idle);
+    idle = setTimeout(recentre, 160);
+  }, { passive: true });
+  mark();
+  el.addEventListener('keydown', e => {
+    const step = { ArrowUp: -1, ArrowDown: 1, PageUp: -5, PageDown: 5 }[e.key];
+    if (step) { e.preventDefault(); el.scrollTo({ top: (index() + step) * ROW, behavior: reduced() ? 'auto' : 'smooth' }); }
+    else if (e.key === 'Enter') { e.preventDefault(); ACT.tpDone(); }
+  });
+  // a mouse: drag and throw, with the speed decaying as on a phone, then settle on a row
+  let drag = null, glide = 0;
+  el.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    cancelAnimationFrame(glide);
+    el.setPointerCapture(e.pointerId);
+    el.style.scrollSnapType = 'none';
+    drag = { y: e.clientY, t: performance.now(), v: 0, moved: 0 };
+  });
+  el.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const now = performance.now(), dy = e.clientY - drag.y, dt = Math.max(1, now - drag.t);
+    el.scrollTop -= dy;
+    drag.v = 0.8 * (-dy / dt) + 0.2 * drag.v;        // px per ms, smoothed
+    drag.moved += Math.abs(dy);
+    drag.y = e.clientY; drag.t = now;
+  });
+  const settle = () => { el.style.scrollSnapType = ''; el.scrollTo({ top: index() * ROW, behavior: 'smooth' }); };
+  el.addEventListener('pointerup', e => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    if (d.moved < 4) {                                  // a click on a number: bring it to the centre
+      const item = document.elementFromPoint(e.clientX, e.clientY);
+      el.style.scrollSnapType = '';
+      if (item && item.dataset.k != null) el.scrollTo({ top: +item.dataset.k * ROW, behavior: 'smooth' });
+      return;
+    }
+    let v = d.v, last = performance.now();
+    const fly = now => {
+      const dt = now - last; last = now;
+      el.scrollTop += v * dt;
+      v *= Math.pow(0.994, dt);                         // friction
+      if (Math.abs(v) > 0.03) glide = requestAnimationFrame(fly); else settle();
+    };
+    glide = requestAnimationFrame(fly);
+  });
+  el.addEventListener('pointercancel', () => { drag = null; settle(); });
+}
 // ---------- toast ----------
 let toastTimer = null;
 function toast(text, ms = 7000) {
@@ -1391,4 +1561,12 @@ getJSON('/api/summary').then(s => {
   if (screen === 'home') renderHome();
   refreshNet();
 }).catch(err => toast(t('serverDown', { msg: err.message })));
-if (readHash()) compute();
+let back = null;
+try { back = JSON.parse(sessionStorage.getItem('bz.back') || 'null'); sessionStorage.removeItem('bz.back'); } catch (e) { back = null; }
+if (readHash()) {
+  if (back && back.screen === 'home') { fit(L.latLngBounds([A, B]).pad(0.3)); }
+  else {
+    if (back) { quietReveal = true; restoreTo = back; }
+    compute();
+  }
+}

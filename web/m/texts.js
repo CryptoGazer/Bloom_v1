@@ -2,6 +2,8 @@
 /* Texts of the phone layout (m.js), on top of ../i18n.js: I18N.<lang>.m. Romanian first; the word "safe" is never used.
    Romanian wording follows the design canvas; it still needs a native speaker's check. */
 Object.assign(I18N.ro, { m: {
+  nowBtn: 'Acum',
+  leaveTime: 'Ora plecării', hours: 'Ora', minutes: 'Minute', done: 'Gata', today: 'AZI', tomorrow: 'MÂINE',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'acum', close: 'Închide', back: 'Înapoi',
   tagline: 'Prin beznă, spre casă.', langBtn: 'Limba: română. Schimbați în EN sau RU', legendLayers: 'Legendă și straturi',
   coverage: 'Zona acoperită: campusul universitar și centrul',
@@ -85,6 +87,8 @@ Object.assign(I18N.ro, { m: {
 } });
 
 Object.assign(I18N.en, { m: {
+  nowBtn: 'Now',
+  leaveTime: 'Leaving time', hours: 'Hours', minutes: 'Minutes', done: 'Done', today: 'TODAY', tomorrow: 'TOMORROW',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'now', close: 'Close', back: 'Back',
   tagline: 'Through the dark, towards home.', langBtn: 'Language: English. Switch to RU or RO', legendLayers: 'Legend and layers',
   coverage: 'Covered area: the university campus and the centre',
@@ -168,6 +172,8 @@ Object.assign(I18N.en, { m: {
 } });
 
 Object.assign(I18N.ru, { m: {
+  nowBtn: 'Сейчас',
+  leaveTime: 'Время выхода', hours: 'Часы', minutes: 'Минуты', done: 'Готово', today: 'СЕГОДНЯ', tomorrow: 'ЗАВТРА',
   agoS: '{s} с', agoMS: '{m} мин {s} с', now: 'сейчас', close: 'Закрыть', back: 'Назад',
   tagline: 'Сквозь темноту — домой.', langBtn: 'Язык: русский. Переключить на RO или EN', legendLayers: 'Обозначения и слои',
   coverage: 'Покрытая зона: университетский городок и центр',

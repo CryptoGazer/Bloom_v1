@@ -54,8 +54,8 @@ def test_takes_the_next_tram_and_walks_lit_streets_to_and_from_the_stops(planner
     assert (walk1["type"], ride["type"], walk2["type"]) == ("walk", "ride", "walk")
     assert walk1["length_m"] == pytest.approx(100, abs=1) and walk2["length_m"] == pytest.approx(100, abs=1)
     assert (ride["line"], ride["from"]["name"], ride["to"]["name"], ride["dep"], ride["arr"]) == ("8", "Stația Unu", "Stația Doi", "22:00", "22:05")
-    assert r["arrive_at"] == "22:06" and r["leave_at"] == "21:58"
-    assert r["last"] == {"line": "8", "stop": "Stația Unu", "time": "00:10"}
+    assert r["arrive_at"] == "22:06" and r["leave_at"] == "21:57"   # 74 s of walking + 1 min at the stop before 22:00
+    assert r["last"] == {"line": "8", "stop": "Stația Unu", "time": "00:10", "missed": False}
 
 
 def test_a_tram_that_leaves_before_you_reach_the_stop_is_not_offered(planner):
@@ -74,6 +74,12 @@ def test_no_more_trams_tonight_says_when_the_last_one_left_and_when_the_next_one
     r = planner.plan(at(planner, 0), at(planner, 2000), when(24, 30))      # 00:30 on the 15th
     assert r["kind"] == "none" and r["reason"] == "no_trip_soon"
     assert r["last"]["time"] == "00:10" and r["next"]["time"] == "06:00"
+    assert r["last"]["missed"] is True
+
+
+def test_the_last_trip_you_can_no_longer_reach_is_marked_missed(planner):
+    r = planner.plan(at(planner, 0), at(planner, 2000), when(24, 9))       # 00:09: the 00:10 tram leaves before you get there
+    assert r["kind"] == "none" and r["last"] == {"line": "8", "stop": "Stația Unu", "time": "00:10", "missed": True}
 
 
 def test_no_stop_within_walking_distance(planner):
@@ -110,3 +116,11 @@ def test_the_ride_follows_the_line_shape(planner):
 def test_the_direction_of_travel_matters(planner):
     r = planner.plan(at(planner, 2000), at(planner, 0), when(22, 0))
     assert r["kind"] == "ok" and (r["legs"][1]["dep"], r["legs"][1]["headsign"]) == ("22:10", "Spre Unu")
+
+
+def test_a_clock_time_well_before_now_means_tomorrow():
+    from backend.app import leaving_time
+    late = dt.datetime(2026, 11, 14, 23, 59)
+    assert leaving_time("00:05", now=late) == dt.datetime(2026, 11, 15, 0, 5)      # after midnight, not this morning
+    assert leaving_time("23:30", now=late) == dt.datetime(2026, 11, 14, 23, 30)    # half an hour ago: still today
+    assert leaving_time("08:00", now=dt.datetime(2026, 11, 14, 7, 0)) == dt.datetime(2026, 11, 14, 8, 0)

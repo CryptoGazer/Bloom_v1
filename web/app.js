@@ -379,7 +379,7 @@ function transitCard() {
   if (tr.kind !== 'ok') {
     const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m })
       : tr.reason === 'no_line' ? t('noLine') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
-    const text = [why, tr.last ? t('lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
+    const text = [why, tr.last ? t(tr.last.missed ? 'lastMissed' : 'lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
     return `<div class="card info"><span class="title">${esc(t('transitTitle'))}</span><p class="warn">${esc(text)}</p>` +
       `<p class="small">${esc(t('walkInstead'))}</p></div>`;
   }

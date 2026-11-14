@@ -118,8 +118,10 @@ class Transit:
         rid, _, stops = self.tt.patterns[p][:3]
         return {"line": self.tt.routes[rid][0], "stop": self.tt.stops[stops[i]][0], "time": clock(t)}
 
-    def _last(self, pairs, day, when, route_id=None, stop=None):
-        """The last departure of tonight's service for these stop pairs (optionally one line from one stop)."""
+    def _last(self, pairs, day, when, route_id=None, stop=None, ready=None):
+        """The last departure of tonight's service for these stop pairs (optionally one line from one stop).
+        ready: {stop_id: seconds since `day` midnight when the person can be there}; with it the answer says
+        whether that last departure can still be caught ("missed")."""
         service_day = day if when.hour >= TRANSIT["night_ends_h"] else day - dt.timedelta(days=1)
         last = None
         for p, times, _ in self.tt.service(service_day):
@@ -131,7 +133,14 @@ class Transit:
                     continue
                 if last is None or times[i] > last[0]:
                     last = (times[i], p, i)
-        return self._departure(last[1], last[2], last[0]) if last else None
+        if last is None:
+            return None
+        out = self._departure(last[1], last[2], last[0])
+        if ready is not None:
+            t = last[0] - (86400 if service_day != day else 0)   # in seconds since `day` midnight
+            sid = self.tt.patterns[last[1]][2][last[2]]
+            out["missed"] = sid in ready and t < ready[sid]
+        return out
 
     def plan(self, A, B, when):
         """Best trip leaving `when` (local wall-clock datetime) from snapped A to snapped B, or the reason there is none."""
@@ -149,13 +158,14 @@ class Transit:
 
         walk = SETTINGS["walk_mps"]
         day, t0 = when.date(), when.hour * 3600 + when.minute * 60 + when.second
+        ready_at = {o: t0 + r[1] / walk + TRANSIT["board_margin_s"] for o, r in origin.items()}
         tomorrow = [(p, [t + 86400 for t in times], ref) for p, times, ref in self.tt.trips(day + dt.timedelta(days=1))]
         best = nxt = None
         for p, times, ref in self.tt.trips(day) + tomorrow:
             stops = self.tt.patterns[p][2]
             for i, j in pairs.get(p, ()):
                 o, d = stops[i], stops[j]
-                ready = t0 + origin[o][1] / walk + TRANSIT["board_margin_s"]
+                ready = ready_at[o]
                 if times[i] < ready:
                     continue
                 if nxt is None or times[i] < nxt[0]:
@@ -166,7 +176,7 @@ class Transit:
                 if best is None or key < best[0]:
                     best = (key, p, i, j, times, ref)
         if best is None:
-            return {"kind": "none", "reason": "no_trip_soon", "last": self._last(pairs, day, when),
+            return {"kind": "none", "reason": "no_trip_soon", "last": self._last(pairs, day, when, ready=ready_at),
                     "next": self._departure(nxt[1], nxt[2], nxt[0]) if nxt else None}
 
         _, p, i, j, times, ref = best
@@ -188,11 +198,12 @@ class Transit:
                 # scheduled departure as seconds since midnight of `day` (past 86400 for tomorrow's early trips)
                 "route_id": rid, "trip_id": ref[0] if ref else None, "board_seq": ref[1] + i if ref else None,
                 "day": day.isoformat(), "dep_s": times[i]}
-        leave, arrive = times[i] - seconds[0], times[j] + seconds[1]
+        # leave early enough to be at the stop board_margin_s before the departure (the search assumes that too)
+        leave, arrive = times[i] - seconds[0] - TRANSIT["board_margin_s"], times[j] + seconds[1]
         return {
             "kind": "ok", "leave_at": clock(leave), "arrive_at": clock(arrive), "minutes": round((arrive - leave) / 60, 1),
-            "wait_min": round((times[i] - t0 - seconds[0]) / 60, 1),
+            "wait_min": round((leave - t0) / 60, 1),
             "legs": [{"type": "walk", **walks[0]}, ride, {"type": "walk", **walks[1]}],
-            "last": self._last(pairs, day, when, route_id=rid, stop=o),
+            "last": self._last(pairs, day, when, route_id=rid, stop=o, ready=ready_at),
             "feed": self.tt.feed_of_day.get(day.isoformat()),
         }
