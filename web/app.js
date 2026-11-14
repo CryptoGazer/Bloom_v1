@@ -267,7 +267,7 @@ function compute() {
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
       plan = d;
-      selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? 'fastest' : 'better_lit';
+      selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? (d.verdict.pick || 'fastest') : 'better_lit';
       say(esc(t('afterRoute')));
       drawRoute();
       renderCards();
@@ -377,7 +377,8 @@ function renderCards() {
   const litShare = r => r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 0;
   let html;
   if (v.kind === 'same') {
-    html = card('fastest', fastest, t(v.near ? 'nearSameTitle' : 'sameTitle'));
+    const pick = v.pick || 'fastest';  // one card: nothing to choose between the two routes
+    html = card(pick, plan.routes[pick], pick === 'better_lit' ? t('litFreeTitle') : t(v.near ? 'nearSameTitle' : 'sameTitle'));
   } else {
     const extra = t('extra', { min: dec(Math.max(0, v.extra_min)), share: pct(v.extra_share) });
     const note = v.kind === 'too_long'

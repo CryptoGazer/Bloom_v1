@@ -27,6 +27,7 @@ SETTINGS = {
     "factor_better_lit": {"lit_confirmed": 1.0, "lit_likely": 1.2, "unknown": 1.6, "dark_reported": 3.0},
     "hide_if_extra_min": 5.0,               # the lit route is not worth showing if it is longer by more than this
     "hide_if_extra_share": 0.30,            # ...or by more than this share
+    "lit_free_extra_min": 0.5,              # a better-lit route at most this much longer replaces the fastest one
     "same_if_gain_below": 0.05,             # the lit route counts as "the same" if it adds less than this share of
                                             # confirmed-lit length and removes less than this share of dark + no data,
                                             # unless it removes a long dark stretch (warn_dark_run_m)
@@ -389,14 +390,18 @@ class Network:
             return None
         gain = self.lit_gain(fastest, lit)
         removes_dark_run = fastest["max_dark_run_m"] > SETTINGS["warn_dark_run_m"] >= lit["max_dark_run_m"]
+        extra_min = (lit["_sec"] - fastest["_sec"]) / 60
+        extra_share = (lit["_sec"] - fastest["_sec"]) / fastest["_sec"] if fastest["_sec"] else 0.0
+        # one card when there is nothing to choose; "pick" says which route that card shows
         if fastest["_key"] == lit["_key"]:
             verdict = {"kind": "same"}
         elif gain < SETTINGS["same_if_gain_below"] and not removes_dark_run:
-            # different streets, but practically the same lighting: one card, the shorter route
-            verdict = {"kind": "same", "near": True, "lit_gain": round(gain, 3)}
+            # different streets, but practically the same lighting: the shorter route
+            verdict = {"kind": "same", "near": True, "pick": "fastest", "lit_gain": round(gain, 3)}
+        elif extra_min <= SETTINGS["lit_free_extra_min"]:
+            # better lit and practically as fast: the fastest route has nothing to offer
+            verdict = {"kind": "same", "near": True, "pick": "better_lit", "lit_gain": round(gain, 3), "extra_min": round(extra_min, 1)}
         else:
-            extra_min = (lit["_sec"] - fastest["_sec"]) / 60
-            extra_share = (lit["_sec"] - fastest["_sec"]) / fastest["_sec"] if fastest["_sec"] else 0.0
             too_long = extra_min > SETTINGS["hide_if_extra_min"] or extra_share > SETTINGS["hide_if_extra_share"]
             verdict = {"kind": "too_long" if too_long else "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
         for r in (fastest, lit):
