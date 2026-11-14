@@ -97,12 +97,24 @@ def test_nearly_identical_routes_are_shown_as_one():
     assert plan["verdict"]["lit_gain"] == pytest.approx(0.02, abs=0.005)
 
 
+def test_a_better_lit_route_that_costs_no_time_replaces_the_fastest():
+    # 300 m "probably lit" straight on, or a lit detour 2 m longer: the lit one wins outright, one card
+    free = detour_network(1000, 300, "lit_likely", 17)
+    plan = free.plan(at(free, 0, 0), at(free, 1300, 0))
+    assert plan["routes"]["fastest"]["by_status_m"]["lit_likely"] == pytest.approx(300, abs=1)
+    assert plan["verdict"]["kind"] == "same" and plan["verdict"]["pick"] == "better_lit"
+
+
 def test_removing_a_long_dark_stretch_is_always_worth_showing():
-    # only 3.6% of 4150 m changes, but the fastest route has 150 m of "reported dark" in one stretch
-    dark = detour_network(4000, 150, "dark_reported", 10)
+    # only 3.6% of 4150 m changes, but the fastest route has 150 m of "reported dark" in one stretch;
+    # the lit detour costs 42 m (31 s): both routes are offered
+    dark = detour_network(4000, 150, "dark_reported", 60)
     plan = dark.plan(at(dark, 0, 0), at(dark, 4150, 0))
     assert plan["routes"]["fastest"]["warn"] is True and plan["routes"]["better_lit"]["warn"] is False
     assert plan["verdict"]["kind"] == "show"
+    # a detour of 1 m: only the lit route is offered
+    cheap = detour_network(4000, 150, "dark_reported", 10)
+    assert cheap.plan(at(cheap, 0, 0), at(cheap, 4150, 0))["verdict"]["pick"] == "better_lit"
 
 
 def test_darkness_never_blocks_a_route(net):

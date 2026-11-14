@@ -19,15 +19,51 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
-from shapely.geometry import Point, shape
+from shapely.geometry import LineString, Point, shape
+from shapely.ops import substring
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:  # run as a script with -I: make "backend" importable
     sys.path.insert(0, str(ROOT))
-from backend.build_city import log  # noqa: E402
+from backend.build_city import KX, KY, log  # noqa: E402
 
 PAD_DEG = 0.004  # ~300-450 m around the area: a stop just outside can still be walked to
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+STOP_OFF_LINE_M = 80     # a stop farther than this from its line: the shape is not trusted, stops are joined straight
+SEARCH_AHEAD_M = 3000    # look for the next stop within this stretch of the line first (lines that pass a street twice)
+
+
+def stop_positions(line_xy, stops_xy, max_off=STOP_OFF_LINE_M, window=SEARCH_AHEAD_M):
+    """Distance along the line (metres) of every stop of a trip, each at or after the previous one, or None
+    if a stop lies far off the line. GTFS SMTT has no shape_dist_traveled, so stops are placed in trip order."""
+    line = LineString(line_xy)
+    total, pos, start = line.length, [], 0.0
+    for x, y in stops_xy:
+        p, found = Point(x, y), None
+        for end in (min(total, start + window), total):
+            part = substring(line, start, end)
+            d = start + (part.project(p) if part.geom_type == "LineString" else 0.0)
+            if line.interpolate(d).distance(p) <= max_off:
+                found = d
+                break
+        if found is None:
+            return None
+        pos.append(found)
+        start = found
+    return pos
+
+
+def shape_between(shape_lonlat, stops_lonlat, first, last):
+    """The line from stop `first` to stop `last` of a trip, as [[lon, lat], ...], with each stop's distance along it."""
+    line_xy = [(lon * KX, lat * KY) for lon, lat in shape_lonlat]
+    pos = stop_positions(line_xy, [(lon * KX, lat * KY) for lon, lat in stops_lonlat])
+    if pos is None:
+        return None, None
+    part = substring(LineString(line_xy), pos[first], pos[last])
+    if part.geom_type != "LineString":
+        return None, None
+    geom = [[round(x / KX, 6), round(y / KY, 6)] for x, y in part.coords]
+    return geom, [round(pos[k] - pos[first], 1) for k in range(first, last + 1)]
 
 
 def seconds(hms):
@@ -73,8 +109,12 @@ def build(feeds, area, start, days):
             times = defaultdict(list)
             for r in feed.read("stop_times.txt"):
                 times[r["trip_id"]].append((int(r["stop_sequence"]), r["stop_id"], seconds(r["departure_time"] or r["arrival_time"])))
-            cache[feed.path] = (stops, inside, {r["route_id"]: r for r in feed.read("routes.txt")}, feed.read("trips.txt"), times)
-        stops, inside, routes, trips, times = cache[feed.path]
+            shapes = defaultdict(list)
+            for r in feed.read("shapes.txt"):
+                shapes[r["shape_id"]].append((int(r["shape_pt_sequence"]), float(r["shape_pt_lon"]), float(r["shape_pt_lat"])))
+            shapes = {sid: [(lon, lat) for _, lon, lat in sorted(pts)] for sid, pts in shapes.items()}
+            cache[feed.path] = (stops, inside, {r["route_id"]: r for r in feed.read("routes.txt")}, feed.read("trips.txt"), times, shapes)
+        stops, inside, routes, trips, times, shapes = cache[feed.path]
         services = feed.services(day)
         kept = []
         for trip in trips:
@@ -88,7 +128,13 @@ def build(feeds, area, start, days):
             key = (trip["route_id"], trip["trip_headsign"], tuple(sid for _, sid, _ in part))
             if key not in pattern_index:
                 pattern_index[key] = len(out["patterns"])
-                out["patterns"].append([trip["route_id"], trip["trip_headsign"], list(key[2])])
+                pattern = [trip["route_id"], trip["trip_headsign"], list(key[2])]
+                if trip.get("shape_id") in shapes:
+                    stops_lonlat = [(float(stops[sid]["stop_lon"]), float(stops[sid]["stop_lat"])) for _, sid, _ in seq]
+                    geom, pos = shape_between(shapes[trip["shape_id"]], stops_lonlat, idx[0], idx[-1])
+                    if geom:
+                        pattern += [geom, pos]
+                out["patterns"].append(pattern)
                 route = routes[trip["route_id"]]
                 out["routes"][trip["route_id"]] = [route["route_short_name"], int(route["route_type"]), route.get("route_color") or "555555"]
                 for sid in key[2]:
@@ -124,7 +170,9 @@ def main():
     out = ROOT / args.out
     with gzip.open(out, "wt", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
-    log(f"written {out} ({out.stat().st_size / 1000:.0f} KB): {len(data['stops'])} stops, {len(data['patterns'])} patterns, days {data['feed_of_day']}")
+    shaped = sum(1 for p in data["patterns"] if len(p) >= 5)
+    log(f"written {out} ({out.stat().st_size / 1000:.0f} KB): {len(data['stops'])} stops, {len(data['patterns'])} patterns "
+        f"({shaped} drawn along the line, {len(data['patterns']) - shaped} straight between stops), days {data['feed_of_day']}")
 
 
 if __name__ == "__main__":

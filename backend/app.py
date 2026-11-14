@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from backend.ask import LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
 from backend.geocode import Places
+from backend.liveliness import LIVELY, Signs
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
 
@@ -84,7 +85,8 @@ def create_app(segments_path=None, gemini=None):
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
-    state = {"net": None, "places": None, "transit": None, "asker": None}
+
+    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -97,6 +99,9 @@ def create_app(segments_path=None, gemini=None):
         ai = gemini or Gemini.from_env()
         if ai is not None and state["places"] is not None:
             state["asker"] = Asker(ai, state["places"])
+        if state["net"] is not None and state["places"] is not None:
+            state["signs"] = Signs(state["net"], [item["e"] for item in state["places"].items],
+                                   state["transit"].tt if state["transit"] else None)
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
@@ -183,7 +188,7 @@ def create_app(segments_path=None, gemini=None):
     def route(from_: str = Query(alias="from", description="start as lat,lon"),
               to: str = Query(description="destination as lat,lon"),
               mode: str = Query("walk", description="'walk', 'bike' or 'transit' (on foot + public transport)"),
-              at: str = Query("", description="transit only: leaving time 'HH:MM' today or 'YYYY-MM-DDTHH:MM'; empty = now")):
+              at: str = Query("", description="leaving time 'HH:MM' today or 'YYYY-MM-DDTHH:MM'; empty = now")):
         """Fastest and better-lit routes on foot or by bike. Darkness never blocks a route, it only makes it costlier.
         By bike: only segments open to bikes, one-way streets in their direction, "dismount" at walking speed.
         transit: the walking routes plus "transit": walk (better lit) to a stop, one line, walk to the door."""
@@ -205,15 +210,17 @@ def create_app(segments_path=None, gemini=None):
         if plan is None:
             raise HTTPException(404, detail={"code": "no_route", "message": f"no {net_mode} route between these points"})
         point = lambda lat, lon, s: {"lat": lat, "lon": lon, "snapped": [s.lat, s.lon], "snap_m": round(s.d, 1)}
-        extra = {}
+        when = leaving_time(at)
+        extra = {"at": when.strftime("%Y-%m-%d %H:%M")}
+        if state["signs"] is not None:  # signs of life along each route at the leaving time (evidence, not a score)
+            for r in plan["routes"].values():
+                r["signs"] = state["signs"].along(r, when)
         if mode == "transit":
             if state["transit"] is None:
                 raise HTTPException(503, detail={"code": "no_timetable", "message": f"{transit_path} not found. Build it: backend/build_transit.py"})
-            when = leaving_time(at)
-            extra = {"transit": state["transit"].plan(snapped["from"][2], snapped["to"][2], when),
-                     "at": when.strftime("%Y-%m-%d %H:%M")}
+            extra["transit"] = state["transit"].plan(snapped["from"][2], snapped["to"][2], when)
         return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
-                "settings": {**SETTINGS, "transit": TRANSIT}, "data_as_of": net.meta.get("as_of")}
+                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY}, "data_as_of": net.meta.get("as_of")}
 
     # The city page (web/) at "/", the older demos under /demo and /data/out. Only these folders are exposed.
     # "/" must be mounted last: it catches every path the API routes above did not.

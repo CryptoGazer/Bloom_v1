@@ -6,6 +6,8 @@ fastapi
 uvicorn[standard]
 # time zone Europe/Bucharest for transit departures; Windows has no system time-zone database
 tzdata
+# "open now" from OSM opening_hours (backend/liveliness.py)
+opening-hours-py
 # tests
 pytest
 httpx

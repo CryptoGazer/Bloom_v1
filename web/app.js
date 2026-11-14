@@ -237,7 +237,7 @@ function swap() {
 function setTravel(value) {
   travel = value;
   for (const r of document.querySelectorAll('input[name="travel"]')) r.checked = r.value === value;
-  $('at-wrap').hidden = value !== 'transit';
+  $('at-wrap').hidden = false;  // the leaving time matters for every mode: signs of life, transit
 }
 
 // A time typed in the control is just HH:MM. Gemini can also give an exact local date so that a relative
@@ -273,7 +273,7 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
-  const at = travel === 'transit' ? departure() : '';
+  const at = departure();
   const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
   if (at) hash.set('at', at);
   history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
@@ -281,7 +281,7 @@ function compute() {
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
       plan = d;
-      selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? 'fastest' : 'better_lit';
+      selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? (d.verdict.pick || 'fastest') : 'better_lit';
       say(esc(t('afterRoute')));
       drawRoute();
       renderCards();
@@ -290,13 +290,17 @@ function compute() {
       plan = null;
       routeLayer.clearLayers();
       $('cards').innerHTML = '';
+      // texts come from i18n.js by error code; the server's English message is only a fallback detail
       const d = err.detail || {};
+      let text;
       if (d.code === 'outside_coverage') {
         const near = d.nearest_m != null ? t('nearest', { d: fmtM(d.nearest_m) }) : '';
-        say(`<span class="error">${esc(t('outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near }))}</span>`);
+        text = t(travel === 'bike' ? 'outsideBike' : 'outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near });
       } else {
-        say(`<span class="error">${esc(t('routeFailed', { msg: err.message }))}</span>`);
+        const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (travel === 'bike' ? 'bike' : 'walk') : d.code);
+        text = d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       }
+      say(`<span class="error">${esc(text)}</span>`);
     });
 }
 
@@ -337,7 +341,26 @@ function drawRoute() {
       .addTo(routeLayer);
   }
   pieces(plan.routes[selected]);
+  for (const p of (plan.routes[selected].signs || {}).open_places || []) {
+    L.circleMarker([p.lat, p.lon], { radius: 6, color: '#6a3d9a', weight: 3, fillColor: '#fff', fillOpacity: 1 })
+      .bindTooltip(esc(p.name + (p.always ? ' (' + t('signsAlways') + ')' : '')), { direction: 'top' }).addTo(routeLayer);
+  }
   routeLayer.bringToFront();
+}
+
+// signs of life along a route at the leaving time: evidence, never a score (backend/liveliness.py)
+function signsBlock(sg) {
+  const items = [];
+  const open = sg.open_places.map(p => p.name + (p.always ? ' (' + t('signsAlways') + ')' : '')).join(', ');
+  let first = open ? t('signsOpen', { list: open }) : t('signsNoneOpen');
+  if (sg.places_unknown_hours) first += ' · ' + t('signsUnknown', { n: sg.places_unknown_hours });
+  items.push(first);
+  if (sg.stops.length) {
+    items.push(t('signsStops', { list: sg.stops.slice(0, 3).map(s => `${s.name} (${s.departures.slice(0, 3).map(d => d.line + ' ' + d.time).join(', ')})`).join('; ') }));
+  }
+  items.push(t('signsMain', { pct: pct(sg.main_share) }));
+  return `<div class="signs"><span class="signs-title">${esc(t('signsTitle', { time: (plan.at || '').slice(11, 16) }))}</span>` +
+    `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul><p class="small">${esc(t('signsNote'))}</p></div>`;
 }
 
 // the "on foot + public transport" card: the trip, or why there is none (the walking cards follow)
@@ -353,6 +376,16 @@ function transitCard() {
   }
   const [walk1, ride, walk2] = tr.legs;
   const lit = r => pct(r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 1);
+  // bar over the whole trip by time: the walks coloured by lighting, the ride in the line's colour
+  const total = walk1.minutes + ride.minutes + walk2.minutes || 1;
+  const walkPart = w => ORDER.filter(k => w.by_status_m[k] > 0).map(k =>
+    `<span style="width:${(100 * w.minutes * w.by_status_m[k] / (w.length_m || 1) / total).toFixed(2)}%;background:${ST[k].c}" title="${esc(t('status.' + k))}"></span>`).join('');
+  const bar = walkPart(walk1) + `<span style="width:${(100 * ride.minutes / total).toFixed(2)}%;background:${ride.color}" title="${esc(t('rt.' + ride.route_type) + ' ' + ride.line)}"></span>` + walkPart(walk2);
+  const walkLen = walk1.length_m + walk2.length_m || 1;
+  const rows = ORDER.map(k => {
+    const m = walk1.by_status_m[k] + walk2.by_status_m[k];
+    return `<li><span class="sw" style="border-top-color:${ST[k].c};border-top-style:${ST[k].css}"></span>${esc(t('status.' + k))}: ${fmtM(m)} (${pct(m / walkLen)})</li>`;
+  }).join('') + `<li><span class="sw" style="border-top-color:${ride.color};border-top-style:solid"></span>${esc(t('rideRow', { min: fmtMin(ride.minutes) }))}</li>`;
   const legs = [
     t('legWalkTo', { min: fmtMin(walk1.minutes), dist: fmtM(walk1.length_m), stop: ride.from.name, lit: lit(walk1) }),
     t('legRide', { type: t('rt.' + ride.route_type), line: ride.line, headsign: ride.headsign, from: ride.from.name, dep: ride.dep,
@@ -366,6 +399,7 @@ function transitCard() {
   const slower = plan.routes.fastest.minutes <= tr.wait_min + tr.minutes ? `<p class="verdict bad">${esc(t('walkFaster'))}</p>` : '';
   return `<button type="button" class="card${selected === 'transit' ? ' selected' : ''}" data-kind="transit" aria-pressed="${selected === 'transit'}">` +
     `<span class="title">${esc(t('transitTitle'))}</span><span class="main">${fmtMin(tr.minutes)} · ${tr.leave_at} → ${tr.arrive_at}</span>` +
+    `<span class="bar">${bar}</span><ul>${rows}</ul><p class="small">${esc(t('walkPartNote'))}</p>` +
     `<ul class="legs">${legs}</ul>${warn}` +
     `<p class="verdict ok">${esc(t('leaveIn', { min: fmtMin(Math.max(0, tr.wait_min)), time: tr.leave_at }))} ${tr.last ? esc(t('lastDep', tr.last)) : ''}</p>` +
     `${slower}<p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p></button>`;
@@ -383,7 +417,7 @@ function card(kind, r, title, note) {
   const via = r.streets.length ? `<p class="via">${esc(t('via'))}${r.streets.slice(0, 4).map(esc).join(' → ')}${r.streets.length > 4 ? ' → …' : ''}</p>` : '';
   return `<button type="button" class="card${selected === kind ? ' selected' : ''}" data-kind="${kind}" aria-pressed="${selected === kind}">` +
     `<span class="title">${esc(title)}</span><span class="main">${fmtMin(r.minutes)} · ${fmtM(r.length_m)}</span>` +
-    `<span class="bar">${bar}</span><ul>${rows}</ul>${warn}${via}${note || ''}</button>`;
+    `<span class="bar">${bar}</span><ul>${rows}</ul>${warn}${via}${r.signs ? signsBlock(r.signs) : ''}${note || ''}</button>`;
 }
 
 function renderCards() {
@@ -391,7 +425,8 @@ function renderCards() {
   const litShare = r => r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 0;
   let html;
   if (v.kind === 'same') {
-    html = card('fastest', fastest, t(v.near ? 'nearSameTitle' : 'sameTitle'));
+    const pick = v.pick || 'fastest';  // one card: nothing to choose between the two routes
+    html = card(pick, plan.routes[pick], pick === 'better_lit' ? t('litFreeTitle') : t(v.near ? 'nearSameTitle' : 'sameTitle'));
   } else {
     const extra = t('extra', { min: dec(Math.max(0, v.extra_min)), share: pct(v.extra_share) });
     const note = v.kind === 'too_long'
@@ -454,7 +489,7 @@ getJSON('/api/summary')
       r.addEventListener('change', () => { setTravel(r.value); if (A && B) compute(); });
     }
     $('at').addEventListener('input', () => { delete $('at').dataset.datetime; });
-    $('at').addEventListener('change', () => { if (A && B && travel === 'transit') compute(); });
+    $('at').addEventListener('change', () => { if (A && B) compute(); });
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {

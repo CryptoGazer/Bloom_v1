@@ -7,9 +7,10 @@ Pure functions over Network and Timetable, no web framework here.
 import datetime as dt
 import gzip
 import json
+import math
 from pathlib import Path
 
-from backend.routing import SETTINGS
+from backend.routing import KX, KY, SETTINGS
 
 # All numbers are settings; check them with real people.
 TRANSIT = {
@@ -22,6 +23,29 @@ TRANSIT = {
 ROUTE_TYPES = {0: "tram", 3: "bus", 11: "trolleybus"}
 
 
+def cut(coords, start_m, end_m):
+    """The part of a [lon, lat] polyline between two distances along it, in metres."""
+    out, done = [], 0.0
+    for (x1, y1), (x2, y2) in zip(coords, coords[1:]):
+        seg = math.hypot((x2 - x1) * KX, (y2 - y1) * KY)
+        if seg == 0:
+            continue
+        a, b = done, done + seg
+        done = b
+        if b < start_m or a > end_m:
+            continue
+        if not out:
+            u = max(0.0, (start_m - a) / seg)
+            out.append([x1 + u * (x2 - x1), y1 + u * (y2 - y1)])
+        if b <= end_m:
+            out.append([x2, y2])
+        else:
+            u = (end_m - a) / seg
+            out.append([x1 + u * (x2 - x1), y1 + u * (y2 - y1)])
+            break
+    return out
+
+
 def clock(sec):
     """Seconds since a service day's midnight -> 'HH:MM' on the wall clock (24:10 -> 00:10)."""
     sec = int(sec) % 86400
@@ -32,7 +56,9 @@ class Timetable:
     def __init__(self, data):
         self.stops = data["stops"]            # stop_id -> [name, lat, lon]
         self.routes = data["routes"]          # route_id -> [line number, GTFS route_type, colour]
-        self.patterns = data["patterns"]      # [route_id, headsign, [stop_id, ...]]
+        # [route_id, headsign, [stop_id, ...]] or, with the line's shape,
+        # [route_id, headsign, [stop_id, ...], [[lon, lat], ...], [metres along that shape for each stop]]
+        self.patterns = data["patterns"]
         self.days = data["days"]              # "YYYY-MM-DD" -> [[pattern, [departure seconds per stop]], ...]
         self.feed_of_day = data.get("feed_of_day", {})
         self.meta = data.get("meta", {})
@@ -76,8 +102,15 @@ class Transit:
         name, lat, lon = self.tt.stops[sid]
         return {"id": sid, "name": name, "lat": lat, "lon": lon}
 
+    def _ride_line(self, p, i, j):
+        """The ride from stop i to stop j along the line's shape; straight between stops if there is no shape."""
+        pattern = self.tt.patterns[p]
+        if len(pattern) >= 5 and pattern[3] and pattern[4]:
+            return cut(pattern[3], pattern[4][i], pattern[4][j])
+        return [[self.tt.stops[s][2], self.tt.stops[s][1]] for s in pattern[2][i: j + 1]]
+
     def _departure(self, p, i, t):
-        rid, _, stops = self.tt.patterns[p]
+        rid, _, stops = self.tt.patterns[p][:3]
         return {"line": self.tt.routes[rid][0], "stop": self.tt.stops[stops[i]][0], "time": clock(t)}
 
     def _last(self, pairs, day, when, route_id=None, stop=None):
@@ -85,7 +118,7 @@ class Transit:
         service_day = day if when.hour >= TRANSIT["night_ends_h"] else day - dt.timedelta(days=1)
         last = None
         for p, times in self.tt.service(service_day):
-            rid, _, stops = self.tt.patterns[p]
+            rid, _, stops = self.tt.patterns[p][:3]
             if route_id is not None and rid != route_id:
                 continue
             for i, _ in pairs.get(p, ()):
@@ -101,7 +134,8 @@ class Transit:
         if not origin or not dest:
             return {"kind": "none", "reason": "no_stop_near", "last": None, "next": None}
         pairs = {}
-        for p, (_, _, stops) in enumerate(self.tt.patterns):
+        for p, pattern in enumerate(self.tt.patterns):
+            stops = pattern[2]
             found = [(i, j) for i, o in enumerate(stops) if o in origin for j in range(i + 1, len(stops)) if stops[j] in dest and stops[j] != o]
             if found:
                 pairs[p] = found
@@ -131,7 +165,7 @@ class Transit:
                     "next": self._departure(nxt[1], nxt[2], nxt[0]) if nxt else None}
 
         _, p, i, j, times = best
-        rid, headsign, stops = self.tt.patterns[p]
+        rid, headsign, stops = self.tt.patterns[p][:3]
         o, d = stops[i], stops[j]
         factors = SETTINGS["factor_better_lit"]
         walks = [self.net.route(A, self.stop_snap[o], factors), self.net.route(self.stop_snap[d], B, factors)]
@@ -144,7 +178,7 @@ class Transit:
         ride = {"type": "ride", "line": line, "route_type": ROUTE_TYPES.get(route_type, "bus"), "color": "#" + colour,
                 "headsign": headsign, "from": self._stop(o), "to": self._stop(d), "dep": clock(times[i]), "arr": clock(times[j]),
                 "stops": j - i, "minutes": round((times[j] - times[i]) / 60, 1),
-                "coords": [[self.tt.stops[s][2], self.tt.stops[s][1]] for s in stops[i: j + 1]]}
+                "coords": self._ride_line(p, i, j)}
         leave, arrive = times[i] - seconds[0], times[j] + seconds[1]
         return {
             "kind": "ok", "leave_at": clock(leave), "arrive_at": clock(arrive), "minutes": round((arrive - leave) / 60, 1),

@@ -7,9 +7,10 @@ import datetime as dt
 
 import pytest
 
+from backend.build_transit import stop_positions
 from backend.routing import Network
 from backend.tests.test_routing import ll, seg
-from backend.transit import Timetable, Transit
+from backend.transit import Timetable, Transit, cut
 
 DAY = dt.date(2026, 11, 14)
 
@@ -78,6 +79,32 @@ def test_no_more_trams_tonight_says_when_the_last_one_left_and_when_the_next_one
 def test_no_stop_within_walking_distance(planner):
     r = planner.plan(at(planner, 1000), at(planner, 1050), when(21, 50))   # both points 850-900 m from any stop
     assert r["kind"] == "none" and r["reason"] == "no_stop_near"
+
+
+def test_cut_takes_the_line_between_two_distances():
+    line = [ll(0, 0), ll(100, 0), ll(100, 100), ll(300, 100)]
+    got = cut(line, 50, 250)
+    assert got[0] == pytest.approx(ll(50, 0), abs=1e-6) and got[-1] == pytest.approx(ll(150, 100), abs=1e-6)
+    assert ll(100, 0) in [pytest.approx(p, abs=1e-9) for p in got[1:-1]] and len(got) == 4
+
+
+def test_stops_are_placed_along_the_line_in_trip_order():
+    # the line goes east and comes back 20 m further north: the two stops at x=200 are on different legs
+    line = [(0, 0), (1000, 0), (1000, 20), (0, 20)]
+    assert stop_positions(line, [(200, 5), (800, 3), (800, 18), (200, 22)]) == pytest.approx([200, 800, 1220, 1820], abs=0.5)
+    assert stop_positions(line, [(200, 5), (500, 300)]) is None                 # a stop far off the line: no shape
+
+
+def test_the_ride_follows_the_line_shape(planner):
+    s1, s2 = ll(100, 5), ll(1900, 5)
+    shaped = Transit(planner.net, Timetable({
+        "stops": {"S1": ["Stația Unu", s1[1], s1[0]], "S2": ["Stația Doi", s2[1], s2[0]]},
+        "routes": {"R8": ["8", 0, "e3a900"]},
+        "patterns": [["R8", "Spre Doi", ["S1", "S2"], [ll(100, 0), ll(1000, 300), ll(1900, 0)], [0, 1897.4]]],
+        "days": {"2026-11-14": [[0, [hms(22), hms(22, 5)]]]},
+    }))
+    ride = shaped.plan(at(planner, 0), at(planner, 2000), when(21, 50))["legs"][1]
+    assert len(ride["coords"]) == 3 and ride["coords"][1] == pytest.approx(ll(1000, 300), abs=1e-6)
 
 
 def test_the_direction_of_travel_matters(planner):
