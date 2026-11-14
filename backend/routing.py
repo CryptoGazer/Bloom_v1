@@ -26,6 +26,9 @@ SETTINGS = {
     "factor_better_lit": {"lit_confirmed": 1.0, "lit_likely": 1.2, "unknown": 1.6, "dark_reported": 3.0},
     "hide_if_extra_min": 5.0,               # the lit route is not worth showing if it is longer by more than this
     "hide_if_extra_share": 0.30,            # ...or by more than this share
+    "same_if_gain_below": 0.05,             # the lit route counts as "the same" if it adds less than this share of
+                                            # confirmed-lit length and removes less than this share of dark + no data,
+                                            # unless it removes a long dark stretch (warn_dark_run_m)
     "warn_dark_run_m": 100.0,               # warn: continuous "reported dark" stretch longer than this
     "warn_dark_unknown_share": 0.20,        # warn: "dark" + "no data" share above this
     "snap_max_m": 300.0,                    # a point farther than this from the network is outside coverage
@@ -266,13 +269,28 @@ class Network:
             "_key": tuple(p["seg"] for p in pieces),
         }
 
+    @staticmethod
+    def lit_gain(fastest, lit):
+        """How much lighting the lit route adds: the larger of the gain in confirmed-lit share
+        and the drop in dark + no-data share, both as shares of each route's length."""
+        def share(r, statuses):
+            return sum(r["by_status_m"][s] for s in statuses) / r["length_m"] if r["length_m"] else 0.0
+        confirmed = share(lit, ("lit_confirmed",)) - share(fastest, ("lit_confirmed",))
+        bad = share(fastest, ("dark_reported", "unknown")) - share(lit, ("dark_reported", "unknown"))
+        return max(confirmed, bad)
+
     def plan(self, A, B):
         """Fastest and better-lit routes plus the verdict whether the lit one is worth showing (spec section 12)."""
         fastest, lit = self.route(A, B), self.route(A, B, SETTINGS["factor_better_lit"])
         if fastest is None or lit is None:
             return None
+        gain = self.lit_gain(fastest, lit)
+        removes_dark_run = fastest["max_dark_run_m"] > SETTINGS["warn_dark_run_m"] >= lit["max_dark_run_m"]
         if fastest["_key"] == lit["_key"]:
             verdict = {"kind": "same"}
+        elif gain < SETTINGS["same_if_gain_below"] and not removes_dark_run:
+            # different streets, but practically the same lighting: one card, the shorter route
+            verdict = {"kind": "same", "near": True, "lit_gain": round(gain, 3)}
         else:
             extra_min = (lit["length_m"] - fastest["length_m"]) / SETTINGS["walk_mps"] / 60
             extra_share = (lit["length_m"] - fastest["length_m"]) / fastest["length_m"] if fastest["length_m"] else 0.0

@@ -229,7 +229,7 @@ function renderCards() {
   const litShare = r => r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 0;
   let html;
   if (v.kind === 'same') {
-    html = card('fastest', fastest, 'Быстрый — он же самый освещённый');
+    html = card('fastest', fastest, v.near ? 'Быстрый — более освещённый почти не отличается' : 'Быстрый — он же самый освещённый');
   } else {
     const extra = `+${Math.max(0, v.extra_min).toString().replace('.', ',')} мин (${pct(v.extra_share)})`;
     const note = v.kind === 'too_long'
