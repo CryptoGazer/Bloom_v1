@@ -24,6 +24,20 @@
 
 Gemini не строит маршрут и не пишет ответ пользователю. Он заполняет фиксированную JSON-форму: intent, откуда, куда, режим и локальное время. Названия затем ищутся только в нашем `places.json.gz`, а сам маршрут считает `routing.py`. Рецепты, программирование, общие вопросы, запросы про другие города и prompt injection получают `kind: "off_topic"`. Текст или аудио уходит в Google, но не сохраняется нашим сервером; координаты в Gemini не отправляются.
 
+### Live-транспорт: CSV и Tiger Data
+
+```bash
+./scripts/transit/logger.sh start 6       # до следующего 04:05 Europe/Bucharest
+./scripts/transit/logger.sh status
+./scripts/transit/logger.sh log
+./scripts/transit/logger.sh sync-tiger    # безопасно повторять: догрузка всего CSV
+./scripts/transit/logger.sh stop
+```
+
+Локальный журнал `data/transit/vehicles.csv` и `polls.csv` всегда записывается и синхронно сбрасывается на диск первым. Если в `.env` есть `TIGER_DATABASE_URL`, тот же poll одной транзакцией отправляется в hypertable `transit_vehicle_fixes` и `transit_polls`. Ключ GPS-фикса — `(vehicle_id, fix_at)`, поэтому повторы городской API и повторный `sync-tiger` пропускаются. Ошибка Tiger не останавливает сбор: логгер продолжает CSV, повторяет подключение раз в 30 секунд, а пропуск затем закрывает `sync-tiger`.
+
+`transit_vehicle_fixes` содержит типизированную историю координат, маршрута, рейса, остановки, скорости и задержки. `transit_polls` хранит доступность и свежесть источника. Сейчас FastAPI эти таблицы ещё не читает: подключение live API, replay и агрегатов — отдельный этап, чтобы база не стала зависимостью существующей маршрутизации.
+
 Весь город, если понадобится (в отдельную папку, бэкенд читает её через `LIGHTMAP_SEGMENTS`):
 
 ```bash
@@ -73,6 +87,9 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 | `backend/tests/test_geocode.py` | 15 тестов поиска на рукотворном списке |
 | `backend/transit.py`, `backend/build_transit.py` | пешком + транспорт: планировщик и расписание области из GTFS SMTT (`data/out/city/transit.json.gz`) |
 | `backend/tests/test_transit.py` | 9 тестов: выбор рейса, «уже уехал», рейсы после полуночи, нет остановки рядом, направление, линия поездки по геометрии GTFS |
+| `scripts/transit/logger.py`, `scripts/transit/tiger_store.py` | append-only сбор live-транспорта: CSV как локальный spool и опциональная batch-запись в Tiger Data |
+| `scripts/transit/import_tiger.py` | идемпотентная догрузка `vehicles.csv` и `polls.csv` в Tiger Data |
+| `backend/tests/test_transit_logger.py` | автоостановка по Бухаресту, типизация Tiger, batch-транзакция и безопасный retry при недоступной базе |
 | `backend/tests/test_bike.py` | 16 тестов велосипеда: доступ по тегам OSM, односторонние улицы, «dismount», ступеньки |
 | `backend/routing.py` | граф, привязка точки, маршруты, выборка по окну; без веб-кода |
 | `backend/app.py` | HTTP-обёртка на FastAPI |

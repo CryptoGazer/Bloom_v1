@@ -3,6 +3,8 @@
 Polls GET https://cont.primariatm.ro/api/mobile/transit/vehicles every --interval seconds and appends to:
   <dir>/vehicles.csv  one row per NEW GPS fix (a vehicle whose updatedAt changed since it was last written)
   <dir>/polls.csv     one row per request, successful or not (shows gaps: logger stopped, API down)
+If TIGER_DATABASE_URL is set in the environment or project .env, the same rows are also written to
+Tiger Data. CSV is always flushed first and remains the catch-up spool if the database is unavailable.
 Existing files are never truncated: rows are only appended, the header is written once, and after a
 restart the logger reads the tail of vehicles.csv so it does not write the same fixes twice.
 
@@ -17,6 +19,7 @@ import csv
 import datetime as dt
 import fcntl
 import gzip
+import importlib.util
 import json
 import os
 import signal
@@ -29,6 +32,14 @@ import urllib.request
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+if __package__:
+    from .tiger_store import TigerStore
+else:  # ``python -I path/to/logger.py`` intentionally omits the script directory from sys.path
+    _tiger_spec = importlib.util.spec_from_file_location("transit_tiger_store", Path(__file__).with_name("tiger_store.py"))
+    _tiger_module = importlib.util.module_from_spec(_tiger_spec)
+    _tiger_spec.loader.exec_module(_tiger_module)
+    TigerStore = _tiger_module.TigerStore
+
 URL = "https://cont.primariatm.ro/api/mobile/transit/vehicles"
 DEFAULT_UA = "UniHack26-NightRoute-team/0.1 (UniHack 2026 hackathon prototype; transit logger)"
 TZ = ZoneInfo("Europe/Bucharest")
@@ -36,6 +47,7 @@ SERVICE_DAY_START_HOUR = 4  # fixes before 04:00 local belong to the previous se
 DEFAULT_STOP_AT = "04:05"
 MAX_BACKOFF_SEC = 300
 TAIL_BYTES = 4_000_000
+ROOT = Path(__file__).resolve().parents[2]
 
 MODES = {"TV": "tram", "TB": "trolleybus", "AB": "bus"}
 VEHICLE_COLUMNS = [
@@ -49,6 +61,18 @@ POLL_COLUMNS = [
 ]
 
 stop_requested = False
+
+
+def load_env(path):
+    """KEY=VALUE lines into the environment; explicitly exported variables win."""
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
 def on_signal(signum, _frame):
@@ -206,8 +230,9 @@ def keep_mac_awake():
 
 
 def main():
+    load_env(ROOT / ".env")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dir", default=str(Path(__file__).resolve().parents[2] / "data" / "transit"))
+    ap.add_argument("--dir", default=str(ROOT / "data" / "transit"))
     ap.add_argument("--interval", type=float, default=15.0, help="seconds between requests (min 5, default 15)")
     ap.add_argument("--timeout", type=float, default=15.0)
     ap.add_argument("--user-agent", default=os.environ.get("TRANSIT_LOGGER_UA", DEFAULT_UA))
@@ -215,6 +240,9 @@ def main():
                     help=f"stop at the next local HH:MM in Europe/Bucharest (default {DEFAULT_STOP_AT})")
     ap.add_argument("--max-polls", type=int, default=0, help="stop after N requests (0 = run until stopped)")
     ap.add_argument("--no-caffeinate", action="store_true")
+    ap.add_argument("--no-tiger", action="store_true", help="ignore TIGER_DATABASE_URL and write CSV only")
+    ap.add_argument("--tiger-retry", type=float, default=30.0,
+                    help="seconds between Tiger reconnect attempts after an error (default 30)")
     args = ap.parse_args()
     interval = max(5.0, args.interval)
     try:
@@ -239,8 +267,11 @@ def main():
     seen = last_fixes(out / "vehicles.csv")
     vfh, vw = open_append(out / "vehicles.csv", VEHICLE_COLUMNS)
     pfh, pw = open_append(out / "polls.csv", POLL_COLUMNS)
+    tiger_dsn = "" if args.no_tiger else os.environ.get("TIGER_DATABASE_URL", "")
+    tiger = TigerStore(tiger_dsn, retry_sec=args.tiger_retry)
     print(f"{local_iso(time.time())} start pid={os.getpid()} interval={interval:g}s dir={out} "
-          f"known vehicles={len(seen)} auto_stop={local_iso(stop_ts)}", flush=True)
+          f"known vehicles={len(seen)} auto_stop={local_iso(stop_ts)} "
+          f"tiger={'configured' if tiger.configured else 'off'}", flush=True)
 
     polls = failures = 0
     try:
@@ -249,6 +280,7 @@ def main():
             poll_ts = time.time()
             status, payload, error, took = fetch(args.user_agent, args.timeout)
             new_rows = 0
+            tiger_vehicles = []
             if payload is not None:
                 failures = 0
                 for v in payload["vehicles"]:
@@ -256,21 +288,26 @@ def main():
                     if vid is None or upd is None or seen.get(str(vid)) == upd:
                         continue
                     seen[str(vid)] = upd
-                    vw.writerow(vehicle_row(v, poll_ts))
+                    row = vehicle_row(v, poll_ts)
+                    vw.writerow(row)
+                    tiger_vehicles.append(dict(zip(VEHICLE_COLUMNS, row)))
                     new_rows += 1
             else:
                 failures += 1
-            pw.writerow([
+            poll_row = [
                 utc_iso(poll_ts), local_iso(poll_ts), status, "1" if payload is not None else "0", int(took * 1000),
                 (payload or {}).get("realtimeAgeSec", ""), (payload or {}).get("refreshInSec", ""),
                 len(payload["vehicles"]) if payload else "", new_rows, error,
-            ])
+            ]
+            pw.writerow(poll_row)
             for fh in (vfh, pfh):
                 fh.flush()
                 os.fsync(fh.fileno())
+            tiger_ok = tiger.write(tiger_vehicles, [dict(zip(POLL_COLUMNS, poll_row))]) if tiger.configured else False
             polls += 1
             total = len(payload["vehicles"]) if payload else 0
             print(f"{local_iso(poll_ts)} {'ok ' if payload else 'ERR'} vehicles={total} new_rows={new_rows}"
+                  + (" tiger=ok" if tiger_ok else (" tiger=pending" if tiger.configured else ""))
                   + (f" error={error}" if error else ""), flush=True)
             if args.max_polls and polls >= args.max_polls:
                 break
@@ -279,6 +316,7 @@ def main():
             while not stop_requested and time.time() < stop_ts and time.monotonic() < deadline:
                 time.sleep(min(0.5, max(0.0, deadline - time.monotonic())))
     finally:
+        tiger.close()
         vfh.close()
         pfh.close()
         if pid_path.exists() and pid_path.read_text().strip() == str(os.getpid()):

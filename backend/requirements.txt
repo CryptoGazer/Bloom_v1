@@ -8,6 +8,8 @@ uvicorn[standard]
 tzdata
 # "open now" from OSM opening_hours (backend/liveliness.py)
 opening-hours-py
+# optional Tiger Data sink and CSV catch-up for scripts/transit/logger.py
+psycopg[binary]>=3.1,<4
 # tests
 pytest
 httpx

@@ -6,13 +6,16 @@
 #   ./scripts/transit/logger.sh status                 running or not, row counts, last request
 #   ./scripts/transit/logger.sh log                    follow the log (Ctrl+C leaves the logger running)
 #   ./scripts/transit/logger.sh summary                build summary tables from what is logged so far
-# Data: data/transit/vehicles.csv and polls.csv, append-only. Optional: TRANSIT_LOGGER_UA="Team X (UniHack 2026)".
+#   ./scripts/transit/logger.sh sync-tiger             idempotently upload all CSV rows to Tiger Data
+# Data: data/transit/vehicles.csv and polls.csv, append-only. Optional: TRANSIT_LOGGER_UA and
+# TIGER_DATABASE_URL in .env. Tiger failures never stop CSV collection.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DIR="$ROOT/data/transit"
 PID_FILE="$DIR/logger.pid"
 LOG="$DIR/logger.log"
+if [[ -x "$ROOT/.venv/bin/python" ]]; then PYTHON="$ROOT/.venv/bin/python"; else PYTHON="python3"; fi
 
 running_pid() {
   if [[ -f "$PID_FILE" ]]; then
@@ -34,7 +37,7 @@ case "$cmd" in
       exit 0
     fi
     mkdir -p "$DIR"
-    nohup python3 -I "$ROOT/scripts/transit/logger.py" --dir "$DIR" --interval "${2:-15}" --stop-at 04:05 >> "$LOG" 2>&1 &
+    nohup "$PYTHON" -I "$ROOT/scripts/transit/logger.py" --dir "$DIR" --interval "${2:-15}" --stop-at 04:05 >> "$LOG" 2>&1 &
     for _ in 1 2 3 4 5 6; do
       if pid="$(running_pid)"; then
         echo "Запущен, pid $pid. Данные: $DIR. Лог: $LOG"
@@ -81,10 +84,14 @@ case "$cmd" in
     ;;
 
   summary)
-    python3 -I "$ROOT/scripts/transit/summarize.py" --dir "$DIR" "${@:2}"
+    "$PYTHON" -I "$ROOT/scripts/transit/summarize.py" --dir "$DIR" "${@:2}"
+    ;;
+
+  sync-tiger)
+    "$PYTHON" -I "$ROOT/scripts/transit/import_tiger.py" --dir "$DIR" "${@:2}"
     ;;
 
   *)
-    sed -n '2,8p' "$0"
+    sed -n '2,10p' "$0"
     ;;
 esac

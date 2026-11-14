@@ -36,7 +36,7 @@
  ├ фраза «от общаги домой…»        ───►  /api/ask    → Gemini           ⬜
  ├ кнопка «прочитать»              ───►  /api/speak  → ElevenLabs       ⬜
  └ пешком + транспорт              ───►  /api/transit (GTFS + живые машины, кеш 15 с)  ⬜
-Логгер машин → CSV (scripts/transit/), позже Tiger Data                 ✅ (CSV)
+Логгер машин → CSV + dual-write/catch-up в Tiger Data                  ✅
 ```
 
 Бэкенд нужен по трём причинам: весь город не помещается в браузер; ключи Gemini и ElevenLabs нельзя держать на странице; гайд мэрии требует кешировать городские API на своём сервере.
@@ -66,7 +66,7 @@
 - ✅ Карта освещённости модельного района на данных Тимура: `data/out/draft-map.html`
 - ✅ Демо маршрута в браузере (без бэкенда, только своя область): `demo/route/`
 - ✅ Слои по городу: велодорожки с освещённостью, остановки с последними рейсами, линии, районы: `demo/layers/`
-- ✅ Логгер транспорта: `scripts/transit/logger.sh start|stop|status|summary`
+- ✅ Логгер транспорта: `scripts/transit/logger.sh start|stop|status|summary|sync-tiger`; CSV остаётся spool при ошибке Tiger
 - ✅ Запуск на Mac: `scripts/mac/lightmap.sh`
 
 ### Этап 1. Весь город и бэкенд — ✅
