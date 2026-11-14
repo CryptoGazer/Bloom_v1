@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ночной маршрут — Тимишоара</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>Traseu de noapte — Timișoara</title>
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <style>
   :root { --ink: #141414; --muted: #555; --line: #ddd; --focus: #0b57d0; }
   html, body { height: 100%; margin: 0; }
@@ -13,6 +13,10 @@
   #map { flex: 1; min-height: 320px; background: #f3f3f1; }
   #panel { width: 380px; max-width: 100%; overflow: auto; padding: 14px 16px; border-left: 1px solid var(--line); box-sizing: border-box; }
   h1 { font-size: 17px; margin: 0 0 6px; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .langs { display: flex; gap: 4px; }
+  .langs button { font: inherit; font-size: 12px; padding: 3px 7px; border: 1px solid #888; border-radius: 5px; background: #fff; color: var(--ink); cursor: pointer; }
+  .langs button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
   h1 small { font-weight: 400; color: var(--muted); font-size: 13px; }
   #hint { margin: 6px 0 10px; }
   .gray-tiles { filter: grayscale(1) brightness(1.05) contrast(.9); }
@@ -54,34 +58,32 @@
 </head>
 <body>
 <div id="app">
-  <div id="map" aria-label="Карта Тимишоары с освещённостью улиц"></div>
+  <div id="map"></div>
   <aside id="panel">
-    <h1>Ночной маршрут <small>Тимишоара, пешком</small></h1>
-    <div class="modes" role="radiogroup" aria-label="Что делает клик по карте">
-      <label><input type="radio" name="mode" value="route" checked>Маршрут: клик ставит точки</label>
-      <label><input type="radio" name="mode" value="inspect">Почему такой цвет: клик по улице</label>
+    <div class="top">
+      <h1><span id="title"></span> <small id="subtitle"></small></h1>
+      <div class="langs" id="langs" role="group"></div>
     </div>
-    <p id="hint" aria-live="polite">Загружаю данные…</p>
+    <div class="modes" role="radiogroup" id="modes">
+      <label><input type="radio" name="mode" value="route" checked><span id="mode-route"></span></label>
+      <label><input type="radio" name="mode" value="inspect"><span id="mode-inspect"></span></label>
+    </div>
+    <p id="hint" aria-live="polite"></p>
     <div id="cards"></div>
     <div class="controls">
-      <button id="reset" type="button">Сбросить</button>
-      <label><input type="checkbox" id="net" checked> Показывать освещённость улиц</label>
+      <button id="reset" type="button"></button>
+      <label><input type="checkbox" id="net" checked> <span id="net-label"></span></label>
     </div>
     <details>
-      <summary>Обозначения</summary>
-      <ul class="legend">
-        <li><span class="sw" style="border-top-color:#009E73;border-top-style:solid"></span>освещено — тег OSM или фонари на съёмке Mapillary</li>
-        <li><span class="sw" style="border-top-color:#E69F00;border-top-style:dashed"></span>вероятно освещено — косвенные признаки или жалоба</li>
-        <li><span class="sw" style="border-top-color:#7F7F7F;border-top-style:dotted"></span>нет данных (не значит «темно»)</li>
-        <li><span class="sw" style="border-top-color:#D55E00;border-top-style:dashed"></span>сообщали, что темно (свежая жалоба или lit=no)</li>
-        <li><span class="sw" style="border-top-color:#2b4fb3;border-top-style:dashed"></span>второй маршрут; нажмите, чтобы переключить</li>
-      </ul>
-      <p class="small">При отдалении карта показывает районы: цифра — доля улиц и тротуаров района, по которым есть данные об освещении.</p>
+      <summary id="legend-title"></summary>
+      <ul class="legend" id="legend"></ul>
+      <p class="small" id="area-note"></p>
     </details>
     <p id="meta" class="small"></p>
   </aside>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="i18n.js"></script>
 <script src="/demo/layers/layers.js"></script>
 <script src="app.js"></script>
 </body>

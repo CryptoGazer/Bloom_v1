@@ -77,6 +77,34 @@ def test_same_route_when_nothing_is_gained(net):
     assert plan["routes"]["fastest"]["length_m"] == pytest.approx(200, abs=0.5)
 
 
+def detour_network(common_m, straight_m, straight_status, bump_m):
+    """A long lit street, then a choice: straight on (straight_status) or a slightly longer lit detour."""
+    end, mid = common_m + straight_m, common_m + straight_m / 2
+    return Network([
+        seg("C", 1, 2, [(0, 0), (common_m, 0)], "lit_confirmed", "Strada Comună"),
+        seg("straight", 2, 3, [(common_m, 0), (end, 0)], straight_status, "Strada Dreaptă"),
+        seg("d1", 2, 4, [(common_m, 0), (mid, bump_m)], "lit_confirmed", "Ocol"),
+        seg("d2", 4, 3, [(mid, bump_m), (end, 0)], "lit_confirmed", "Ocol"),
+    ], {"as_of": "2026-11-14"})
+
+
+def test_nearly_identical_routes_are_shown_as_one():
+    # 1020 m; the lit route swaps 20 m of "probably lit" for a 0.4 m longer lit detour: 2% gain, not worth a second card
+    near = detour_network(1000, 20, "lit_likely", 2)
+    plan = near.plan(at(near, 0, 0), at(near, 1020, 0))
+    assert plan["routes"]["fastest"]["streets"] != plan["routes"]["better_lit"]["streets"]
+    assert plan["verdict"]["kind"] == "same" and plan["verdict"]["near"] is True
+    assert plan["verdict"]["lit_gain"] == pytest.approx(0.02, abs=0.005)
+
+
+def test_removing_a_long_dark_stretch_is_always_worth_showing():
+    # only 3.6% of 4150 m changes, but the fastest route has 150 m of "reported dark" in one stretch
+    dark = detour_network(4000, 150, "dark_reported", 10)
+    plan = dark.plan(at(dark, 0, 0), at(dark, 4150, 0))
+    assert plan["routes"]["fastest"]["warn"] is True and plan["routes"]["better_lit"]["warn"] is False
+    assert plan["verdict"]["kind"] == "show"
+
+
 def test_darkness_never_blocks_a_route(net):
     # the only way to the middle of the dark street is along it
     plan = net.plan(at(net, 0, 60), at(net, 100, 0))
