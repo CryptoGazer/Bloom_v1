@@ -1,4 +1,5 @@
 """Throwaway draft map (NOT project code): applies the spec rules to the model area and writes one HTML file.
+Superseded by backend/build_city.py; the status rule now lives in backend/rules.py. Do not change rules here.
 usage: python -I draft_map.py <unihack-data dir> <osmnx cache dir> <out html>"""
 import json, os, sys, math, datetime as dt, unicodedata
 from collections import defaultdict

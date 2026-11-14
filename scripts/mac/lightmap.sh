@@ -6,7 +6,7 @@
 #   ./scripts/mac/lightmap.sh dryrun [data dir]   whole-city rule dry run -> data/out/dryrun.txt
 #   ./scripts/mac/lightmap.sh fallback            stand-in inputs from repo files (if unihack-data is missing)
 #   ./scripts/mac/lightmap.sh serve               http://localhost:8000 (pages need http, not file://)
-#   ./scripts/mac/lightmap.sh city   [data dir]   WHOLE CITY: lighting status of every segment -> data/out/city/
+#   ./scripts/mac/lightmap.sh city   [data dir]   AREA (university district + centre, config/area.geojson): lighting status -> data/out/city/
 #   ./scripts/mac/lightmap.sh api                 backend on http://localhost:8001 (API + the demo pages)
 #   ./scripts/mac/lightmap.sh test                backend tests
 # Another area: LIGHTMAP_BBOX="south,west,north,east" ./scripts/mac/lightmap.sh draft
@@ -98,7 +98,7 @@ case "$cmd" in
   api)
     need_venv
     if [[ ! -f "$OUT/city/segments.geojson.gz" ]]; then
-      echo "Нет данных по городу. Сначала: $0 city" >&2
+      echo "Нет данных по области карты. Сначала: $0 city" >&2
       exit 1
     fi
     echo "API: http://localhost:${PORT:-8001}/  (запросы руками: http://localhost:${PORT:-8001}/docs)"
