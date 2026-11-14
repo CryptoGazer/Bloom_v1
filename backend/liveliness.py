@@ -84,7 +84,8 @@ class Signs:
                 for sid, t in zip(stops, times):
                     if sid in near and abs(t - t0) <= LIVELY["departure_window_s"]:
                         found.setdefault(sid, set()).add((t, self.tt.routes[rid][0]))
-            out["stops"] = [{"name": self.tt.stops[sid][0], "departures": [{"line": line_no, "time": clock(t)} for t, line_no in sorted(deps)]}
+            out["stops"] = [{"name": self.tt.stops[sid][0], "lat": self.tt.stops[sid][1], "lon": self.tt.stops[sid][2],
+                             "departures": [{"line": line_no, "time": clock(t)} for t, line_no in sorted(deps)]}
                             for sid, deps in sorted(found.items(), key=lambda kv: min(kv[1]))]
         if self._main_tree is not None and line.length > 0:
             n = max(1, int(line.length // 10))

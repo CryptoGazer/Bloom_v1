@@ -27,7 +27,7 @@ LIVE = {
     "refresh_s": 15,              # at most one request to the city server per this many seconds (longer if it asks)
     "max_backoff_s": 120,         # after failures: wait 15, 30, 60, 120 s
     "timeout_s": 8,
-    "stale_s": 90,                # a GPS point older than this is shown as old, not live
+    "stale_s": 60,                # a GPS point older than this is shown as old, not live (the design's "LIVE" limit)
     "delay_min_s": -10 * 60,      # a reported delay outside [-10, +30] min is not used for a forecast
     "delay_max_s": 30 * 60,
     "track_before_s": 60 * 60,    # a planned trip is tracked from an hour before its departure
