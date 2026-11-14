@@ -35,6 +35,12 @@
   .travel label:has(input:checked) { background: #111; color: #fff; border-color: #111; }
   .travel input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .travel label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .at { margin: -2px 0 10px; font-size: 13px; }
+  .at input { font: inherit; font-size: 15px; padding: 4px 6px; border: 1px solid #888; border-radius: 6px; }
+  .at small { color: var(--muted); }
+  .card.info { cursor: default; }
+  .card .legs li { display: list-item; margin: 0 0 3px 16px; list-style: disc; }
+  .card .legs { margin: 4px 0 0; }
   h1 small { font-weight: 400; color: var(--muted); font-size: 13px; }
   #hint { margin: 6px 0 10px; }
   .gray-tiles { filter: grayscale(1) brightness(1.05) contrast(.9); }
@@ -93,7 +99,9 @@
     <div class="travel" role="radiogroup" id="travel">
       <label><input type="radio" name="travel" value="walk" checked><span id="travel-walk"></span></label>
       <label><input type="radio" name="travel" value="bike"><span id="travel-bike"></span></label>
+      <label><input type="radio" name="travel" value="transit"><span id="travel-transit"></span></label>
     </div>
+    <p class="at" id="at-wrap" hidden><label><span id="at-label"></span> <input type="time" id="at"></label> <small id="at-hint"></small></p>
     <div class="modes" role="radiogroup" id="modes">
       <span class="modes-caption" id="modes-caption"></span>
       <label><input type="radio" name="mode" value="route" checked><span id="mode-route"></span></label>
