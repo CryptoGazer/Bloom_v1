@@ -17,6 +17,19 @@
   .langs { display: flex; gap: 4px; }
   .langs button { font: inherit; font-size: 12px; padding: 3px 7px; border: 1px solid #888; border-radius: 5px; background: #fff; color: var(--ink); cursor: pointer; }
   .langs button[aria-pressed="true"] { background: #111; color: #fff; border-color: #111; }
+  .places { display: grid; grid-template-columns: 24px 1fr auto; gap: 6px 8px; align-items: center; margin: 8px 0 10px; }
+  .pin-label { width: 24px; height: 24px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center;
+               justify-content: center; font-weight: 700; font-size: 13px; }
+  .box { position: relative; min-width: 0; }
+  .box input { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; padding: 8px 10px; border: 1px solid #888; border-radius: 8px; }
+  .suggest { position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px 0; list-style: none; background: #fff;
+             border: 1px solid #888; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.18); max-height: 330px; overflow: auto; }
+  .suggest li { padding: 6px 10px; cursor: pointer; }
+  .suggest li[aria-selected="true"], .suggest li:hover { background: #e8eefc; }
+  .suggest li.empty { color: var(--muted); cursor: default; background: none; }
+  .suggest .sub { display: block; font-size: 12px; color: var(--muted); }
+  .icon-btn { font: inherit; font-size: 13px; padding: 8px 10px; border: 1px solid #555; border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; white-space: nowrap; }
+  .modes-caption { color: var(--muted); font-size: 13px; align-self: center; }
   h1 small { font-weight: 400; color: var(--muted); font-size: 13px; }
   #hint { margin: 6px 0 10px; }
   .gray-tiles { filter: grayscale(1) brightness(1.05) contrast(.9); }
@@ -64,7 +77,16 @@
       <h1><span id="title"></span> <small id="subtitle"></small></h1>
       <div class="langs" id="langs" role="group"></div>
     </div>
+    <div class="places">
+      <span class="pin-label" id="label-a" aria-hidden="true"></span>
+      <div class="box"><input id="from" type="text" autocomplete="off" spellcheck="false"><ul class="suggest" id="from-list" hidden></ul></div>
+      <button type="button" class="icon-btn" id="locate"></button>
+      <span class="pin-label" id="label-b" aria-hidden="true"></span>
+      <div class="box"><input id="to" type="text" autocomplete="off" spellcheck="false"><ul class="suggest" id="to-list" hidden></ul></div>
+      <button type="button" class="icon-btn" id="swap">⇅</button>
+    </div>
     <div class="modes" role="radiogroup" id="modes">
+      <span class="modes-caption" id="modes-caption"></span>
       <label><input type="radio" name="mode" value="route" checked><span id="mode-route"></span></label>
       <label><input type="radio" name="mode" value="inspect"><span id="mode-inspect"></span></label>
     </div>
@@ -84,6 +106,7 @@
 </div>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="i18n.js"></script>
+<script src="search.js"></script>
 <script src="/demo/layers/layers.js"></script>
 <script src="app.js"></script>
 </body>

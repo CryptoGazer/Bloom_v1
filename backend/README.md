@@ -30,6 +30,7 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 | Запрос | Что возвращает |
 |---|---|
 | `GET /api/route?from=lat,lon&to=lat,lon` | два пеших маршрута, `fastest` и `better_lit`: минуты, метры, метры по статусам освещённости, предупреждение, улицы по ходу, геометрия кусками по статусу; `verdict` говорит, стоит ли показывать освещённый (`same` / `show` / `too_long`) |
+| `GET /api/geocode?q=camin c12&limit=8` | подсказки для полей адреса: улицы, адреса с номером дома, места, остановки внутри области; `number_missing`, если такого номера нет на карте. Индекс — `data/out/city/places.json.gz` от `backend/build_places.py` (адреса и места из Overpass, кеш в `data/cache/places/`) |
 | `GET /api/segments?bbox=west,south,east,north` | отрезки в окне карты (id, вид, название, длина, статус). Если их больше `limit` (по умолчанию 4000), список пустой и `truncated: true`: нужно приблизить карту или показать районы |
 | `GET /api/segments/{id}` | один отрезок со свидетельствами: тег OSM, фонари Mapillary, жалобы, косвенные признаки |
 | `GET /api/summary` | сводка: доли по статусам, проверки, таблица по 40 районам, источники с датами |
@@ -55,6 +56,9 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 |---|---|
 | `backend/build_city.py` | сборка: сеть улиц (osmnx, кеш в `data/cache/city/`) + фонари + жалобы → статусы |
 | `backend/rules.py` | правило статуса отрезка: чистые функции, без файлов и геометрии |
+| `backend/build_places.py` | индекс поиска: улицы, адреса, места, остановки области → `data/out/city/places.json.gz` |
+| `backend/geocode.py` | поиск по индексу: без диакритики, номер дома, ранжирование; без сети |
+| `backend/tests/test_geocode.py` | 15 тестов поиска на рукотворном списке |
 | `backend/routing.py` | граф, привязка точки, маршруты, выборка по окну; без веб-кода |
 | `backend/app.py` | HTTP-обёртка на FastAPI |
 | `backend/tests/test_routing.py` | 14 тестов маршрутов и API на маленькой рукотворной сети |
