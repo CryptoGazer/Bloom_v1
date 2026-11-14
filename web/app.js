@@ -405,13 +405,14 @@ function transitCard() {
     ? `<p class="warn">${esc(t('warn', { bad: fmtM(walk1.by_status_m.unknown + walk1.by_status_m.dark_reported + walk2.by_status_m.unknown + walk2.by_status_m.dark_reported),
       total: fmtM(walk1.length_m + walk2.length_m), share: pct((walk1.dark_unknown_share * walk1.length_m + walk2.dark_unknown_share * walk2.length_m) / Math.max(1, walk1.length_m + walk2.length_m)) }))}.</p>`
     : '';
-  const slower = plan.routes.fastest.minutes <= tr.wait_min + tr.minutes ? `<p class="verdict bad">${esc(t('walkFaster'))}</p>` : '';
+  // No "walking is not slower" note here: it compared arrival times from the requested leaving time and showed on
+  // 64% of trips, while the transit card counts from the later leaving time and still saves ~5 min of walking outside.
   return `<button type="button" class="card${selected === 'transit' ? ' selected' : ''}" data-kind="transit" aria-pressed="${selected === 'transit'}">` +
     `<span class="title">${esc(t('transitTitle'))}</span><span class="main">${fmtMin(tr.minutes)} · ${tr.leave_at} → ${tr.arrive_at}</span>` +
     `<span class="bar">${bar}</span><ul>${rows}</ul><p class="small">${esc(t('walkPartNote'))}</p>` +
     `<ul class="legs">${legs}</ul>${warn}` +
     `<p class="verdict ok">${esc(t('leaveIn', { min: fmtMin(Math.max(0, tr.wait_min)), time: tr.leave_at }))} ${tr.last ? esc(t('lastDep', tr.last)) : ''}</p>` +
-    `${slower}<p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p></button>`;
+    `<p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p></button>`;
 }
 
 function card(kind, r, title, note) {

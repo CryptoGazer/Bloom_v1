@@ -1029,7 +1029,8 @@ function renderTransit() {
       <li><span class="tm">${esc(rd.arr)}</span><span style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 14px"><strong style="font-weight: 600">${esc(t('m.walkMin', { min: minN(w2.minutes) }))}</strong> · ${esc(t('m.toDest', { d: dist(w2.length_m) }))}</span>${legBar(w2)}</span></li>
     </ol>`;
   const last = tr.last ? `<p class="dashed"><span>${esc(t('m.lastToday', { line: tr.last.line, stop: tr.last.stop }))} <strong>${esc(tr.last.time)}</strong></span><span class="tag">${esc(t('m.orar'))}</span></p>` : '';
-  const faster = plan.routes.fastest.minutes <= tr.wait_min + tr.minutes ? `<p class="sec">${esc(t('walkFaster'))} <button type="button" class="link-btn" data-act="walkInstead" style="display: inline; height: auto; padding: 0">${esc(t('m.walkInsteadBtn'))}</button></p>` : '';
+  // No "walking is not slower" note (as on the desktop page): it compared arrivals from the requested leaving time and
+  // showed on 64% of trips, while the trip counts from the later leaving time and still saves ~5 min of walking outside.
   $('screen').innerHTML = top + `
   <section class="sheet" aria-labelledby="h-tr" style="max-height: calc(100% - 230px)">
     <div class="handle"></div>
@@ -1038,7 +1039,7 @@ function renderTransit() {
     ${modeSeg('compact')}
     ${tl}
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
-    ${steps}${last}${faster}
+    ${steps}${last}
     <p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p>
     <div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button></div>
   </section>`;
