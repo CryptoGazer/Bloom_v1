@@ -58,7 +58,8 @@ def test_after_three_only_the_all_night_shop(signs):
 def test_stops_with_departures_within_ten_minutes(signs):
     s, net = signs
     got = s.along(route(net), FRI_2230)
-    assert got["stops"] == [{"name": "Stația Mică", "departures": [{"line": "8", "time": "22:30"}]}]
+    assert [(x["name"], x["departures"]) for x in got["stops"]] == [("Stația Mică", [{"line": "8", "time": "22:30"}])]
+    assert (got["stops"][0]["lat"], got["stops"][0]["lon"]) == tuple(s.tt.stops["S"][1:3])   # for the stop marker on the map
     assert s.along(route(net), dt.datetime(2026, 11, 13, 23, 0))["stops"] == []
 
 
