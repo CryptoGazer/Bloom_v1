@@ -27,6 +27,10 @@ from shapely.geometry import LineString, box, shape
 from shapely.strtree import STRtree
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:  # run as a script with -I: make "backend" importable
+    sys.path.insert(0, str(ROOT))
+from backend import rules  # noqa: E402
+
 KX, KY = 77811.0, 111147.0  # metres per degree of lon / lat at 45.748 N; error under 0.1% across the city
 PAD_DEG = 0.001
 PARAMS = {
@@ -249,11 +253,9 @@ def classify(segs, lamps, complaints, as_of):
     # facts and indirect signs
     fresh = P["open_complaint_fresh_days"]
     for i, s in enumerate(segs):
-        evs = seg_events.get(i, [])
-        s["fam"] = ((["osm"] if s["lit"] == "yes" else []) + (["mapillary"] if cov[i] >= P["lamp_coverage_min"] else [])
-                    + (["sesizari"] if any(ev["kind"] != "declined" for ev, _ in evs) else []))
-        s["fresh_lamps"] = sum(ev["kind"] == "open_lamp_out" and ev["age"] <= fresh for ev, _ in evs)
-        s["dark_compl"] = any(ev["kind"] == "open_area_outage" and ev["age"] <= fresh for ev, _ in evs) or s["fresh_lamps"] >= P["lamps_out_for_dark"]
+        s["facts"] = [(ev["kind"], ev["age"]) for ev, _ in seg_events.get(i, [])]
+        s["fam"] = rules.families(s["lit"], cov[i], [kind for kind, _ in s["facts"]], P["lamp_coverage_min"])
+        s["dark_compl"] = rules.dark_by_complaints(s["facts"], fresh, P["lamps_out_for_dark"])
         if 0 < cov[i] < P["lamp_coverage_min"]:
             s["ind"].append("partial_lamps")
     names_yes = {fold(s["name"]) for s in segs if s["kind"] == "street" and s["lit"] == "yes" and s["name"]}
@@ -271,16 +273,9 @@ def classify(segs, lamps, complaints, as_of):
             if street["dark_compl"]:
                 me["inh_dark"] = True
 
-    # status (checked top to bottom) and evidence for the "why" card
+    # status (backend/rules.py) and evidence for the "why" card
     for i, s in enumerate(segs):
-        if s["lit"] == "no" or s["dark_compl"] or s.get("inh_dark"):
-            s["status"] = "dark_reported"
-        elif ({"osm", "mapillary"} & set(s["fam"])) and s["fresh_lamps"] == 0:
-            s["status"] = "lit_confirmed"
-        elif s["fam"] or s["ind"]:
-            s["status"] = "lit_likely"
-        else:
-            s["status"] = "unknown"
+        s["status"] = rules.status(s["lit"], s["fam"], s["facts"], s["ind"], bool(s.get("inh_dark")), fresh, P["lamps_out_for_dark"])
         ev = []
         if s["lit"]:
             ev.append({"s": "osm", "k": s["lit"], "ways": s["ways"][:4]})
