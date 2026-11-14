@@ -73,6 +73,12 @@
          font-size: 11px; line-height: 1.2; text-align: center; padding: 2px 5px; }
   .leaflet-tooltip.zone-name:before { display: none; }
   .leaflet-popup-content ul { margin: 6px 0 4px 16px; padding: 0; }
+  .ask { margin: 8px 0 12px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: #f6f7fa; }
+  .ask-row { display: flex; gap: 6px; }
+  .ask-row input { flex: 1; min-width: 0; font: inherit; font-size: 16px; padding: 8px 10px; border: 1px solid #888; border-radius: 8px; }
+  .ask-row button:disabled { opacity: .5; cursor: default; }
+  #ask-mic[aria-pressed="true"] { background: #b3261e; border-color: #b3261e; color: #fff; }
+  .ask p { margin: 6px 0 0; }
   @media (max-width: 800px) {
     #app { flex-direction: column; }
     #map { flex: 0 0 55vh; }
@@ -88,6 +94,15 @@
       <h1><span id="title"></span> <small id="subtitle"></small></h1>
       <div class="langs" id="langs" role="group"></div>
     </div>
+    <form class="ask" id="ask" hidden>
+      <div class="ask-row">
+        <input id="ask-text" type="text" maxlength="300" autocomplete="off" enterkeyhint="search">
+        <button type="button" class="icon-btn" id="ask-mic" aria-pressed="false"></button>
+        <button type="submit" class="icon-btn" id="ask-go"></button>
+      </div>
+      <p class="small" id="ask-note" aria-live="polite" hidden></p>
+      <p class="small" id="ask-privacy"></p>
+    </form>
     <div class="places">
       <span class="pin-label" id="label-a" aria-hidden="true"></span>
       <div class="box"><input id="from" type="text" autocomplete="off" spellcheck="false"><ul class="suggest" id="from-list" hidden></ul></div>
@@ -126,5 +141,6 @@
 <script src="search.js"></script>
 <script src="/demo/layers/layers.js"></script>
 <script src="app.js"></script>
+<script src="ask.js"></script>
 </body>
 </html>

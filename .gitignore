@@ -2,6 +2,7 @@
 # API keys (Gemini, ElevenLabs, Tiger Data, Vultr) live only here
 .env
 .env.*
+!.env.example
 .venv/
 __pycache__/
 # raw inputs (Mapillary licence, residents' complaint numbers), osmnx cache, transit logs

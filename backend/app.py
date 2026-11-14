@@ -9,14 +9,16 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 import datetime as dt
 from zoneinfo import ZoneInfo
 
+from backend.ask import LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
 from backend.geocode import Places
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
@@ -66,11 +68,23 @@ def leaving_time(at):
         raise HTTPException(422, detail={"code": "bad_time", "message": "at must be 'HH:MM' or 'YYYY-MM-DDTHH:MM'"})
 
 
-def create_app(segments_path=None):
+class AskIn(BaseModel):
+    """A request in plain words: typed text, or a short voice recording as base64."""
+    text: str = Field("", max_length=ASK_LIMITS["text_chars"], description="what the person typed, e.g. 'de la căminul C12 la Piața Victoriei cu bicicleta'")
+    audio: str = Field("", max_length=ASK_LIMITS["audio_b64_chars"], description="voice recording, base64 (the page sends 16 kHz mono WAV, at most 10 s)")
+    mime: str = Field("audio/wav", max_length=40)
+    lang: str = Field("ro", max_length=5, description="interface language: ro, en or ru")
+    near: str = Field("", max_length=40, description="current start point as lat,lon, if any: 'the nearest pharmacy' is "
+                                                      "picked next to it. Stays on this server, never goes to Gemini")
+
+
+def create_app(segments_path=None, gemini=None):
+    """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment."""
+    load_env(ROOT / ".env")
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
-    state = {"net": None, "places": None, "transit": None}
+    state = {"net": None, "places": None, "transit": None, "asker": None}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -80,6 +94,9 @@ def create_app(segments_path=None):
             state["places"] = Places.load(places_path)
         if state["net"] is not None and transit_path.exists():
             state["transit"] = Transit(state["net"], Timetable.load(transit_path))
+        ai = gemini or Gemini.from_env()
+        if ai is not None and state["places"] is not None:
+            state["asker"] = Asker(ai, state["places"])
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
@@ -97,7 +114,26 @@ def create_app(segments_path=None):
     @app.get("/api/health")
     def health():
         net = state["net"]
-        return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None}
+        return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None,
+                "ask": state["asker"] is not None}
+
+    @app.post("/api/ask")
+    def ask(body: AskIn, request: Request):
+        """A route asked in plain words, typed or spoken (Romanian, English, Russian). Gemini only fills in a form
+        (from, to, mode, time); the places are then found in our own index. Answers:
+        kind "route" (points to route between), "not_found" (a place is not in the map area), "unclear",
+        or "off_topic" for anything that is not a route request: the assistant does not answer other questions.
+        The text or recording is sent to Google and is not stored here; no coordinates are sent."""
+        if state["asker"] is None:
+            raise HTTPException(503, detail={"code": "ai_not_configured", "message": "GEMINI_API_KEY is not set or the place index is missing"})
+        client = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "-")
+        near = parse_point(body.near, "near") if body.near else None
+        try:
+            return state["asker"].ask(text=body.text, audio=body.audio, mime=body.mime, lang=body.lang, client=client, near=near)
+        except AskError as e:
+            if e.status >= 500:
+                print(f"ask: {e.code}: {e}", flush=True)  # the reason stays in the server log, not in the answer
+            raise HTTPException(e.status, detail={"code": e.code, "message": e.code if e.status >= 500 else str(e)})
 
     @app.get("/api/summary")
     def summary():

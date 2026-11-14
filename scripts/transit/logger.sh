@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Control the transit logger (scripts/transit/logger.py).
-#   ./scripts/transit/logger.sh start [interval_sec]   run in background (default 15 s), Mac kept awake
+#   ./scripts/transit/logger.sh start [interval_sec]   run in background (default 15 s), Mac kept awake;
+#                                                       auto-stops at 04:05 Europe/Bucharest
 #   ./scripts/transit/logger.sh stop                   stop; data already written stays
 #   ./scripts/transit/logger.sh status                 running or not, row counts, last request
 #   ./scripts/transit/logger.sh log                    follow the log (Ctrl+C leaves the logger running)
@@ -33,7 +34,7 @@ case "$cmd" in
       exit 0
     fi
     mkdir -p "$DIR"
-    nohup python3 -I "$ROOT/scripts/transit/logger.py" --dir "$DIR" --interval "${2:-15}" >> "$LOG" 2>&1 &
+    nohup python3 -I "$ROOT/scripts/transit/logger.py" --dir "$DIR" --interval "${2:-15}" --stop-at 04:05 >> "$LOG" 2>&1 &
     for _ in 1 2 3 4 5 6; do
       if pid="$(running_pid)"; then
         echo "Запущен, pid $pid. Данные: $DIR. Лог: $LOG"

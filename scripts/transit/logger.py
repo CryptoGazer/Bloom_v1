@@ -6,9 +6,11 @@ Polls GET https://cont.primariatm.ro/api/mobile/transit/vehicles every --interva
 Existing files are never truncated: rows are only appended, the header is written once, and after a
 restart the logger reads the tail of vehicles.csv so it does not write the same fixes twice.
 
-usage: python3 -I scripts/transit/logger.py [--dir data/transit] [--interval 15] [--max-polls N]
-The API refreshes all vehicle fixes together about every 15 s (measured 14.11.2026), so 15 s loses nothing.
-Stop with Ctrl+C or SIGTERM (scripts/transit/logger.sh stop). Standard library only.
+usage: python3 -I scripts/transit/logger.py [--dir data/transit] [--interval 15] [--stop-at 04:05] [--max-polls N]
+The API reports its next refresh in each response; use about 6 s for full-resolution logging, or 15 s
+for a lower request rate when every intermediate GPS fix is not needed.
+By default it stops at the next 04:05 in Europe/Bucharest. Stop earlier with Ctrl+C or SIGTERM
+(scripts/transit/logger.sh stop). Standard library only.
 """
 import argparse
 import csv
@@ -31,6 +33,7 @@ URL = "https://cont.primariatm.ro/api/mobile/transit/vehicles"
 DEFAULT_UA = "UniHack26-NightRoute-team/0.1 (UniHack 2026 hackathon prototype; transit logger)"
 TZ = ZoneInfo("Europe/Bucharest")
 SERVICE_DAY_START_HOUR = 4  # fixes before 04:00 local belong to the previous service day
+DEFAULT_STOP_AT = "04:05"
 MAX_BACKOFF_SEC = 300
 TAIL_BYTES = 4_000_000
 
@@ -64,6 +67,20 @@ def local_iso(ts):
 def service_date(ts):
     local = dt.datetime.fromtimestamp(ts, TZ)
     return (local - dt.timedelta(hours=SERVICE_DAY_START_HOUR)).date().isoformat()
+
+
+def next_local_time(value, now_ts=None):
+    """Unix timestamp of the next HH:MM in Europe/Bucharest, strictly after now."""
+    try:
+        hour, minute = (int(part) for part in value.split(":"))
+        clock = dt.time(hour, minute)
+    except (AttributeError, TypeError, ValueError):
+        raise ValueError("--stop-at must be local time as HH:MM, e.g. 04:05")
+    now = dt.datetime.fromtimestamp(time.time() if now_ts is None else now_ts, TZ)
+    target = dt.datetime.combine(now.date(), clock, TZ)
+    if target <= now:
+        target = dt.datetime.combine(now.date() + dt.timedelta(days=1), clock, TZ)
+    return target.timestamp()
 
 
 def split_route(route_id):
@@ -194,10 +211,16 @@ def main():
     ap.add_argument("--interval", type=float, default=15.0, help="seconds between requests (min 5, default 15)")
     ap.add_argument("--timeout", type=float, default=15.0)
     ap.add_argument("--user-agent", default=os.environ.get("TRANSIT_LOGGER_UA", DEFAULT_UA))
+    ap.add_argument("--stop-at", default=DEFAULT_STOP_AT,
+                    help=f"stop at the next local HH:MM in Europe/Bucharest (default {DEFAULT_STOP_AT})")
     ap.add_argument("--max-polls", type=int, default=0, help="stop after N requests (0 = run until stopped)")
     ap.add_argument("--no-caffeinate", action="store_true")
     args = ap.parse_args()
     interval = max(5.0, args.interval)
+    try:
+        stop_ts = next_local_time(args.stop_at)
+    except ValueError as e:
+        ap.error(str(e))
 
     out = Path(args.dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -217,11 +240,11 @@ def main():
     vfh, vw = open_append(out / "vehicles.csv", VEHICLE_COLUMNS)
     pfh, pw = open_append(out / "polls.csv", POLL_COLUMNS)
     print(f"{local_iso(time.time())} start pid={os.getpid()} interval={interval:g}s dir={out} "
-          f"known vehicles={len(seen)}", flush=True)
+          f"known vehicles={len(seen)} auto_stop={local_iso(stop_ts)}", flush=True)
 
     polls = failures = 0
     try:
-        while not stop_requested:
+        while not stop_requested and time.time() < stop_ts:
             started = time.monotonic()
             poll_ts = time.time()
             status, payload, error, took = fetch(args.user_agent, args.timeout)
@@ -253,14 +276,15 @@ def main():
                 break
             wait = interval if failures == 0 else min(MAX_BACKOFF_SEC, interval * 2 ** min(failures, 6))
             deadline = started + wait
-            while not stop_requested and time.monotonic() < deadline:
+            while not stop_requested and time.time() < stop_ts and time.monotonic() < deadline:
                 time.sleep(min(0.5, max(0.0, deadline - time.monotonic())))
     finally:
         vfh.close()
         pfh.close()
         if pid_path.exists() and pid_path.read_text().strip() == str(os.getpid()):
             pid_path.unlink()
-        print(f"{local_iso(time.time())} stop after {polls} polls", flush=True)
+        reason = "auto-stop" if time.time() >= stop_ts else "requested"
+        print(f"{local_iso(time.time())} stop after {polls} polls reason={reason}", flush=True)
 
 
 if __name__ == "__main__":

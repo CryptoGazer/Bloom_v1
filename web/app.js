@@ -240,6 +240,20 @@ function setTravel(value) {
   $('at-wrap').hidden = value !== 'transit';
 }
 
+// A time typed in the control is just HH:MM. Gemini can also give an exact local date so that a relative
+// request such as "in 20 minutes" keeps the correct day when it crosses midnight. The control shows the
+// clock part; the complete value stays with it until the person edits the field.
+function setDeparture(value) {
+  const input = $('at');
+  const exact = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value || '');
+  input.value = exact ? value.slice(11) : (value || '');
+  if (exact) input.dataset.datetime = value; else delete input.dataset.datetime;
+}
+
+function departure() {
+  return $('at').dataset.datetime || $('at').value;
+}
+
 function onMapClick(e) {
   if (mode !== 'route' || !summary) return;
   if (A && B) reset();
@@ -259,7 +273,7 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
-  const at = travel === 'transit' ? $('at').value : '';
+  const at = travel === 'transit' ? departure() : '';
   const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
   if (at) hash.set('at', at);
   history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
@@ -406,7 +420,7 @@ function readHash() {
   const a = point(h.get('a')), b = point(h.get('b'));
   if (!a || !b) return false;
   if (['bike', 'transit'].includes(h.get('m'))) setTravel(h.get('m'));
-  if (h.get('at')) $('at').value = h.get('at');
+  if (h.get('at')) setDeparture(h.get('at'));
   setPoint('A', a, h.get('an'));
   setPoint('B', b, h.get('bn'));
   map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
@@ -439,6 +453,7 @@ getJSON('/api/summary')
     for (const r of document.querySelectorAll('input[name="travel"]')) {
       r.addEventListener('change', () => { setTravel(r.value); if (A && B) compute(); });
     }
+    $('at').addEventListener('input', () => { delete $('at').dataset.datetime; });
     $('at').addEventListener('change', () => { if (A && B && travel === 'transit') compute(); });
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
