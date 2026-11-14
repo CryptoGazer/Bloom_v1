@@ -135,7 +135,8 @@ const prefs = { net: true, livenet: false };
 const map = L.map('map', { zoomControl: false, attributionControl: true, zoomSnap: 0.25 }).setView([45.7500, 21.2270], 14);
 map.attributionControl.setPrefix('');
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'bz-tiles',
-  attribution: '&copy; OpenStreetMap · Mapillary · Primăria Timișoara' }).addTo(map);
+  attribution: '&copy; OpenStreetMap · Mapillary · Primăria Timișoara · ' +
+    '<a href="https://www.flaticon.com/free-icons/street-light" title="street light icons" target="_blank" rel="noopener">Icon: Magnific – Flaticon</a>' }).addTo(map);
 const svgR = L.svg({ padding: 0.5 });
 const netR = L.canvas({ padding: 0.3, tolerance: 6 });
 const areaLayer = L.layerGroup().addTo(map);
