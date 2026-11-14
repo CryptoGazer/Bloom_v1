@@ -152,8 +152,17 @@ def client(tmp_path_factory):
     path = tmp_path_factory.mktemp("city") / "segments.geojson.gz"
     with gzip.open(path, "wt", encoding="utf-8") as f:
         json.dump({"type": "FeatureCollection", "meta": {"as_of": "2026-11-14"}, "features": FEATURES}, f)
+    lon, lat = ll(0, 60)
+    with gzip.open(path.parent / "places.json.gz", "wt", encoding="utf-8") as f:
+        json.dump({"meta": {}, "entries": [{"k": "street", "n": "Strada Vest", "lat": lat, "lon": lon}]}, f)
     with TestClient(create_app(path)) as c:
         yield c
+
+
+def test_api_geocode(client):
+    body = client.get("/api/geocode", params={"q": "str vest"}).json()
+    assert [r["name"] for r in body["results"]] == ["Strada Vest"]
+    assert client.get("/api/geocode", params={"q": "x"}).json()["results"] == []
 
 
 def point(x, y):

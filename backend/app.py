@@ -14,6 +14,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.geocode import Places
 from backend.routing import SETTINGS, Network
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +30,7 @@ INDEX_HTML = """<!doctype html><html lang="ru"><meta charset="utf-8"><title>Nigh
 <li><a href="/api/summary">/api/summary</a> — сводка по городу</li>
 <li><a href="/api/route?from=45.7470,21.2395&to=45.7415,21.2200">/api/route</a> — пример маршрута</li>
 <li><a href="/api/segments?bbox=21.225,45.745,21.235,45.750">/api/segments</a> — отрезки в окне карты</li>
+<li><a href="/api/geocode?q=camin%20c12">/api/geocode</a> — поиск адреса, места или остановки</li>
 <li><a href="/demo/route/">/demo/route/</a> — демо маршрута в браузере</li>
 <li><a href="/data/out/draft-map.html">/data/out/draft-map.html</a> — карта освещённости</li>
 </ul></body></html>"""
@@ -46,12 +48,15 @@ def parse_point(value, name):
 
 def create_app(segments_path=None):
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
-    state = {"net": None}
+    places_path = segments_path.parent / "places.json.gz"
+    state = {"net": None, "places": None}
 
     @asynccontextmanager
     async def lifespan(_app):
         if segments_path.exists():
             state["net"] = Network.load(segments_path)
+        if places_path.exists():
+            state["places"] = Places.load(places_path)
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
@@ -79,6 +84,15 @@ def create_app(segments_path=None):
         if not path.exists():
             raise HTTPException(404, detail={"code": "no_summary", "message": "summary.json not found next to the segments file"})
         return json.loads(path.read_text(encoding="utf-8"))
+
+    @app.get("/api/geocode")
+    def geocode(q: str = Query("", max_length=120, description="what the person typed: street and number, place or stop"),
+                limit: int = Query(8, ge=1, le=20)):
+        """Suggestions while typing, only inside the map area. No request leaves our server: no external geocoder,
+        so typed addresses are not sent anywhere."""
+        if state["places"] is None:
+            raise HTTPException(503, detail={"code": "no_places", "message": f"{places_path} not found. Build it: backend/build_places.py"})
+        return {"query": q, "results": state["places"].search(q, limit)}
 
     @app.get("/api/segments")
     def segments(bbox: str = Query(description="west,south,east,north in degrees"),
