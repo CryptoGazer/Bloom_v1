@@ -1,0 +1,1 @@
+[out:json][timeout:180];rel["name"="Timișoara"]["boundary"="administrative"];out tags;map_to_area->.a;(nwr["amenity"~"^(bar|pub|restaurant|cafe|fast_food|nightclub|biergarten|pharmacy|fuel|cinema|theatre|casino|bank|atm|library|university|college)$"](area.a);nwr["shop"](area.a);nwr["tourism"~"^(hotel|hostel|guest_house)$"](area.a););out center tags;

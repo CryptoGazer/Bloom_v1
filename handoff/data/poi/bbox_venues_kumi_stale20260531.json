@@ -1,0 +1,4361 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-05-31T22:37:44Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 500010749,
+  "lat": 45.7483472,
+  "lon": 21.2180808,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:street": "Strada Miron Costin",
+    "amenity": "pharmacy",
+    "dispensing": "yes",
+    "drive_through": "no",
+    "healthcare": "pharmacy",
+    "name": "Farmacia Roz",
+    "opening_hours": "Mo-Fr 08:00-20:00; Sa 08:00-14:00"
+  }
+},
+{
+  "type": "node",
+  "id": 500011529,
+  "lat": 45.7457057,
+  "lon": 21.2407295,
+  "tags": {
+    "amenity": "atm",
+    "brand": "BCR",
+    "brand:wikidata": "Q806149",
+    "brand:wikipedia": "ro:Banca Comercială Română",
+    "cash_in": "no",
+    "currency:RON": "yes",
+    "drive_through": "no",
+    "name": "BCR",
+    "official_name": "Banca Comercială Română",
+    "operator": "BCR",
+    "operator:wikidata": "Q806149",
+    "operator:wikipedia": "ro:Banca Comercială Română"
+  }
+},
+{
+  "type": "node",
+  "id": 1202902228,
+  "lat": 45.7452786,
+  "lon": 21.2424368,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "90A",
+    "addr:street": "1 Decembrie 1918",
+    "name": "Prospero",
+    "opening_hours": "Su 09:00-19:00; Sa 08:00-22:00; Mo-Fr 07:00-22:00",
+    "operator": "Prospero",
+    "shop": "bakery",
+    "website": "https://www.prospero.tm.ro/",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 1205765126,
+  "lat": 45.7424781,
+  "lon": 21.2382903,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Restaurant Sabres",
+    "opening_hours": "Mo-Su 11:00-23:30"
+  }
+},
+{
+  "type": "node",
+  "id": 1234050821,
+  "lat": 45.7441729,
+  "lon": 21.2250708,
+  "tags": {
+    "amenity": "pharmacy",
+    "healthcare": "pharmacy",
+    "name": "Mihai Viteazul"
+  }
+},
+{
+  "type": "node",
+  "id": 1234059442,
+  "lat": 45.7435337,
+  "lon": 21.2256118,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "sandwich",
+    "name": "Monsieur Bistro",
+    "opening_hours": "Mo-Fr 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 1239892209,
+  "lat": 45.7491878,
+  "lon": 21.2399927,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Barista"
+  }
+},
+{
+  "type": "node",
+  "id": 1239892218,
+  "lat": 45.7500389,
+  "lon": 21.2387096,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "Banca Transilvania",
+    "brand:wikidata": "Q806161",
+    "name": "Banca Transilvania"
+  }
+},
+{
+  "type": "node",
+  "id": 1239892219,
+  "lat": 45.7492346,
+  "lon": 21.2401240,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "regional",
+    "name": "Pret a Manger"
+  }
+},
+{
+  "type": "node",
+  "id": 1263620350,
+  "lat": 45.7461994,
+  "lon": 21.2181247,
+  "tags": {
+    "name": "Salon Young Style",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 1263620352,
+  "lat": 45.7366837,
+  "lon": 21.2170139,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:postcode": "300481",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Snagov",
+    "name": "Prospero",
+    "opening_hours": "Mo-Sa 06:30 - 21:30",
+    "operator": "Prospero",
+    "shop": "bakery",
+    "website": "https://www.prospero.tm.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 1263620353,
+  "lat": 45.7395869,
+  "lon": 21.2209456,
+  "tags": {
+    "amenity": "bar",
+    "name": "Zanoni"
+  }
+},
+{
+  "type": "node",
+  "id": 1268301489,
+  "lat": 45.7501565,
+  "lon": 21.2435880,
+  "tags": {
+    "amenity": "pub",
+    "name": "Like Pub"
+  }
+},
+{
+  "type": "node",
+  "id": 1310278904,
+  "lat": 45.7402965,
+  "lon": 21.2391446,
+  "tags": {
+    "amenity": "atm",
+    "brand": "UniCredit",
+    "brand:wikidata": "Q45568",
+    "operator": "UniCredit",
+    "operator:wikidata": "Q45568"
+  }
+},
+{
+  "type": "node",
+  "id": 1317142513,
+  "lat": 45.7489592,
+  "lon": 21.2255243,
+  "tags": {
+    "amenity": "bar",
+    "name": "D'Arc pe mal"
+  }
+},
+{
+  "type": "node",
+  "id": 1670083990,
+  "lat": 45.7500952,
+  "lon": 21.2385276,
+  "tags": {
+    "amenity": "bar",
+    "name": "The Social"
+  }
+},
+{
+  "type": "node",
+  "id": 1809740049,
+  "lat": 45.7397008,
+  "lon": 21.2211746,
+  "tags": {
+    "addr:housenumber": "1",
+    "addr:street": "Strada Vadul Călugăreni",
+    "amenity": "restaurant",
+    "cuisine": "balkan",
+    "delivery": "yes",
+    "name": "Restaurant Yugoslavia",
+    "opening_hours": "Mo-Su 12:00-23:00",
+    "outdoor_seating": "yes",
+    "website": "http://www.restaurantyugoslavia.ro"
+  }
+},
+{
+  "type": "node",
+  "id": 1836768430,
+  "lat": 45.7485266,
+  "lon": 21.2396537,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "regional",
+    "drive_through": "no",
+    "name": "3F",
+    "smoking": "outside",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1836768581,
+  "lat": 45.7479205,
+  "lon": 21.2387044,
+  "tags": {
+    "amenity": "atm",
+    "brand": "Banca Transilvania",
+    "brand:wikidata": "Q806161",
+    "operator": "Banca Transilvania",
+    "operator:wikidata": "Q806161"
+  }
+},
+{
+  "type": "node",
+  "id": 1840406340,
+  "lat": 45.7506806,
+  "lon": 21.2459638,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "name": "Profi Go",
+    "opening_hours": "Mo-Su 07:00-23:00",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 2218074107,
+  "lat": 45.7456949,
+  "lon": 21.2377766,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 2218076392,
+  "lat": 45.7459671,
+  "lon": 21.2373902,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 2218133927,
+  "lat": 45.7406472,
+  "lon": 21.2266147,
+  "tags": {
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 2330612747,
+  "lat": 45.7411072,
+  "lon": 21.2250428,
+  "tags": {
+    "name": "Randevu Two",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 2330616744,
+  "lat": 45.7410697,
+  "lon": 21.2251354,
+  "tags": {
+    "name": "Bimark International 2",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 2525599099,
+  "lat": 45.7412989,
+  "lon": 21.2373235,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "91",
+    "addr:postcode": "300580",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Cozia",
+    "amenity": "restaurant",
+    "beds": "57",
+    "name": "Hotel Reghina",
+    "stars": "3",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2525599101,
+  "lat": 45.7409584,
+  "lon": 21.2381704,
+  "tags": {
+    "_tip_": "H",
+    "beds": "28",
+    "name": "TRISTAR",
+    "note": "Add me to the right place",
+    "stars": "3",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2525606847,
+  "lat": 45.7503391,
+  "lon": 21.2457809,
+  "tags": {
+    "beds": "36",
+    "name": "Hotel Veronica",
+    "stars": "3",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2525606859,
+  "lat": 45.7511933,
+  "lon": 21.2451790,
+  "tags": {
+    "amenity": "restaurant",
+    "beds": "36",
+    "name": "Valentina",
+    "stars": "3",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 3100433059,
+  "lat": 45.7451686,
+  "lon": 21.2420915,
+  "tags": {
+    "amenity": "pharmacy",
+    "brand": "Farmacia Dona",
+    "brand:wikidata": "Q12726919",
+    "dispensing": "yes",
+    "drive_through": "no",
+    "healthcare": "pharmacy",
+    "name": "Farmacia Dona",
+    "opening_hours": "Mo-Fr 07:00-22:00; Sa 08:00-22:00; Su 08:00-16:00",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 3100433060,
+  "lat": 45.7450626,
+  "lon": 21.2418315,
+  "tags": {
+    "name": "Elisabeth",
+    "opening_hours": "Mo-Sa 07:00-23:00, Su 08:30-23:00",
+    "shop": "convenience",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 3148962105,
+  "lat": 45.7503438,
+  "lon": 21.2441760,
+  "tags": {
+    "designation": "****",
+    "name": "MC's 1 accommodation",
+    "source": "www.mc-s.ro",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3252631263,
+  "lat": 45.7395902,
+  "lon": 21.2395662,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:postcode": "300736",
+    "addr:street": "Strada Arieș",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "ING",
+    "brand:wikidata": "Q645708",
+    "brand:wikipedia": "en:ING Group",
+    "name": "ING",
+    "opening_hours": "Mo-Fr 09:00-18:00",
+    "operator": "ING"
+  }
+},
+{
+  "type": "node",
+  "id": 3252631307,
+  "lat": 45.7394865,
+  "lon": 21.2396512,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:postcode": "300736",
+    "addr:street": "Strada Arieș",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "Banca Transilvania",
+    "brand:wikidata": "Q806161",
+    "brand:wikipedia": "en:Banca Transilvania",
+    "name": "Banca Transilvania"
+  }
+},
+{
+  "type": "node",
+  "id": 3252639622,
+  "lat": 45.7391849,
+  "lon": 21.2398818,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:postcode": "300736",
+    "addr:street": "Strada Arieș",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "Raiffeisen Bank",
+    "brand:wikidata": "Q7283806",
+    "brand:wikipedia": "cs:Raiffeisenbank",
+    "name": "Raiffeisen Bank",
+    "opening_hours": "Mo-Fr 09:00-17:30",
+    "operator": "Raiffeisen Bank"
+  }
+},
+{
+  "type": "node",
+  "id": 3252642292,
+  "lat": 45.7397840,
+  "lon": 21.2394294,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:postcode": "300736",
+    "addr:street": "Strada Arieș",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "Alpha Bank",
+    "brand:wikidata": "Q747394",
+    "brand:wikipedia": "en:Alpha Bank",
+    "name": "Alpha Bank",
+    "opening_hours": "Mo-Fr 09:00-17:00",
+    "operator": "Alpha Bank"
+  }
+},
+{
+  "type": "node",
+  "id": 3514853404,
+  "lat": 45.7494385,
+  "lon": 21.2201012,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "burger",
+    "drive_through": "no",
+    "name": "Agil",
+    "operator": "Agil",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3514853682,
+  "lat": 45.7502977,
+  "lon": 21.2255930,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Bulevardul Regele Ferdinand I",
+    "amenity": "fast_food",
+    "check_date": "2025-07-05",
+    "cuisine": "shawarma;grill;kebab",
+    "delivery": "yes",
+    "drive_through": "no",
+    "name": "Pan Rusovan",
+    "opening_hours": "24/7",
+    "operator": "Pan Rusovan",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3780602957,
+  "lat": 45.7467170,
+  "lon": 21.2159749,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:postcode": "300173",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Piața Alexandru Mocioni",
+    "amenity": "cafe",
+    "check_date": "2024-10-30",
+    "internet_access": "wlan",
+    "name": "COPA Caffe",
+    "opening_hours": "Mo-Sa 08:00-23:00; Su 10:00-23:00",
+    "smoking": "yes",
+    "website": "https://www.facebook.com/CopaCaffe"
+  }
+},
+{
+  "type": "node",
+  "id": 3781973807,
+  "lat": 45.7480264,
+  "lon": 21.2197640,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "6",
+    "addr:postcode": "300000",
+    "addr:street": "Strada General Henri Berthelot",
+    "amenity": "bar",
+    "name": "Viniloteca",
+    "note": "Viniloteca sells used vinyl records, but is also a fine café during the day and carries a fine selection of craft beer in bottles by night.",
+    "opening_hours": "Mo-Fr 10:00-22:00; Sa 12:00-22:00; Su 16:00-21:00",
+    "shop": "music",
+    "smoking": "no",
+    "website": "http://viniloteca.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 3926641957,
+  "lat": 45.7487223,
+  "lon": 21.2188083,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:postcode": "300173",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Bulevardul 16 Decembrie 1989",
+    "contact:email": "timisoara@mcmusic.ro",
+    "contact:phone": "0256 499 456; 0724 586 967",
+    "contact:website": "http://www.mcmusic.ro",
+    "name": "M&C Musical Instruments",
+    "opening_hours": "Mo-Fr 10:00-18:00; Sa 10:00-14:00",
+    "shop": "musical_instrument"
+  }
+},
+{
+  "type": "node",
+  "id": 4189653085,
+  "lat": 45.7414225,
+  "lon": 21.2381093,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2A",
+    "addr:postcode": "300724",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Calea Martirilor 1989",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "CEC Bank",
+    "brand:wikidata": "Q1023306",
+    "brand:wikipedia": "en:CEC Bank",
+    "drive_through": "no",
+    "name": "CEC Bank",
+    "opening_hours": "L - V: 09:00 - 16:30",
+    "operator": "CEC",
+    "website": "https://www.cec.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 4189684195,
+  "lat": 45.7410714,
+  "lon": 21.2255651,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "5",
+    "addr:postcode": "300236",
+    "addr:street": "Piața Nicolae Bălcescu",
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "UniCredit Bank",
+    "brand:wikidata": "Q45568",
+    "brand:wikipedia": "en:UniCredit",
+    "drive_through": "no",
+    "name": "UniCredit Bank",
+    "opening_hours": "L - V: 09:00 - 17:00; ATM: 24/7",
+    "operator": "UniCredit",
+    "website": "https://www.unicredit.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 4214506110,
+  "lat": 45.7500553,
+  "lon": 21.2391588,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Strada Aurelianus",
+    "amenity": "fast_food",
+    "check_date": "2025-08-15",
+    "cuisine": "balkan;donut;lebanese;local;shawarma;kebab",
+    "name": "Shaorma 100%",
+    "opening_hours": "24/7"
+  }
+},
+{
+  "type": "node",
+  "id": 4242634607,
+  "lat": 45.7459918,
+  "lon": 21.2402965,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "22",
+    "addr:postcode": "300575",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "brand": "Carrefour Market",
+    "brand:wikidata": "Q2689639",
+    "name": "Carrefour Market",
+    "opening_hours": "Mo-Sa 07:00-23:00; Su 08:00-22:00",
+    "operator": "Carrefour",
+    "phone": "+40 374 778 603",
+    "shop": "supermarket",
+    "website": "https://www.carrefour.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 4258608919,
+  "lat": 45.7364867,
+  "lon": 21.2449996,
+  "tags": {
+    "amenity": "atm",
+    "brand": "BRD",
+    "brand:wikidata": "Q796927",
+    "drive_through": "no",
+    "name": "BRD",
+    "operator": "BRD",
+    "operator:wikidata": "Q796927"
+  }
+},
+{
+  "type": "node",
+  "id": 4275977288,
+  "lat": 45.7510986,
+  "lon": 21.2421821,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "3",
+    "addr:postcode": "300558",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Daliei",
+    "name": "Prospero",
+    "operator": "Prospero",
+    "shop": "bakery",
+    "website": "https://www.prospero.tm.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 4276535195,
+  "lat": 45.7491914,
+  "lon": 21.2430789,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:street": "Strada Daliei",
+    "amenity": "pharmacy",
+    "dispensing": "yes",
+    "drive_through": "no",
+    "healthcare": "pharmacy",
+    "name": "Arcatim"
+  }
+},
+{
+  "type": "node",
+  "id": 4284075595,
+  "lat": 45.7509111,
+  "lon": 21.2390333,
+  "tags": {
+    "addr:housenumber": "16",
+    "addr:street": "Bulevardul Corneliu Coposu",
+    "amenity": "casino",
+    "email": "office@massivestudio.ro",
+    "internet_access": "wlan",
+    "name": "MassiveStudio",
+    "name:en": "MassiveStudio",
+    "name:ro": "MassiveStudio",
+    "opening_hours": "Mo-Sa 09:00-20:00",
+    "phone": "+40722373309",
+    "website": "https://massivestudio.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601186,
+  "lat": 45.7472640,
+  "lon": 21.2267099,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Automatică și Calculatoare"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601187,
+  "lat": 45.7472646,
+  "lon": 21.2268468,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Electronică și Telecomunicații"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601188,
+  "lat": 45.7471755,
+  "lon": 21.2278309,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Electrotehnică și Electroenergetică"
+  }
+},
+{
+  "type": "node",
+  "id": 4308197290,
+  "lat": 45.7450011,
+  "lon": 21.2418476,
+  "tags": {
+    "addr:street": "Aleea F.C. Ripensia",
+    "name": "Dera",
+    "opening_hours": "Mo-Sa 09:00-23:00",
+    "shop": "convenience",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 4320939893,
+  "lat": 45.7393074,
+  "lon": 21.2397792,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:street": "Strada Arieș",
+    "amenity": "bank",
+    "brand": "Garanti Bankası",
+    "brand:wikidata": "Q322962",
+    "name": "Garanti Bankası"
+  }
+},
+{
+  "type": "node",
+  "id": 4324792689,
+  "lat": 45.7446645,
+  "lon": 21.2408375,
+  "tags": {
+    "addr:street": "Strada 1 Decembrie 1918",
+    "amenity": "bar",
+    "internet_access": "wlan",
+    "name": "PAGO",
+    "opening_hours": "Mo-Su 08:00-23:30"
+  }
+},
+{
+  "type": "node",
+  "id": 4466418891,
+  "lat": 45.7509716,
+  "lon": 21.2447850,
+  "tags": {
+    "addr:housenumber": "5",
+    "addr:postcode": "300558",
+    "addr:street": "Strada Mehadia",
+    "amenity": "restaurant",
+    "beds": "58",
+    "name": "Eurohotel",
+    "name:ro": "Eurohotel",
+    "stars": "3",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4491011394,
+  "lat": 45.7409616,
+  "lon": 21.2400469,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "19",
+    "addr:street": "Strada Arieș",
+    "amenity": "pub",
+    "name": "The 80's Pub",
+    "name:ro": "The 80's Pub"
+  }
+},
+{
+  "type": "node",
+  "id": 4496768115,
+  "lat": 45.7517051,
+  "lon": 21.2251650,
+  "tags": {
+    "check_date:opening_hours": "2025-09-19",
+    "name": "Amely",
+    "opening_hours": "Mo-Sa 09:00-21:00; Su 11:00-20:00",
+    "shop": "shoes"
+  }
+},
+{
+  "type": "node",
+  "id": 4496768116,
+  "lat": 45.7517629,
+  "lon": 21.2243367,
+  "tags": {
+    "check_date": "2024-10-28",
+    "name": "Marelbo",
+    "opening_hours": "Mo-Fr 09:00-21:00; Sa 10:00-19:00",
+    "shop": "shoes"
+  }
+},
+{
+  "type": "node",
+  "id": 4496768117,
+  "lat": 45.7519029,
+  "lon": 21.2252595,
+  "tags": {
+    "amenity": "pharmacy",
+    "brand": "Dr. Max",
+    "brand:wikidata": "Q56317371",
+    "brand:wikipedia": "ro:Sensiblu",
+    "dispensing": "yes",
+    "drive_through": "no",
+    "healthcare": "pharmacy",
+    "name": "Dr. Max",
+    "opening_hours": "Mo-Fr 09:00-21:00; Sa 10:00-21:00; Su 10:00-20:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4496772402,
+  "lat": 45.7514328,
+  "lon": 21.2251504,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7",
+    "addr:postcode": "300021",
+    "addr:street": "Piața Victoriei",
+    "name": "Delicii de Patiserie",
+    "opening_hours": "Mo-Fr 07:30-22:00; Sa 11:00-22:00; Su 09:30-22:00",
+    "shop": "bakery",
+    "source": "survey"
+  }
+},
+{
+  "type": "node",
+  "id": 4504378168,
+  "lat": 45.7462499,
+  "lon": 21.2408434,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "AGIL",
+    "opening_hours": "Mo-Fr 07:00-21:00; Sa 07:00-17:00; Su 08:00-14:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4551274481,
+  "lat": 45.7472858,
+  "lon": 21.2288779,
+  "tags": {
+    "amenity": "cafe",
+    "name": "BiblioTech Cafe",
+    "smoking": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 4595999329,
+  "lat": 45.7419210,
+  "lon": 21.2252232,
+  "tags": {
+    "amenity": "bank",
+    "atm": "yes",
+    "brand": "Banca Transilvania",
+    "brand:en": "Transilvania Bank",
+    "brand:ro": "Banca Transilvania",
+    "brand:wikidata": "Q806161",
+    "brand:wikipedia": "en:Banca Transilvania",
+    "name": "Banca Transilvania",
+    "name:en": "Transilvania Bank",
+    "name:ro": "Banca Transilvania"
+  }
+},
+{
+  "type": "node",
+  "id": 4704904575,
+  "lat": 45.7424089,
+  "lon": 21.2404851,
+  "tags": {
+    "name": "Rovere Mobili",
+    "shop": "furniture"
+  }
+},
+{
+  "type": "node",
+  "id": 4734478337,
+  "lat": 45.7488254,
+  "lon": 21.2394972,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "check_date": "2025-04-09",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 730 770 199;+40 730 770 228",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi",
+    "opening_hours": "24/7",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "node",
+  "id": 4786475921,
+  "lat": 45.7380072,
+  "lon": 21.2223322,
+  "tags": {
+    "email": "bicicleteme@yahoo.com",
+    "name": "Bicicle TeMe",
+    "name:en": "Bicicle TeMe",
+    "opening_hours": "Mo-Fr 11:00-19:00",
+    "phone": "0758908718",
+    "shop": "bicycle",
+    "website": "http://bicicleteme.ro"
+  }
+},
+{
+  "type": "node",
+  "id": 4848093811,
+  "lat": 45.7484800,
+  "lon": 21.2182996,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:street": "Bulevardul 16 Decembrie 1989",
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 799 108 364;+40 799 108 365",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi",
+    "opening_hours": "Mo-Su 07:00-23:00",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "node",
+  "id": 4915630921,
+  "lat": 45.7448020,
+  "lon": 21.2254342,
+  "tags": {
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "amenity": "fast_food",
+    "name": "Brunch",
+    "opening_hours": "Mo-Fr 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4953009584,
+  "lat": 45.7516251,
+  "lon": 21.2241050,
+  "tags": {
+    "brand": "Telekom",
+    "brand:wikidata": "Q9396",
+    "brand:wikipedia": "en:Deutsche Telekom",
+    "name": "Telekom",
+    "opening_hours": "Mo-Fr 09:00-17:00; Sa 09:00-13:00",
+    "shop": "mobile_phone"
+  }
+},
+{
+  "type": "node",
+  "id": 4953009585,
+  "lat": 45.7517112,
+  "lon": 21.2242552,
+  "tags": {
+    "name": "Targul Cartii",
+    "opening_hours": "Mo-Fr 09:00-21:00; Sa 10:00-21:00; Su 10:00-20:00",
+    "shop": "books"
+  }
+},
+{
+  "type": "node",
+  "id": 5073223163,
+  "lat": 45.7463643,
+  "lon": 21.2366522,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "3",
+    "addr:street": "Strada Mihail Jora",
+    "amenity": "cafe",
+    "facebook": "https://www.facebook.com/lapisicitm/",
+    "name": "La Pisici",
+    "theme": "cat"
+  }
+},
+{
+  "type": "node",
+  "id": 5073242240,
+  "lat": 45.7458000,
+  "lon": 21.2152719,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 726 787 803;+40 737 007 903",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi Super",
+    "opening_hours": "Mo-Su 07:00-22:00",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 5184053741,
+  "lat": 45.7488803,
+  "lon": 21.2173675,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Kafka",
+    "website": "https://www.facebook.com/kafkatimisoara/"
+  }
+},
+{
+  "type": "node",
+  "id": 5184053742,
+  "lat": 45.7466755,
+  "lon": 21.2158306,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:street": "Piața Alexandru Mocioni",
+    "contact:phone": "+40  356 113 225",
+    "name": "Iosefin Residence",
+    "tourism": "hotel",
+    "website": "https://iosefinresidence.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 5184053745,
+  "lat": 45.7458014,
+  "lon": 21.2143715,
+  "tags": {
+    "amenity": "theatre",
+    "check_date": "2024-10-30",
+    "name": "Teatrul Merlin",
+    "website": "https://www.teatrul-merlin.ro/",
+    "wikidata": "Q133800063",
+    "wikipedia": "en:Merlin Children's and Youth Theatre"
+  }
+},
+{
+  "type": "node",
+  "id": 5184109412,
+  "lat": 45.7420030,
+  "lon": 21.2235503,
+  "tags": {
+    "amenity": "atm",
+    "brand": "ING",
+    "brand:wikidata": "Q645708",
+    "name": "ING",
+    "operator": "ING",
+    "operator:wikidata": "Q645708"
+  }
+},
+{
+  "type": "node",
+  "id": 5184114776,
+  "lat": 45.7420184,
+  "lon": 21.2254687,
+  "tags": {
+    "name": "Violette",
+    "opening_hours": "Mo-Sa 09:00-17:00",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 5184115353,
+  "lat": 45.7416619,
+  "lon": 21.2249582,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Piața Nicolae Bălcescu",
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "check_date": "2026-03-20",
+    "check_date:opening_hours": "2026-03-20",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 732 672 462;+40 732 672 483",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi",
+    "opening_hours": "Mo-Sa 06:00-23:00; Su 07:00-23:00",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "node",
+  "id": 5184115354,
+  "lat": 45.7415652,
+  "lon": 21.2249679,
+  "tags": {
+    "addr:housenumber": "7-8",
+    "addr:street": "Strada Ciprian Porumbescu",
+    "amenity": "pharmacy",
+    "brand": "Farmacia Dona",
+    "brand:wikidata": "Q12726919",
+    "check_date": "2026-03-20",
+    "check_date:opening_hours": "2026-03-20",
+    "healthcare": "pharmacy",
+    "name": "Farmacia Dona",
+    "opening_hours": "Mo-Fr 07:00-21:30; Sa 08:00-18:00; Su 08:00-16:00"
+  }
+},
+{
+  "type": "node",
+  "id": 5184115356,
+  "lat": 45.7414192,
+  "lon": 21.2248204,
+  "tags": {
+    "name": "Cofetăria Verona",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 5185441092,
+  "lat": 45.7372836,
+  "lon": 21.2345669,
+  "tags": {
+    "name": "MotorPlus",
+    "shop": "car_parts"
+  }
+},
+{
+  "type": "node",
+  "id": 5198534276,
+  "lat": 45.7395926,
+  "lon": 21.2208279,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "29 A",
+    "addr:postcode": "300239",
+    "addr:street": "Strada Ciprian Porumbescu",
+    "name": "Pensiunea Dinu Residence",
+    "stars": "3",
+    "tourism": "hotel",
+    "website": "http://www.dinu-residence.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 5224538284,
+  "lat": 45.7512859,
+  "lon": 21.2251908,
+  "tags": {
+    "name": "Fresca",
+    "opening_hours": "Mo-Fr 08:30-21:00; Sa 10:00-21:00; Su 10:30-21:00",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 5224538285,
+  "lat": 45.7513277,
+  "lon": 21.2251706,
+  "tags": {
+    "amenity": "cinema",
+    "check_date:opening_hours": "2025-10-20",
+    "name": "Cinema Timiș",
+    "opening_hours:signed": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 5224538286,
+  "lat": 45.7512452,
+  "lon": 21.2252515,
+  "tags": {
+    "brand": "Luca",
+    "brand:wikidata": "Q114647790",
+    "name": "Luca",
+    "opening_hours": "Mo-Fr 06:00-20:00; Sa,Su 08:30-20:30",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 5224538287,
+  "lat": 45.7516591,
+  "lon": 21.2241716,
+  "tags": {
+    "name": "Victoria Flowers",
+    "opening_hours": "Mo-Fr 08:00-20:00; Sa,Su 10:00-20:00",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 5224538288,
+  "lat": 45.7516892,
+  "lon": 21.2242299,
+  "tags": {
+    "branch": "Arsis",
+    "brand": "Vodafone",
+    "brand:wikidata": "Q122141",
+    "name": "Vodafone",
+    "opening_hours": "Mo-Fr 09:00-19:00; Sa 09:00-14:00",
+    "shop": "mobile_phone"
+  }
+},
+{
+  "type": "node",
+  "id": 5227210114,
+  "lat": 45.7365228,
+  "lon": 21.2448177,
+  "tags": {
+    "amenity": "atm",
+    "brand": "BCR",
+    "brand:wikidata": "Q806149",
+    "drive_through": "no",
+    "name": "BCR",
+    "operator": "BCR",
+    "operator:wikidata": "Q806149"
+  }
+},
+{
+  "type": "node",
+  "id": 5238387842,
+  "lat": 45.7473464,
+  "lon": 21.2322020,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 5275454668,
+  "lat": 45.7479317,
+  "lon": 21.2387234,
+  "tags": {
+    "amenity": "atm",
+    "brand": "Raiffeisen Bank",
+    "brand:wikidata": "Q7283806",
+    "operator": "Raiffeisen Bank",
+    "operator:wikidata": "Q7283806"
+  }
+},
+{
+  "type": "node",
+  "id": 5389583825,
+  "lat": 45.7496734,
+  "lon": 21.2410020,
+  "tags": {
+    "addr:housenumber": "5",
+    "addr:postcode": "300001",
+    "addr:street": "Aleea Studenților",
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "Napoleon",
+    "opening_hours": "Mo-Su 10:00-00:00"
+  }
+},
+{
+  "type": "node",
+  "id": 5465066137,
+  "lat": 45.7458523,
+  "lon": 21.2335652,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:street": "Strada Ion Vidu",
+    "amenity": "cafe",
+    "name": "Coffee Hub"
+  }
+},
+{
+  "type": "node",
+  "id": 5598620399,
+  "lat": 45.7511672,
+  "lon": 21.2257485,
+  "tags": {
+    "male": "yes",
+    "name": "Barbiere",
+    "opening_hours": "Mo-Fr 09:30-19:00; Sa 11:00-19:00",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 5598620400,
+  "lat": 45.7512069,
+  "lon": 21.2254693,
+  "tags": {
+    "hairdresser": "barber",
+    "name": "Kelly Image",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 5643648243,
+  "lat": 45.7492778,
+  "lon": 21.2402501,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Strada Aurelianus",
+    "amenity": "fast_food",
+    "brand": "Subway",
+    "brand:wikidata": "Q244457",
+    "brand:wikipedia": "en:Subway (restaurant)",
+    "cuisine": "sandwich",
+    "name": "Subway",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5940470593,
+  "lat": 45.7441091,
+  "lon": 21.2359605,
+  "tags": {
+    "addr:housenumber": "18",
+    "addr:street": "Strada Argeș",
+    "amenity": "restaurant",
+    "name": "La Pizza Napoletana"
+  }
+},
+{
+  "type": "node",
+  "id": 6034587189,
+  "lat": 45.7436450,
+  "lon": 21.2230053,
+  "tags": {
+    "addr:housenumber": "40",
+    "addr:street": "Strada Gheorghe Doja",
+    "amenity": "restaurant",
+    "check_date": "2024-10-30",
+    "name": "Homemade",
+    "opening_hours": "Mo-Su 12:00-23:00",
+    "phone": "+40 730 832 299"
+  }
+},
+{
+  "type": "node",
+  "id": 6051381536,
+  "lat": 45.7370573,
+  "lon": 21.2167040,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 799 708 091;+40 799 708 127",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi Go",
+    "opening_hours": "Mo-Su 07:00-23:00",
+    "operator": "Profi Rom Food",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 6051516303,
+  "lat": 45.7471544,
+  "lon": 21.2315903,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "4",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "fast_food",
+    "name": "InTime"
+  }
+},
+{
+  "type": "node",
+  "id": 6052398679,
+  "lat": 45.7406721,
+  "lon": 21.2225941,
+  "tags": {
+    "name": "Backstage",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 6134959929,
+  "lat": 45.7487701,
+  "lon": 21.2270696,
+  "tags": {
+    "amenity": "pub",
+    "name": "Berărescu"
+  }
+},
+{
+  "type": "node",
+  "id": 6425126537,
+  "lat": 45.7419123,
+  "lon": 21.2248745,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "58",
+    "addr:street": "Strada Gheorghe Doja",
+    "check_date": "2024-10-28",
+    "name": "STPT",
+    "opening_hours": "Mo-Fr 06:00-21:30",
+    "shop": "ticket"
+  }
+},
+{
+  "type": "node",
+  "id": 6425151291,
+  "lat": 45.7438206,
+  "lon": 21.2370796,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Strada Cluj",
+    "name": "STPT",
+    "opening_hours": "Mo-Fr 07:00-15:00",
+    "shop": "ticket"
+  }
+},
+{
+  "type": "node",
+  "id": 6427465114,
+  "lat": 45.7469612,
+  "lon": 21.2364858,
+  "tags": {
+    "name": "Akoma Center",
+    "opening_hours": "08:00-24:00",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 6434141049,
+  "lat": 45.7477776,
+  "lon": 21.2197188,
+  "tags": {
+    "amenity": "cafe",
+    "indoor_seating": "yes",
+    "name": "VIM",
+    "opening_hours": "Mo-Fr 10:00-16:00; Sa 11:00-15:00",
+    "outdoor_seating": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 6456320984,
+  "lat": 45.7499888,
+  "lon": 21.2175403,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "16A",
+    "addr:street": "Splaiul Tudor Vladimirescu",
+    "amenity": "bar",
+    "name": "Docks",
+    "outdoor_seating": "yes",
+    "phone": "+40770191893"
+  }
+},
+{
+  "type": "node",
+  "id": 6478977725,
+  "lat": 45.7397356,
+  "lon": 21.2249155,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "14",
+    "addr:postcode": "300207",
+    "addr:street": "Strada Independenței",
+    "check_date": "2024-10-28",
+    "internet_access": "wlan",
+    "name": "Vila La Residenza",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 6529879754,
+  "lat": 45.7417631,
+  "lon": 21.2249420,
+  "tags": {
+    "name": "Arrow",
+    "shop": "fishing"
+  }
+},
+{
+  "type": "node",
+  "id": 6584692941,
+  "lat": 45.7496602,
+  "lon": 21.2409154,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Versus",
+    "opening_hours": "10:00-24:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6584692942,
+  "lat": 45.7496892,
+  "lon": 21.2407009,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "HașDe"
+  }
+},
+{
+  "type": "node",
+  "id": 6649816427,
+  "lat": 45.7495374,
+  "lon": 21.2144388,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7",
+    "addr:street": "Splaiul Nicolae Titulescu",
+    "amenity": "cafe",
+    "name": "Narativ Specialty Coffee"
+  }
+},
+{
+  "type": "node",
+  "id": 6687818110,
+  "lat": 45.7461947,
+  "lon": 21.2153886,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6784331454,
+  "lat": 45.7463508,
+  "lon": 21.2186249,
+  "tags": {
+    "addr:housenumber": "9",
+    "addr:street": "Strada Treboniu Laurean",
+    "name": "Agecco",
+    "opening_hours": "Mo-Fr 10:00-18:00; Sa 10:00-14:00",
+    "phone": "+40723546769",
+    "shop": "computer",
+    "website": "http://www.agecco.ro"
+  }
+},
+{
+  "type": "node",
+  "id": 6788495903,
+  "lat": 45.7476006,
+  "lon": 21.2206001,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "5",
+    "addr:street": "Piața Plevnei",
+    "contact:phone": "+40 356 431 653",
+    "name": "Alina Beauty Salon",
+    "shop": "beauty"
+  }
+},
+{
+  "type": "node",
+  "id": 6788790087,
+  "lat": 45.7481861,
+  "lon": 21.2193302,
+  "tags": {
+    "addr:housenumber": "1",
+    "addr:street": "Strada Gheorghe Doja",
+    "name": "Euromoda SRL",
+    "opening_hours": "Mo-Fr 09:00-18:00; Sa 10:00-14:00",
+    "shop": "tailor"
+  }
+},
+{
+  "type": "node",
+  "id": 6799029910,
+  "lat": 45.7470327,
+  "lon": 21.2251378,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "contact:email": "comenzi@dataprint.ro",
+    "contact:phone": "+40 752 119 494",
+    "name": "Dataprint International",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 6801242755,
+  "lat": 45.7468648,
+  "lon": 21.2165241,
+  "tags": {
+    "name": "Timlibris",
+    "opening_hours": "Mo-Fr 09:00-17:00; Sa 09:00-13:00",
+    "shop": "books"
+  }
+},
+{
+  "type": "node",
+  "id": 6801646120,
+  "lat": 45.7468200,
+  "lon": 21.2164088,
+  "tags": {
+    "amenity": "atm",
+    "brand": "Euronet",
+    "brand:wikidata": "Q5412010",
+    "network": "Euronet",
+    "operator": "Euronet",
+    "operator:wikidata": "Q5412010"
+  }
+},
+{
+  "type": "node",
+  "id": 6934864243,
+  "lat": 45.7495157,
+  "lon": 21.2377661,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:postcode": "300551",
+    "addr:street": "Strada Socrate",
+    "amenity": "bank",
+    "brand": "BRD",
+    "brand:wikidata": "Q796927",
+    "brand:wikipedia": "ro:BRD - Groupe Société Générale",
+    "name": "BRD"
+  }
+},
+{
+  "type": "node",
+  "id": 6959488562,
+  "lat": 45.7468872,
+  "lon": 21.2200316,
+  "tags": {
+    "amenity": "pub",
+    "name": "Mayerhoff Brauerei",
+    "opening_hours": "15:00-22:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6959616660,
+  "lat": 45.7381978,
+  "lon": 21.2379823,
+  "tags": {
+    "amenity": "pharmacy",
+    "dispensing": "yes",
+    "healthcare": "pharmacy",
+    "name": "Karim Pharm"
+  }
+},
+{
+  "type": "node",
+  "id": 6959616667,
+  "lat": 45.7380927,
+  "lon": 21.2380026,
+  "tags": {
+    "name": "Nisi",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 6959616668,
+  "lat": 45.7380243,
+  "lon": 21.2380058,
+  "tags": {
+    "name": "Osman Market",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 6959616674,
+  "lat": 45.7382854,
+  "lon": 21.2377731,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 6959616675,
+  "lat": 45.7381414,
+  "lon": 21.2384545,
+  "tags": {
+    "name": "Florăria Crina",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 6959655686,
+  "lat": 45.7377099,
+  "lon": 21.2379395,
+  "tags": {
+    "name": "Articole de pescuit",
+    "shop": "fishing"
+  }
+},
+{
+  "type": "node",
+  "id": 6959655688,
+  "lat": 45.7371708,
+  "lon": 21.2376618,
+  "tags": {
+    "shop": "pet"
+  }
+},
+{
+  "type": "node",
+  "id": 7021617472,
+  "lat": 45.7408460,
+  "lon": 21.2255147,
+  "tags": {
+    "amenity": "pharmacy",
+    "brand": "Help Net",
+    "brand:wikidata": "Q12729923",
+    "check_date": "2024-10-28",
+    "dispensing": "yes",
+    "healthcare": "pharmacy",
+    "name": "Help Net"
+  }
+},
+{
+  "type": "node",
+  "id": 7049253146,
+  "lat": 45.7405161,
+  "lon": 21.2318055,
+  "tags": {
+    "name": "Elma",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 7057841210,
+  "lat": 45.7473212,
+  "lon": 21.2316517,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Escape"
+  }
+},
+{
+  "type": "node",
+  "id": 7090597583,
+  "lat": 45.7501352,
+  "lon": 21.2388557,
+  "tags": {
+    "addr:housenumber": "4",
+    "addr:street": "Strada Aurelianus",
+    "amenity": "fast_food",
+    "cuisine": "burger",
+    "name": "Burger 100%",
+    "opening_hours": "24/7"
+  }
+},
+{
+  "type": "node",
+  "id": 7090597584,
+  "lat": 45.7499625,
+  "lon": 21.2385218,
+  "tags": {
+    "amenity": "bar",
+    "name": "MGM"
+  }
+},
+{
+  "type": "node",
+  "id": 7090625151,
+  "lat": 45.7450849,
+  "lon": 21.2275048,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1B",
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "amenity": "nightclub",
+    "name": "Park Place"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633116,
+  "lat": 45.7503361,
+  "lon": 21.2423765,
+  "tags": {
+    "amenity": "casino",
+    "name": "Reno"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633985,
+  "lat": 45.7503503,
+  "lon": 21.2388102,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Ferrari Caffe"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633986,
+  "lat": 45.7502598,
+  "lon": 21.2387072,
+  "tags": {
+    "name": "Copy Shop",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633987,
+  "lat": 45.7510188,
+  "lon": 21.2412183,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Caffe Tabaco"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633988,
+  "lat": 45.7512843,
+  "lon": 21.2421365,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Dali"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633991,
+  "lat": 45.7496713,
+  "lon": 21.2436363,
+  "tags": {
+    "name": "easywash",
+    "self_service": "yes",
+    "shop": "laundry"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633992,
+  "lat": 45.7492712,
+  "lon": 21.2434718,
+  "tags": {
+    "amenity": "bar",
+    "name": "Leone"
+  }
+},
+{
+  "type": "node",
+  "id": 7090633993,
+  "lat": 45.7497688,
+  "lon": 21.2431037,
+  "tags": {
+    "amenity": "bar"
+  }
+},
+{
+  "type": "node",
+  "id": 7101186978,
+  "lat": 45.7490043,
+  "lon": 21.2396910,
+  "tags": {
+    "amenity": "bar",
+    "name": "Student's Pub"
+  }
+},
+{
+  "type": "node",
+  "id": 7101186979,
+  "lat": 45.7490597,
+  "lon": 21.2398089,
+  "tags": {
+    "amenity": "bar",
+    "name": "Paradisul Piraților"
+  }
+},
+{
+  "type": "node",
+  "id": 7125738878,
+  "lat": 45.7412336,
+  "lon": 21.2252407,
+  "tags": {
+    "name": "Agil",
+    "shop": "butcher"
+  }
+},
+{
+  "type": "node",
+  "id": 7127823576,
+  "lat": 45.7410271,
+  "lon": 21.2247980,
+  "tags": {
+    "name": "Foto Bilec",
+    "shop": "photo"
+  }
+},
+{
+  "type": "node",
+  "id": 7127840502,
+  "lat": 45.7406247,
+  "lon": 21.2271656,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 7128554238,
+  "lat": 45.7491851,
+  "lon": 21.2405105,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "name": "La Falafel"
+  }
+},
+{
+  "type": "node",
+  "id": 7140039448,
+  "lat": 45.7426081,
+  "lon": 21.2280480,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Restaurant Perla",
+    "website": "https://hotelperla.ro/english/restaurant-perla/"
+  }
+},
+{
+  "type": "node",
+  "id": 7160001396,
+  "lat": 45.7433546,
+  "lon": 21.2375918,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "3",
+    "addr:street": "Strada Arieș",
+    "female": "yes",
+    "name": "Urban Beauty Care",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 7214053713,
+  "lat": 45.7464422,
+  "lon": 21.2151698,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Strada Emanoil Gojdu",
+    "amenity": "pharmacy",
+    "brand": "Dr. Max",
+    "brand:wikidata": "Q56317371",
+    "dispensing": "yes",
+    "healthcare": "pharmacy",
+    "name": "Dr. Max"
+  }
+},
+{
+  "type": "node",
+  "id": 7214053716,
+  "lat": 45.7435121,
+  "lon": 21.2430461,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "29",
+    "addr:street": "Aleea F.C. Ripensia",
+    "amenity": "pharmacy",
+    "brand": "Dr. Max",
+    "brand:wikidata": "Q56317371",
+    "dispensing": "yes",
+    "healthcare": "pharmacy",
+    "name": "Dr. Max",
+    "opening_hours": "Mo-Fr 08:00-21:00; Sa 08:00-18:00; Su 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 7245570124,
+  "lat": 45.7467240,
+  "lon": 21.2251461,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "10",
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "name": "Coquette Beauty Clinique",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 7261500536,
+  "lat": 45.7386097,
+  "lon": 21.2409206,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Calea Martirilor 1989",
+    "name": "STPT",
+    "shop": "ticket"
+  }
+},
+{
+  "type": "node",
+  "id": 7280229764,
+  "lat": 45.7481849,
+  "lon": 21.2434527,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "37a",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "name": "Black & White Coiffure",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 7280243935,
+  "lat": 45.7481511,
+  "lon": 21.2427168,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "pizza",
+    "name": "Pizza Ricci"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444708,
+  "lat": 45.7468271,
+  "lon": 21.2269835,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Electrotehnică și Electroenergetică"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444709,
+  "lat": 45.7450339,
+  "lon": 21.2277892,
+  "tags": {
+    "amenity": "restaurant",
+    "check_date": "2026-03-13",
+    "check_date:opening_hours": "2026-03-13",
+    "level": "-1",
+    "name": "Rustic Fastfood Cantina MV",
+    "opening_hours": "Mo-Fr 11:30-16:00",
+    "self_service": "partially"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444710,
+  "lat": 45.7453787,
+  "lon": 21.2305760,
+  "tags": {
+    "amenity": "university",
+    "name": "Departamentul de Construcții Metalice și Mecanica Construcțiilor"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444711,
+  "lat": 45.7454605,
+  "lon": 21.2311628,
+  "tags": {
+    "amenity": "university",
+    "name": "Departamentul Căi de Comunicație Terestre, Fundații și Cadastru"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444712,
+  "lat": 45.7457808,
+  "lon": 21.2299367,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444713,
+  "lat": 45.7455594,
+  "lon": 21.2299754,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Arhitectură și Urbanism"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444714,
+  "lat": 45.7453160,
+  "lon": 21.2300203,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Științe ale Comunicării"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444715,
+  "lat": 45.7461325,
+  "lon": 21.2315101,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444716,
+  "lat": 45.7458761,
+  "lon": 21.2315837,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Științe ale Comunicării"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444717,
+  "lat": 45.7455870,
+  "lon": 21.2316678,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Automatică și Calculatoare"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444718,
+  "lat": 45.7463062,
+  "lon": 21.2271335,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Mecanică"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444719,
+  "lat": 45.7455161,
+  "lon": 21.2265552,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444720,
+  "lat": 45.7454742,
+  "lon": 21.2274850,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Management și Producție în Transporturi"
+  }
+},
+{
+  "type": "node",
+  "id": 7385774051,
+  "lat": 45.7512235,
+  "lon": 21.2253926,
+  "tags": {
+    "female": "yes",
+    "name": "Kelly Image",
+    "opening_hours": "Mo-Fr 09:00-20:00; Sa 09:00-17:00",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 7385774052,
+  "lat": 45.7511909,
+  "lon": 21.2256164,
+  "tags": {
+    "name": "Kelly Image",
+    "shop": "cosmetics"
+  }
+},
+{
+  "type": "node",
+  "id": 7580460784,
+  "lat": 45.7446964,
+  "lon": 21.2254451,
+  "tags": {
+    "name": "Magazin Mixt",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 7731046634,
+  "lat": 45.7372261,
+  "lon": 21.2378296,
+  "tags": {
+    "second_hand": "only",
+    "shop": "clothes"
+  }
+},
+{
+  "type": "node",
+  "id": 7850200963,
+  "lat": 45.7512603,
+  "lon": 21.2251973,
+  "tags": {
+    "name": "Indra Suvenir",
+    "opening_hours": "Mo-Su 11:00-19:00",
+    "shop": "gift"
+  }
+},
+{
+  "type": "node",
+  "id": 7858774414,
+  "lat": 45.7505420,
+  "lon": 21.2381714,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Strada Aurelianus",
+    "name": "Domestique",
+    "shop": "bicycle"
+  }
+},
+{
+  "type": "node",
+  "id": 7887944753,
+  "lat": 45.7393308,
+  "lon": 21.2325033,
+  "tags": {
+    "name": "La Petre (mos Ventil)",
+    "payment:cash": "yes",
+    "service:bicycle:pump": "yes",
+    "service:bicycle:repair": "yes",
+    "shop": "bicycle"
+  }
+},
+{
+  "type": "node",
+  "id": 7965900886,
+  "lat": 45.7488215,
+  "lon": 21.2393533,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Aleea Studenților",
+    "amenity": "cafe",
+    "check_date:opening_hours": "2025-04-09",
+    "cuisine": "coffee_shop",
+    "name": "Tucano Coffee Thailand",
+    "opening_hours": "Mo-Fr 08:00-22:00; Sa,Su 10:00-22:00"
+  }
+},
+{
+  "type": "node",
+  "id": 8213971426,
+  "lat": 45.7492346,
+  "lon": 21.2406750,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 747 075 304;+40 747 085 451",
+    "contact:website": "https://www.profi.ro",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi Go",
+    "opening_hours": "Mo-Su 07:00-24:00",
+    "operator": "Profi Rom Food",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 8628417698,
+  "lat": 45.7496686,
+  "lon": 21.2431785,
+  "tags": {
+    "brand": "Superbet",
+    "brand:wikidata": "Q61082636",
+    "contact:email": "suport@superbet.ro",
+    "contact:facebook": "https://www.facebook.com/superbet.ro",
+    "contact:instagram": "https://www.instagram.com/superbetromania/",
+    "contact:phone": "+40 786 401 088",
+    "contact:twitter": "https://twitter.com/SuperbetRomania",
+    "contact:website": "https://www.superbet.ro/",
+    "name": "Superbet",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "operator": "Superbet Betting & Gaming SA",
+    "shop": "bookmaker"
+  }
+},
+{
+  "type": "node",
+  "id": 8628418044,
+  "lat": 45.7488240,
+  "lon": 21.2437870,
+  "tags": {
+    "brand": "Superbet",
+    "brand:wikidata": "Q61082636",
+    "contact:email": "suport@superbet.ro",
+    "contact:facebook": "https://www.facebook.com/superbet.ro",
+    "contact:instagram": "https://www.instagram.com/superbetromania/",
+    "contact:phone": "+40 786 401 088",
+    "contact:twitter": "https://twitter.com/SuperbetRomania",
+    "contact:website": "https://www.superbet.ro/",
+    "name": "Superbet",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "operator": "Superbet Betting & Gaming SA",
+    "shop": "bookmaker"
+  }
+},
+{
+  "type": "node",
+  "id": 8628418302,
+  "lat": 45.7377900,
+  "lon": 21.2167427,
+  "tags": {
+    "brand": "Superbet",
+    "brand:wikidata": "Q61082636",
+    "contact:email": "suport@superbet.ro",
+    "contact:facebook": "https://www.facebook.com/superbet.ro",
+    "contact:instagram": "https://www.instagram.com/superbetromania/",
+    "contact:phone": "+40 786 401 088",
+    "contact:twitter": "https://twitter.com/SuperbetRomania",
+    "contact:website": "https://www.superbet.ro/",
+    "name": "Superbet",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "operator": "Superbet Betting & Gaming SA",
+    "shop": "bookmaker"
+  }
+},
+{
+  "type": "node",
+  "id": 8628418339,
+  "lat": 45.7505130,
+  "lon": 21.2395710,
+  "tags": {
+    "brand": "Superbet",
+    "brand:wikidata": "Q61082636",
+    "contact:email": "suport@superbet.ro",
+    "contact:facebook": "https://www.facebook.com/superbet.ro",
+    "contact:instagram": "https://www.instagram.com/superbetromania/",
+    "contact:phone": "+40 786 401 088",
+    "contact:twitter": "https://twitter.com/SuperbetRomania",
+    "contact:website": "https://www.superbet.ro/",
+    "name": "Superbet",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "operator": "Superbet Betting & Gaming SA",
+    "shop": "bookmaker"
+  }
+},
+{
+  "type": "node",
+  "id": 8628418359,
+  "lat": 45.7457698,
+  "lon": 21.2379992,
+  "tags": {
+    "brand": "Superbet",
+    "brand:wikidata": "Q61082636",
+    "contact:email": "suport@superbet.ro",
+    "contact:facebook": "https://www.facebook.com/superbet.ro",
+    "contact:instagram": "https://www.instagram.com/superbetromania/",
+    "contact:phone": "+40 786 401 088",
+    "contact:twitter": "https://twitter.com/SuperbetRomania",
+    "contact:website": "https://www.superbet.ro/",
+    "name": "Superbet",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "operator": "Superbet Betting & Gaming SA",
+    "shop": "bookmaker"
+  }
+},
+{
+  "type": "node",
+  "id": 8727848525,
+  "lat": 45.7506493,
+  "lon": 21.2458688,
+  "tags": {
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 741 226 136;+40 741 266 121",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi",
+    "opening_hours": "Mo-Su 07:00-23:00",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "node",
+  "id": 8831873397,
+  "lat": 45.7498910,
+  "lon": 21.2409612,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "kebab",
+    "name": "La Falafel Original"
+  }
+},
+{
+  "type": "node",
+  "id": 9369790921,
+  "lat": 45.7428199,
+  "lon": 21.2349857,
+  "tags": {
+    "shop": "fishing"
+  }
+},
+{
+  "type": "node",
+  "id": 9691719847,
+  "lat": 45.7499224,
+  "lon": 21.2430675,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "13",
+    "addr:street": "Strada Daliei",
+    "brand": "Mega Image",
+    "brand:wikidata": "Q6808085",
+    "brand:wikipedia": "en:Mega Image",
+    "name": "Mega Image",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "node",
+  "id": 9795096674,
+  "lat": 45.7482349,
+  "lon": 21.2179235,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "10",
+    "addr:street": "Bulevardul 16 Decembrie 1989",
+    "amenity": "cafe",
+    "name": "Común Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 9859717234,
+  "lat": 45.7397038,
+  "lon": 21.2203316,
+  "tags": {
+    "amenity": "cafe",
+    "name": "acas"
+  }
+},
+{
+  "type": "node",
+  "id": 9949669162,
+  "lat": 45.7466709,
+  "lon": 21.2167712,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 9949674455,
+  "lat": 45.7469561,
+  "lon": 21.2166795,
+  "tags": {
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 9986151148,
+  "lat": 45.7511649,
+  "lon": 21.2421109,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:neighbourhood": "Complexul Studentesc",
+    "addr:street": "Strada Daliei",
+    "amenity": "restaurant",
+    "bar": "yes",
+    "cuisine": "turkish",
+    "internet_access": "yes",
+    "name": "La Halit",
+    "opening_hours": "24/7",
+    "outdoor_seating": "yes",
+    "phone": "0723 146 931",
+    "takeaway": "yes",
+    "website": "https://lahalit.ro"
+  }
+},
+{
+  "type": "node",
+  "id": 10115963797,
+  "lat": 45.7463145,
+  "lon": 21.2170404,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Pizza by Milano"
+  }
+},
+{
+  "type": "node",
+  "id": 10115975905,
+  "lat": 45.7478138,
+  "lon": 21.2193967,
+  "tags": {
+    "check_date": "2024-10-30",
+    "name": "Antik",
+    "shop": "antiques"
+  }
+},
+{
+  "type": "node",
+  "id": 10129659975,
+  "lat": 45.7515764,
+  "lon": 21.2239998,
+  "tags": {
+    "amenity": "bank",
+    "brand": "BCR",
+    "brand:wikidata": "Q806149",
+    "check_date": "2025-08-13",
+    "check_date:opening_hours": "2025-08-13",
+    "name": "BCR",
+    "official_name": "Banca Comercială Română",
+    "opening_hours": "Mo-Fr 09:00-13:00,13:30-17:00"
+  }
+},
+{
+  "type": "node",
+  "id": 10615396714,
+  "lat": 45.7447596,
+  "lon": 21.2372314,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Două Boabe"
+  }
+},
+{
+  "type": "node",
+  "id": 10615396715,
+  "lat": 45.7447507,
+  "lon": 21.2371047,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "Bun Burger"
+  }
+},
+{
+  "type": "node",
+  "id": 10812196818,
+  "lat": 45.7482727,
+  "lon": 21.2186383,
+  "tags": {
+    "shop": "second_hand"
+  }
+},
+{
+  "type": "node",
+  "id": 10812196819,
+  "lat": 45.7480902,
+  "lon": 21.2191147,
+  "tags": {
+    "name": "Clubul Pescarilor",
+    "shop": "fishing"
+  }
+},
+{
+  "type": "node",
+  "id": 10929272924,
+  "lat": 45.7388713,
+  "lon": 21.2385934,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "11",
+    "addr:postcode": "300735",
+    "addr:street": "Calea Martirilor 1989",
+    "amenity": "bar",
+    "brewery": "various",
+    "min_age": "18",
+    "name": "Lucky Bar",
+    "opening_hours": "Mo-Su 09:00-23:00"
+  }
+},
+{
+  "type": "node",
+  "id": 11107613453,
+  "lat": 45.7510891,
+  "lon": 21.2388883,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Magic Pizza"
+  }
+},
+{
+  "type": "node",
+  "id": 11136762198,
+  "lat": 45.7379767,
+  "lon": 21.2140337,
+  "tags": {
+    "addr:housenumber": "87",
+    "addr:street": "Ciprian Porumbescu",
+    "name": "Annona Style",
+    "shop": "beauty"
+  }
+},
+{
+  "type": "node",
+  "id": 11136828828,
+  "lat": 45.7379501,
+  "lon": 21.2142441,
+  "tags": {
+    "name": "Annona Style",
+    "shop": "beauty"
+  }
+},
+{
+  "type": "node",
+  "id": 11189232729,
+  "lat": 45.7465485,
+  "lon": 21.2155920,
+  "tags": {
+    "name": "8 Covrigi",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 11189270995,
+  "lat": 45.7482078,
+  "lon": 21.2178813,
+  "tags": {
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 11195739084,
+  "lat": 45.7413111,
+  "lon": 21.2245278,
+  "tags": {
+    "amenity": "cinema",
+    "name": "Cinema Victoria"
+  }
+},
+{
+  "type": "node",
+  "id": 11297454203,
+  "lat": 45.7481965,
+  "lon": 21.2412111,
+  "tags": {
+    "name": "Printtech",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 11336281335,
+  "lat": 45.7387952,
+  "lon": 21.2160507,
+  "tags": {
+    "name": "Langoși",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 11393662665,
+  "lat": 45.7515198,
+  "lon": 21.2255149,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7",
+    "addr:place": "Piața Victoriei",
+    "amenity": "cinema",
+    "name": "Cinema Timiș",
+    "screen": "1"
+  }
+},
+{
+  "type": "node",
+  "id": 11832326740,
+  "lat": 45.7451848,
+  "lon": 21.2265503,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Haiku"
+  }
+},
+{
+  "type": "node",
+  "id": 12146860688,
+  "lat": 45.7408778,
+  "lon": 21.2146130,
+  "tags": {
+    "amenity": "fast_food",
+    "cuisine": "arab",
+    "name": "Cairo"
+  }
+},
+{
+  "type": "node",
+  "id": 12146942242,
+  "lat": 45.7390938,
+  "lon": 21.2457709,
+  "tags": {
+    "amenity": "restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 12212641563,
+  "lat": 45.7423238,
+  "lon": 21.2281206,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Nori Specialty Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12487072994,
+  "lat": 45.7464806,
+  "lon": 21.2153748,
+  "tags": {
+    "name": "Florăria Nr. 3",
+    "operator": "Horticultura SA",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 12487128515,
+  "lat": 45.7481759,
+  "lon": 21.2184204,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Bucate cu Savoare",
+    "opening_hours": "Mo-Fr 11:00-15:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13155057983,
+  "lat": 45.7511903,
+  "lon": 21.2255604,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Frenzy Specialty Coffee",
+    "opening_hours": "Mo-Fr 07:30-19:00; Sa,Su 09:00-19:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13155098524,
+  "lat": 45.7513860,
+  "lon": 21.2251609,
+  "tags": {
+    "shop": "vacant"
+  }
+},
+{
+  "type": "node",
+  "id": 13339934972,
+  "lat": 45.7471643,
+  "lon": 21.2369706,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Aleea Studenților",
+    "amenity": "fast_food",
+    "name": "Food Corner"
+  }
+},
+{
+  "type": "node",
+  "id": 13339954024,
+  "lat": 45.7487117,
+  "lon": 21.2394496,
+  "tags": {
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709275,
+  "lat": 45.7467000,
+  "lon": 21.2379285,
+  "tags": {
+    "name": "La Mihai",
+    "opening_hours": "Mo-Su 07:30-22:00",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709276,
+  "lat": 45.7465886,
+  "lon": 21.2376197,
+  "tags": {
+    "name": "El Greko",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709277,
+  "lat": 45.7466413,
+  "lon": 21.2377541,
+  "tags": {
+    "name": "Copy Shop Complex",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709278,
+  "lat": 45.7465255,
+  "lon": 21.2374076,
+  "tags": {
+    "name": "Printkop Center",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709280,
+  "lat": 45.7465285,
+  "lon": 21.2390521,
+  "tags": {
+    "name": "Amanet BKG",
+    "shop": "pawnbroker"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709281,
+  "lat": 45.7459355,
+  "lon": 21.2384045,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "16",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "amenity": "fast_food",
+    "name": "Escobar the Burger",
+    "website": "https://escobartheburger.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 13366709284,
+  "lat": 45.7475746,
+  "lon": 21.2421213,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "31",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "name": "Copy Expert",
+    "phone": "0766445485",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 13367035923,
+  "lat": 45.7393961,
+  "lon": 21.2397171,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:street": "Strada Arieș",
+    "name": "The Flower Shop",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 13367035924,
+  "lat": 45.7398853,
+  "lon": 21.2393547,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:street": "Strada Arieș",
+    "brand": "Telekom",
+    "brand:wikidata": "Q9396",
+    "name": "Telekom",
+    "shop": "mobile_phone"
+  }
+},
+{
+  "type": "node",
+  "id": 13367035925,
+  "lat": 45.7399637,
+  "lon": 21.2392873,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "20",
+    "addr:street": "Strada Arieș",
+    "female": "yes",
+    "male": "yes",
+    "name": "Frizerie Coafura Igiena",
+    "opening_hours": "Mo-Fr 07:00-20:00; Sa 08:00-14:00; Su,PH off",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 13400650463,
+  "lat": 45.7371541,
+  "lon": 21.2384037,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "104",
+    "addr:street": "Strada Doctor Ioan Mureșan",
+    "name": "Prima Photo Studio",
+    "opening_hours": "Mo-Fr 09:00-17:00 Sa 10:00-14:00",
+    "phone": "0771659325",
+    "shop": "photo",
+    "website": "https://www.primaphoto.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 13400650465,
+  "lat": 45.7371806,
+  "lon": 21.2384707,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "104",
+    "addr:street": "Strada Doctor Ioan Mureșan",
+    "name": "Universul Muzicii",
+    "shop": "musical_instrument"
+  }
+},
+{
+  "type": "node",
+  "id": 13400650466,
+  "lat": 45.7372054,
+  "lon": 21.2385381,
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "104",
+    "addr:street": "Strada Doctor Ioan Mureșan",
+    "name": "OrtoProfil",
+    "shop": "medical_supply",
+    "website": "https://ortoprofil.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 13400650467,
+  "lat": 45.7372500,
+  "lon": 21.2386531,
+  "tags": {
+    "name": "Salon Irene",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 13455542301,
+  "lat": 45.7412968,
+  "lon": 21.2164742,
+  "tags": {
+    "name": "Mojo Perruqueria",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 13588970803,
+  "lat": 45.7490845,
+  "lon": 21.2202553,
+  "tags": {
+    "addr:housenumber": "12",
+    "addr:street": "Splaiul Tudor Vladimirescu",
+    "amenity": "cafe",
+    "check_date": "2026-02-22",
+    "check_date:opening_hours": "2026-02-22",
+    "name": "Stația de cafea Marschall",
+    "opening_hours": "Mo-Fr 07:00-17:00; Sa 08:00-16:00; Su 09:00-16:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13665066801,
+  "lat": 45.7414861,
+  "lon": 21.2249718,
+  "tags": {
+    "check_date": "2026-03-20",
+    "check_date:opening_hours": "2026-03-20",
+    "name": "PEK ELA PAN",
+    "opening_hours": "Mo-Fr 06:00-22:00; Sa 06:00-20:00; Su 07:00-18:00",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 13665100001,
+  "lat": 45.7403876,
+  "lon": 21.2227777,
+  "tags": {
+    "addr:housenumber": "13",
+    "addr:street": "Strada Ciprian Porumbescu",
+    "check_date": "2026-03-20",
+    "check_date:opening_hours": "2026-03-20",
+    "name": "Florăria D-Dea",
+    "opening_hours": "Mo-We, Fr 09:00-18:30; Th, Sa 10:00-15:00",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 13665134301,
+  "lat": 45.7419012,
+  "lon": 21.2251116,
+  "tags": {
+    "addr:housenumber": "1",
+    "addr:street": "Piața Nicolae Bălcescu",
+    "amenity": "atm",
+    "check_date": "2026-03-20",
+    "check_date:opening_hours": "2026-03-20",
+    "level": "0",
+    "opening_hours": "24/7",
+    "operator": "Banca Transilvania"
+  }
+},
+{
+  "type": "node",
+  "id": 13695025001,
+  "lat": 45.7447536,
+  "lon": 21.2311605,
+  "tags": {
+    "addr:housenumber": "7",
+    "addr:postcode": "300226",
+    "addr:street": "Bulevardul Doctor Victor Babeș",
+    "check_date": "2026-03-31",
+    "check_date:opening_hours": "2026-03-31",
+    "email": "office@spaceprint.ro",
+    "name": "Space Print - Photo, Business Cards and More Printing",
+    "opening_hours": "Mo-Fr 09:00-17:00; Sa 09:00-14:00",
+    "phone": "+40765822382",
+    "shop": "copyshop",
+    "website": "https://www.spaceprint.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 13705472312,
+  "lat": 45.7462289,
+  "lon": 21.2361151,
+  "tags": {
+    "amenity": "pub",
+    "name": "Alf",
+    "opening_hours": "Mo-Fr 10:00-22:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13758819481,
+  "lat": 45.7441546,
+  "lon": 21.2142365,
+  "tags": {
+    "addr:city": "timisoara",
+    "addr:housenumber": "2",
+    "addr:postcode": "300202",
+    "addr:street": "Strada Alexandru Odobescu",
+    "amenity": "restaurant",
+    "bar": "yes",
+    "cuisine": "burger",
+    "diet:vegetarian": "yes",
+    "name": "E10 Hub & Pub",
+    "opening_hours": "Mo-Su 11:00-23:00",
+    "phone": "+40750407808",
+    "website": "https://e10burgers.ro/"
+  }
+},
+{
+  "type": "node",
+  "id": 13827939271,
+  "lat": 45.7392151,
+  "lon": 21.2385175,
+  "tags": {
+    "name": "Reparații încălțăminte",
+    "opening_hours": "Mo-Fr 09:00-17:00",
+    "shop": "shoe_repair"
+  }
+},
+{
+  "type": "way",
+  "id": 23947842,
+  "center": {
+    "lat": 45.7501663,
+    "lon": 21.2325297
+  },
+  "tags": {
+    "amenity": "theatre",
+    "check_date": "2025-07-05",
+    "name": "Teatrul de Vară"
+  }
+},
+{
+  "type": "way",
+  "id": 97929100,
+  "center": {
+    "lat": 45.7472256,
+    "lon": 21.2312903
+  },
+  "tags": {
+    "amenity": "university",
+    "name": "Universitatea de Vest din Timișoara",
+    "name:de": "West-Universität Temeswar",
+    "name:en": "West University of Timișoara",
+    "name:hu": "Temesvári Nyugati Tudományegyetem",
+    "name:la": "Universitas Occidentis Timisvariensis",
+    "name:ro": "Universitatea de Vest din Timișoara",
+    "short_name": "UVT",
+    "website": "https://uvt.ro/",
+    "wheelchair": "yes",
+    "wikidata": "Q837657"
+  }
+},
+{
+  "type": "way",
+  "id": 97930019,
+  "center": {
+    "lat": 45.7458608,
+    "lon": 21.2307741
+  },
+  "tags": {
+    "amenity": "university",
+    "operator": "Universitatea Politehnica Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104357252,
+  "center": {
+    "lat": 45.7460890,
+    "lon": 21.2276057
+  },
+  "tags": {
+    "amenity": "university",
+    "name": "Universitatea Politehnica Timișoara",
+    "name:de": "Polytechnische Universität Temeswar",
+    "name:en": "Politehnica University of Timișoara",
+    "name:fr": "Université Politehnica Timișoara",
+    "name:ro": "Universitatea Politehnica Timișoara",
+    "short_name": "UPT",
+    "website": "http://www.upt.ro/",
+    "wikidata": "Q1475126"
+  }
+},
+{
+  "type": "way",
+  "id": 104357311,
+  "center": {
+    "lat": 45.7422630,
+    "lon": 21.2384487
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Strada Arieș",
+    "amenity": "fuel",
+    "brand": "OMV",
+    "brand:wikidata": "Q168238",
+    "brand:wikipedia": "en:OMV",
+    "building": "yes",
+    "compressed_air": "yes",
+    "fuel:diesel": "yes",
+    "fuel:octane_95": "yes",
+    "fuel:octane_98": "yes",
+    "name": "OMV",
+    "opening_hours": "24/7",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 104357475,
+  "center": {
+    "lat": 45.7421397,
+    "lon": 21.2390929
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "10",
+    "addr:postcode": "300579",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Arieș",
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "building": "commercial",
+    "building:levels": "1",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 723 800 377;+40 735 005 202",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi",
+    "opening_hours": "24/7",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket"
+  }
+},
+{
+  "type": "way",
+  "id": 104507169,
+  "center": {
+    "lat": 45.7480381,
+    "lon": 21.2430927
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "37a",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "amenity": "fuel",
+    "brand": "OMV",
+    "brand:wikidata": "Q168238",
+    "brand:wikipedia": "en:OMV",
+    "building": "yes",
+    "maxheight": "4.5",
+    "name": "OMV"
+  }
+},
+{
+  "type": "way",
+  "id": 104509290,
+  "center": {
+    "lat": 45.7456662,
+    "lon": 21.2419770
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7a",
+    "addr:street": "Aleea F.C. Ripensia",
+    "beds": "130",
+    "building": "yes",
+    "check_date": "2024-10-28",
+    "name": "Hotel Boavista",
+    "phone": "+40 256 309409",
+    "rooms": "52",
+    "stars": "3",
+    "tourism": "hotel",
+    "website": "https://hotelboavista.ro/contact/"
+  }
+},
+{
+  "type": "way",
+  "id": 106993391,
+  "center": {
+    "lat": 45.7363040,
+    "lon": 21.2446561
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "160",
+    "addr:postcode": "300748",
+    "addr:street": "Bulevardul Liviu Rebreanu",
+    "brand": "Carrefour Market",
+    "brand:wikidata": "Q2689639",
+    "building": "yes",
+    "name": "Carrefour Market",
+    "opening_hours": "Mo-Sa 07:00-23:00; Su 07:00-22:00",
+    "operator": "Carrefour",
+    "shop": "convenience",
+    "website": "https://carrefour.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 106993715,
+  "center": {
+    "lat": 45.7387205,
+    "lon": 21.2420987
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Bulevardul Liviu Rebreanu",
+    "amenity": "fuel",
+    "brand": "MOL",
+    "brand:wikidata": "Q549181",
+    "brand:wikipedia": "en:MOL (company)",
+    "building": "yes",
+    "fuel:diesel": "yes",
+    "fuel:octane_95": "yes",
+    "fuel:octane_98": "yes",
+    "name": "MOL",
+    "opening_hours": "24/7",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 107361587,
+  "center": {
+    "lat": 45.7432540,
+    "lon": 21.2244163
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:street": "Strada Arhitect László Székely",
+    "amenity": "bar",
+    "building": "yes",
+    "indoor_seating": "yes",
+    "name": "Scârț Loc Lejer",
+    "opening_hours": "Mo-Fr 10:00-23:00; Sa 11:00-23:00; Su 14:00-23:00",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 110259280,
+  "center": {
+    "lat": 45.7434035,
+    "lon": 21.2431787
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "29",
+    "addr:postcode": "300584",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Aleea F.C. Ripensia",
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "brand:wikipedia": "en:Profi",
+    "building": "retail",
+    "building:levels": "1",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 799 303 131;+40 799 303 132",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "is_in:city": "Timișoara",
+    "name": "Profi",
+    "opening_hours": "Mo-Sa 07:00-23:00;Su 08:00-22:00",
+    "operator": "Profi Rom Food",
+    "shop": "supermarket",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 110259300,
+  "center": {
+    "lat": 45.7473566,
+    "lon": 21.2326044
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "4A",
+    "addr:postcode": "300223",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "library",
+    "building": "yes",
+    "name": "Biblioteca Centrală Universitară Eugen Todoran",
+    "name:en": "Main University Library Eugen Todoran",
+    "phone": "+40 256 491 233",
+    "website": "https://bcut.ro/",
+    "wikidata": "Q12721712"
+  }
+},
+{
+  "type": "way",
+  "id": 110259310,
+  "center": {
+    "lat": 45.7469538,
+    "lon": 21.2388925
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "4",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "university",
+    "building": "yes",
+    "education": "university",
+    "name": "Facultatea de Drept",
+    "website": "https://drept.uvt.ro/",
+    "wikidata": "Q18540072",
+    "wikipedia": "ro:Facultatea de Drept a Universitații de Vest din Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 111288585,
+  "center": {
+    "lat": 45.7436175,
+    "lon": 21.2428075
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "29A",
+    "addr:street": "Aleea F.C. Ripensia",
+    "building": "hotel",
+    "building:levels": "5",
+    "internet_access": "wlan",
+    "name": "Hotel Novera",
+    "tourism": "hotel",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 116933177,
+  "center": {
+    "lat": 45.7477003,
+    "lon": 21.2244221
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:postcode": "300193",
+    "addr:street": "Splaiul Tudor Vladimirescu",
+    "beds": "50",
+    "building": "yes",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Savoy",
+    "phone": "+40 256 249 900",
+    "rooms": "54",
+    "smoking": "outside",
+    "stars": "4",
+    "tourism": "hotel",
+    "website": "https://www.hotelsavoytimisoara.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 117230316,
+  "center": {
+    "lat": 45.7489298,
+    "lon": 21.2287312
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1a",
+    "addr:street": "Strada George Enescu",
+    "alt_name": "Corp H",
+    "amenity": "university",
+    "building": "yes",
+    "check_date": "2025-09-26",
+    "name": "Facultatea de Hidrotehnică",
+    "operator": "Universitatea Politehnica Timișoara",
+    "operator:type": "public"
+  }
+},
+{
+  "type": "way",
+  "id": 117634142,
+  "center": {
+    "lat": 45.7428351,
+    "lon": 21.2192412
+  },
+  "tags": {
+    "building": "yes",
+    "check_date": "2024-04-08",
+    "name": "Excelsior",
+    "stars": "4",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 154485338,
+  "center": {
+    "lat": 45.7495514,
+    "lon": 21.2433657
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:street": "Strada Alexandru Vaida Voievod",
+    "brand": "Profi",
+    "brand:wikidata": "Q956664",
+    "building": "yes",
+    "contact:email": "contact@profi.ro",
+    "contact:facebook": "https://www.facebook.com/Profi.ro",
+    "contact:instagram": "https://www.instagram.com/profi.ro",
+    "contact:phone": "+40 720 032 583;+40 720 032 589;+40 799 108 319",
+    "contact:website": "https://www.profi.ro/",
+    "contact:youtube": "https://www.youtube.com/user/magazineleprofi",
+    "name": "Profi Go",
+    "opening_hours": "24/7",
+    "operator": "Profi Rom Food",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "way",
+  "id": 159603647,
+  "center": {
+    "lat": 45.7506179,
+    "lon": 21.2454888
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Hotel Check In",
+    "rooms": "48",
+    "tourism": "hotel",
+    "website": "http://www.checkinn.ro"
+  }
+},
+{
+  "type": "way",
+  "id": 169815462,
+  "center": {
+    "lat": 45.7420045,
+    "lon": 21.2282072
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "10",
+    "addr:street": "Strada Profesor George Dragomir",
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "Restaurant Valentino"
+  }
+},
+{
+  "type": "way",
+  "id": 176249189,
+  "center": {
+    "lat": 45.7389170,
+    "lon": 21.2409315
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Bulevardul Liviu Rebreanu",
+    "amenity": "fast_food",
+    "brand": "McDonald's",
+    "brand:wikidata": "Q38076",
+    "brand:wikipedia": "en:McDonald's",
+    "building": "yes",
+    "building:levels": "1",
+    "cuisine": "burger",
+    "drive_through": "yes",
+    "kids_area": "yes",
+    "name": "McDonald's",
+    "outdoor_seating": "yes",
+    "reservation": "no",
+    "takeaway": "yes",
+    "website": "https://www.mcdonalds.ro"
+  }
+},
+{
+  "type": "way",
+  "id": 190263438,
+  "center": {
+    "lat": 45.7470424,
+    "lon": 21.2288490
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2b",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "library",
+    "building": "public",
+    "building:material": "glass",
+    "name": "Biblioteca Centrală UPT",
+    "opening_hours": "Mo-Sa 09:00-20:00",
+    "operator": "UPT",
+    "wikidata": "Q12721704",
+    "wikipedia": "ro:Biblioteca Centrală a Universității Politehnica"
+  }
+},
+{
+  "type": "way",
+  "id": 194487718,
+  "center": {
+    "lat": 45.7518240,
+    "lon": 21.2237362
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:postcode": "300006",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Bulevardul Regele Ferdinand I",
+    "building": "yes",
+    "building:facade:colour": "white",
+    "is_in:city": "Timișoara",
+    "name": "Casa Politehnicii nr. 1",
+    "roof:shape": "hipped",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 195618118,
+  "center": {
+    "lat": 45.7488861,
+    "lon": 21.2269393
+  },
+  "tags": {
+    "amenity": "restaurant",
+    "building": "yes",
+    "indoor_seating": "yes",
+    "name": "Rivière",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 195646090,
+  "center": {
+    "lat": 45.7505637,
+    "lon": 21.2262841
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Bulevardul Constantin Diaconovici Loga",
+    "amenity": "theatre",
+    "building": "yes",
+    "check_date": "2025-07-05",
+    "name": "Filarmonica Banatul",
+    "name:en": "Banatul Philarmonic",
+    "theatre:genre": "philharmonic",
+    "url": "http://www.filarmonicabanatul.ro",
+    "wikidata": "Q806119",
+    "wikipedia": "ro:Filarmonica Banatul din Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 218947060,
+  "center": {
+    "lat": 45.7485107,
+    "lon": 21.2399786
+  },
+  "tags": {
+    "alt_name": "Cantina Studențească Politehnica",
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "Restaurant Universitar Politehnica"
+  }
+},
+{
+  "type": "way",
+  "id": 223647827,
+  "center": {
+    "lat": 45.7482584,
+    "lon": 21.2302187
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "biergarten",
+    "name": "Vineri15",
+    "opening_hours": "Mo-Su 10:00-02:00"
+  }
+},
+{
+  "type": "way",
+  "id": 223650841,
+  "center": {
+    "lat": 45.7486976,
+    "lon": 21.2417240
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Hotel Roma",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 230939586,
+  "center": {
+    "lat": 45.7400346,
+    "lon": 21.2335483
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "51 - 53",
+    "addr:postcode": "300580",
+    "addr:street": "Strada Cozia",
+    "building": "yes",
+    "building:levels": "4",
+    "name": "Hotel Reghina Blue",
+    "tourism": "hotel",
+    "website": "https://www.reghinablue.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 239286061,
+  "center": {
+    "lat": 45.7420890,
+    "lon": 21.2174389
+  },
+  "tags": {
+    "amenity": "fuel",
+    "building": "yes",
+    "name": "RP Express",
+    "opening_hours": "24/7"
+  }
+},
+{
+  "type": "way",
+  "id": 259455317,
+  "center": {
+    "lat": 45.7509026,
+    "lon": 21.2437508
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7A",
+    "addr:street": "Strada Mehadia",
+    "building": "yes",
+    "name": "Magazin ABC",
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "way",
+  "id": 259464548,
+  "center": {
+    "lat": 45.7451573,
+    "lon": 21.2339676
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Silva",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 337771284,
+  "center": {
+    "lat": 45.7445894,
+    "lon": 21.2213471
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "12",
+    "addr:postcode": "300238",
+    "addr:street": "Strada Romulus",
+    "contact:mobile": "+40 770 852 276",
+    "email": "hotel@casadelsole.ro",
+    "name": "Boutique Hotel Casa del Sole",
+    "phone": "+40356457771",
+    "smoking": "isolated",
+    "tourism": "hotel",
+    "website": "https://hotel.casadelsole.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 366425285,
+  "center": {
+    "lat": 45.7362387,
+    "lon": 21.2312498
+  },
+  "tags": {
+    "building": "yes",
+    "name": "ITP",
+    "shop": "car_parts"
+  }
+},
+{
+  "type": "way",
+  "id": 389960585,
+  "center": {
+    "lat": 45.7422986,
+    "lon": 21.2347945
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housename": "Penisunea Vlad",
+    "addr:housenumber": "56",
+    "addr:postcode": "300592",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada 1 Decembrie 1918",
+    "building": "yes",
+    "designation": "3",
+    "name": "Penisunea Vlad",
+    "phone": "+40256489987",
+    "source": "local knowledge",
+    "tourism": "guest_house",
+    "website": "https://www.pensiuneavlad.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 420765695,
+  "center": {
+    "lat": 45.7483579,
+    "lon": 21.2308462
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "biergarten",
+    "name": "Șura",
+    "website": "http://lacapite.ro"
+  }
+},
+{
+  "type": "way",
+  "id": 428572814,
+  "center": {
+    "lat": 45.7504725,
+    "lon": 21.2421147
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "4",
+    "addr:postcode": "300558",
+    "addr:street": "Strada Daliei",
+    "amenity": "pub",
+    "building": "yes",
+    "name": "Oxford Pub & Restaurant",
+    "website": "http://www.oxfordtm.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 428573593,
+  "center": {
+    "lat": 45.7507820,
+    "lon": 21.2424774
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "7",
+    "addr:postcode": "300558",
+    "addr:street": "Strada Daliei",
+    "building": "yes",
+    "building:levels": "3",
+    "name": "Pensiunea Casa Solaris",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 437970651,
+  "center": {
+    "lat": 45.7499564,
+    "lon": 21.2207449
+  },
+  "tags": {
+    "amenity": "restaurant",
+    "building": "yes",
+    "internet_access": "wlan",
+    "name": "Porto Arte",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 464303947,
+  "center": {
+    "lat": 45.7455845,
+    "lon": 21.2225893
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "14",
+    "addr:street": "Strada Remus",
+    "alt_name": "MPT",
+    "amenity": "university",
+    "name": "Facultatea de Management în Producție și Transporturi",
+    "website": "https://www.mpt.upt.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 467207822,
+  "center": {
+    "lat": 45.7481836,
+    "lon": 21.2297559
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "restaurant",
+    "name": "Zaza Restopub"
+  }
+},
+{
+  "type": "way",
+  "id": 541568590,
+  "center": {
+    "lat": 45.7445749,
+    "lon": 21.2213255
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "12",
+    "addr:postcode": "300238",
+    "addr:street": "Strada Romulus",
+    "amenity": "restaurant",
+    "building": "yes",
+    "capacity": "120",
+    "delivery": "yes",
+    "email": "restaurant@casadelsole.ro",
+    "name": "Restaurant Casa del Sole",
+    "opening_hours": "Mo-Su 12:00-22:00",
+    "outdoor_seating": "patio",
+    "phone": "+40 256 499 399",
+    "smoking": "isolated",
+    "takeaway": "no",
+    "website": "https://restaurant.casadelsole.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 554092512,
+  "center": {
+    "lat": 45.7486176,
+    "lon": 21.2143887
+  },
+  "tags": {
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "Chic Royal"
+  }
+},
+{
+  "type": "way",
+  "id": 569605507,
+  "center": {
+    "lat": 45.7468422,
+    "lon": 21.2148850
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "6",
+    "addr:postcode": "300176",
+    "addr:street": "Strada Emanoil Gojdu",
+    "amenity": "restaurant",
+    "building": "yes",
+    "cuisine": "italian",
+    "delivery": "yes",
+    "email": "comenzilamaria@gmail.com",
+    "internet_access": "wlan",
+    "internet_access:fee": "yes",
+    "name": "La Maria",
+    "opening_hours": "Mo-Fr 11:30-22:30; Sa-Su 12:00-22:30",
+    "outdoor_seating": "yes",
+    "phone": "+40256226647",
+    "website": "https://www.pizzalamaria.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 686277509,
+  "center": {
+    "lat": 45.7428611,
+    "lon": 21.2288144
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "14",
+    "addr:street": "Strada Evlia Celebi",
+    "building": "hotel",
+    "name": "Hotel Perla d'Oro",
+    "tourism": "hotel",
+    "website": "https://hotelperla.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 686277510,
+  "center": {
+    "lat": 45.7427102,
+    "lon": 21.2289653
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "16",
+    "addr:street": "Strada Evlia Celebi",
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "Pomo d'Oro"
+  }
+},
+{
+  "type": "way",
+  "id": 723697612,
+  "center": {
+    "lat": 45.7456327,
+    "lon": 21.2234985
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "17",
+    "addr:street": "Strada Remus",
+    "building": "yes",
+    "name": "Pensiunea Park",
+    "phone": "+40 756 302 102",
+    "stars": "4",
+    "tourism": "hotel",
+    "website": "https://pensiuneapark.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 751046956,
+  "center": {
+    "lat": 45.7386932,
+    "lon": 21.2253805
+  },
+  "tags": {
+    "addr:housenumber": "1",
+    "addr:street": "Strada Memorandului",
+    "amenity": "restaurant",
+    "building": "yes",
+    "name": "Bistro Gourmet"
+  }
+},
+{
+  "type": "way",
+  "id": 759150510,
+  "center": {
+    "lat": 45.7497267,
+    "lon": 21.2411058
+  },
+  "tags": {
+    "amenity": "fast_food",
+    "building": "yes",
+    "name": "Mega Yummy",
+    "opening_hours": "Mo-Su 12:00-23:00",
+    "website": "https://www.facebook.com/MegaYummy"
+  }
+},
+{
+  "type": "way",
+  "id": 759150511,
+  "center": {
+    "lat": 45.7496046,
+    "lon": 21.2412970
+  },
+  "tags": {
+    "amenity": "fast_food",
+    "building": "yes",
+    "name": "Falafel"
+  }
+},
+{
+  "type": "way",
+  "id": 764264795,
+  "center": {
+    "lat": 45.7426521,
+    "lon": 21.2281693
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:street": "Strada Profesor George Dragomir",
+    "area": "yes",
+    "description": "Building A-B",
+    "name": "Hotel Perla d'Oro",
+    "swimming_pool": "yes",
+    "tourism": "hotel",
+    "website": "https://hotelperla.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 766623528,
+  "center": {
+    "lat": 45.7437301,
+    "lon": 21.2366544
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Randler",
+    "shop": "general"
+  }
+},
+{
+  "type": "way",
+  "id": 766841490,
+  "center": {
+    "lat": 45.7466771,
+    "lon": 21.2412664
+  },
+  "tags": {
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "amenity": "fuel",
+    "brand": "Lukoil",
+    "brand:wikidata": "Q329347",
+    "brand:wikipedia": "en:Lukoil",
+    "building": "yes",
+    "name": "Lukoil"
+  }
+},
+{
+  "type": "way",
+  "id": 779615430,
+  "center": {
+    "lat": 45.7388147,
+    "lon": 21.2385899
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Agil",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "way",
+  "id": 938182526,
+  "center": {
+    "lat": 45.7495516,
+    "lon": 21.2411644
+  },
+  "tags": {
+    "amenity": "fast_food",
+    "building": "yes",
+    "cuisine": "kebab",
+    "name": "Shawarma City",
+    "website": "https://www.facebook.com/Shawarmacitytimisoara"
+  }
+},
+{
+  "type": "way",
+  "id": 938182527,
+  "center": {
+    "lat": 45.7495085,
+    "lon": 21.2410204
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Gescala",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "way",
+  "id": 938874734,
+  "center": {
+    "lat": 45.7490464,
+    "lon": 21.2325606
+  },
+  "tags": {
+    "amenity": "bar",
+    "building": "yes",
+    "name": "La Givan"
+  }
+},
+{
+  "type": "way",
+  "id": 938884353,
+  "center": {
+    "lat": 45.7500289,
+    "lon": 21.2397346
+  },
+  "tags": {
+    "amenity": "fast_food",
+    "building": "yes",
+    "cuisine": "pizza",
+    "name": "Autentik by Amedeea"
+  }
+},
+{
+  "type": "way",
+  "id": 938884354,
+  "center": {
+    "lat": 45.7498877,
+    "lon": 21.2395200
+  },
+  "tags": {
+    "amenity": "fast_food",
+    "building": "yes",
+    "name": "Roy"
+  }
+},
+{
+  "type": "way",
+  "id": 939094569,
+  "center": {
+    "lat": 45.7467142,
+    "lon": 21.2240583
+  },
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes",
+    "cuisine": "coffee_shop",
+    "name": "Granular",
+    "website": "https://www.granular.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 944043702,
+  "center": {
+    "lat": 45.7382755,
+    "lon": 21.2389175
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Codrina",
+    "operator": "Codrina",
+    "payment:apple_pay": "yes",
+    "payment:cash": "yes",
+    "payment:coins": "yes",
+    "payment:contactless": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "payment:maestro": "yes",
+    "payment:mastercard": "yes",
+    "payment:visa": "yes",
+    "payment:visa_electron": "yes",
+    "shop": "pastry"
+  }
+},
+{
+  "type": "way",
+  "id": 1059220172,
+  "center": {
+    "lat": 45.7472862,
+    "lon": 21.2317869
+  },
+  "tags": {
+    "building": "yes",
+    "shop": "books"
+  }
+},
+{
+  "type": "way",
+  "id": 1274595146,
+  "center": {
+    "lat": 45.7498327,
+    "lon": 21.2187234
+  },
+  "tags": {
+    "amenity": "university"
+  }
+},
+{
+  "type": "way",
+  "id": 1297180320,
+  "center": {
+    "lat": 45.7520311,
+    "lon": 21.2415452
+  },
+  "tags": {
+    "building": "yes",
+    "name": "Urban Budget Hotel",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "relation",
+  "id": 15353096,
+  "center": {
+    "lat": 45.7499939,
+    "lon": 21.2259926
+  },
+  "tags": {
+    "amenity": "theatre",
+    "building": "yes",
+    "name": "Grădina de vară Capitol",
+    "type": "multipolygon"
+  }
+}
+
+  ]
+}

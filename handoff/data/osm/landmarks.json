@@ -1,0 +1,1340 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-11-14T03:27:32Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 2267824965,
+  "lat": 45.7480738,
+  "lon": 21.2353400,
+  "tags": {
+    "bus": "yes",
+    "name": "Complexul Studențesc",
+    "public_transport": "stop_position",
+    "trolleybus": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2272193099,
+  "lat": 45.7480831,
+  "lon": 21.2352007,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "bus_stop",
+    "lit": "no",
+    "name": "Complexul Studențesc",
+    "public_transport": "platform",
+    "shelter": "yes",
+    "trolleybus": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2281432794,
+  "lat": 45.7482711,
+  "lon": 21.2392081,
+  "tags": {
+    "is_in": "Timișoara",
+    "name": "Complexul Studențesc",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3815391709,
+  "lat": 45.7481174,
+  "lon": 21.2355395,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "bus_stop",
+    "lit": "no",
+    "name": "Complexul Studențesc",
+    "public_transport": "platform",
+    "shelter": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601186,
+  "lat": 45.7472640,
+  "lon": 21.2267099,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Automatică și Calculatoare"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601187,
+  "lat": 45.7472646,
+  "lon": 21.2268468,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Electronică și Telecomunicații"
+  }
+},
+{
+  "type": "node",
+  "id": 4291601188,
+  "lat": 45.7471755,
+  "lon": 21.2278309,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-04-04",
+    "name": "Facultatea de Electrotehnică și Electroenergetică"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444708,
+  "lat": 45.7468271,
+  "lon": 21.2269835,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-06-05",
+    "name": "Facultatea de Electrotehnică și Electroenergetică"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444710,
+  "lat": 45.7453787,
+  "lon": 21.2305760,
+  "tags": {
+    "amenity": "university",
+    "name": "Departamentul de Construcții Metalice și Mecanica Construcțiilor"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444711,
+  "lat": 45.7454605,
+  "lon": 21.2311628,
+  "tags": {
+    "amenity": "university",
+    "name": "Departamentul Căi de Comunicație Terestre, Fundații și Cadastru"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444712,
+  "lat": 45.7457808,
+  "lon": 21.2299367,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444713,
+  "lat": 45.7455594,
+  "lon": 21.2299754,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Arhitectură și Urbanism"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444714,
+  "lat": 45.7453160,
+  "lon": 21.2300203,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Științe ale Comunicării"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444715,
+  "lat": 45.7461325,
+  "lon": 21.2315101,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444716,
+  "lat": 45.7458761,
+  "lon": 21.2315837,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Științe ale Comunicării"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444717,
+  "lat": 45.7455870,
+  "lon": 21.2316678,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Automatică și Calculatoare"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444718,
+  "lat": 45.7463062,
+  "lon": 21.2271335,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-06-05",
+    "name": "Facultatea de Mecanică"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444719,
+  "lat": 45.7455161,
+  "lon": 21.2265552,
+  "tags": {
+    "amenity": "university",
+    "check_date": "2026-06-05",
+    "name": "Facultatea de Construcții"
+  }
+},
+{
+  "type": "node",
+  "id": 7284444720,
+  "lat": 45.7454742,
+  "lon": 21.2274850,
+  "tags": {
+    "amenity": "university",
+    "name": "Facultatea de Management și Producție în Transporturi"
+  }
+},
+{
+  "type": "node",
+  "id": 13339936481,
+  "lat": 45.7468438,
+  "lon": 21.2356026,
+  "tags": {
+    "board_type": "history",
+    "information": "board",
+    "name": "Complexul Studențesc",
+    "operator": "Spotlight Heritage",
+    "tourism": "information"
+  }
+},
+{
+  "type": "way",
+  "id": 23620260,
+  "center": {
+    "lat": 45.7465045,
+    "lon": 21.2105518
+  },
+  "tags": {
+    "boat": "yes",
+    "motorboat": "permissive",
+    "name": "Bega",
+    "name:hu": "Béga",
+    "name:ro": "Bega",
+    "name:sr": "Бегеј",
+    "name:sr-Latn": "Begej",
+    "waterway": "canal",
+    "width": "25"
+  }
+},
+{
+  "type": "way",
+  "id": 97929100,
+  "center": {
+    "lat": 45.7472256,
+    "lon": 21.2312903
+  },
+  "tags": {
+    "amenity": "university",
+    "internet_access": "wlan",
+    "internet_access:ssid": "eduroam",
+    "name": "Universitatea de Vest din Timișoara",
+    "name:de": "West-Universität Temeswar",
+    "name:en": "West University of Timișoara",
+    "name:hu": "Temesvári Nyugati Tudományegyetem",
+    "name:la": "Universitas Occidentis Timisvariensis",
+    "name:ro": "Universitatea de Vest din Timișoara",
+    "short_name": "UVT",
+    "website": "https://uvt.ro/",
+    "wheelchair": "yes",
+    "wikidata": "Q837657"
+  }
+},
+{
+  "type": "way",
+  "id": 97930019,
+  "center": {
+    "lat": 45.7458608,
+    "lon": 21.2307741
+  },
+  "tags": {
+    "amenity": "university",
+    "operator": "Universitatea Politehnica Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 100711013,
+  "center": {
+    "lat": 45.7554628,
+    "lon": 21.2171583
+  },
+  "tags": {
+    "building": "dormitory",
+    "name": "Cămin"
+  }
+},
+{
+  "type": "way",
+  "id": 100711039,
+  "center": {
+    "lat": 45.7558774,
+    "lon": 21.2173137
+  },
+  "tags": {
+    "building": "dormitory",
+    "name": "Cămin"
+  }
+},
+{
+  "type": "way",
+  "id": 104357252,
+  "center": {
+    "lat": 45.7460890,
+    "lon": 21.2276057
+  },
+  "tags": {
+    "amenity": "university",
+    "name": "Universitatea Politehnica Timișoara",
+    "name:de": "Polytechnische Universität Temeswar",
+    "name:en": "Politehnica University of Timișoara",
+    "name:fr": "Université Politehnica Timișoara",
+    "name:ro": "Universitatea Politehnica Timișoara",
+    "short_name": "UPT",
+    "website": "http://www.upt.ro/",
+    "wikidata": "Q1475126"
+  }
+},
+{
+  "type": "way",
+  "id": 104509754,
+  "center": {
+    "lat": 45.7497951,
+    "lon": 21.2390272
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "6",
+    "addr:postcode": "300551",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Aurelianus",
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul G25",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 104509755,
+  "center": {
+    "lat": 45.7494387,
+    "lon": 21.2393921
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:postcode": "300551",
+    "addr:postcode:source": "Date de la Poșta Română, publicate sub Licența pentru Guvernare Deschisă v1.0 la http://date.gov.ro/organization/posta-romana",
+    "addr:street": "Strada Aurelianus",
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul G24",
+    "roof:colour": "#a56362",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 104509936,
+  "center": {
+    "lat": 45.7476101,
+    "lon": 21.2375421
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "6",
+    "name": "Căminul 20C UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104509937,
+  "center": {
+    "lat": 45.7473523,
+    "lon": 21.2368601
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "6",
+    "name": "Căminul 21C UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104509938,
+  "center": {
+    "lat": 45.7479687,
+    "lon": 21.2382222
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "6",
+    "name": "Căminul 19C UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104509939,
+  "center": {
+    "lat": 45.7471192,
+    "lon": 21.2360433
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "6",
+    "name": "Căminul 22C UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104510338,
+  "center": {
+    "lat": 45.7477584,
+    "lon": 21.2389521
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Aleea F.C. Ripensia",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C2 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104510339,
+  "center": {
+    "lat": 45.7467263,
+    "lon": 21.2365546
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C6 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104510340,
+  "center": {
+    "lat": 45.7474349,
+    "lon": 21.2383867
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C3 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104510345,
+  "center": {
+    "lat": 45.7471777,
+    "lon": 21.2377664
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C4 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 104510347,
+  "center": {
+    "lat": 45.7465571,
+    "lon": 21.2358172
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C7 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 104510348,
+  "center": {
+    "lat": 45.7469396,
+    "lon": 21.2371422
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "name": "Căminul C5 UPT",
+    "residential": "university",
+    "roof:colour": "#f27e13",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 109543222,
+  "center": {
+    "lat": 45.7566769,
+    "lon": 21.2375445
+  },
+  "tags": {
+    "addr:housenumber": "1",
+    "building": "dormitory",
+    "name": "Căminul 1-2"
+  }
+},
+{
+  "type": "way",
+  "id": 110259279,
+  "center": {
+    "lat": 45.7503978,
+    "lon": 21.2418446
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "14",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C14 UPT",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259281,
+  "center": {
+    "lat": 45.7478008,
+    "lon": 21.2401895
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul C15 UVT",
+    "roof:colour": "#c8666d",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 110259283,
+  "center": {
+    "lat": 45.7492484,
+    "lon": 21.2416973
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C9 UPT",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259284,
+  "center": {
+    "lat": 45.7502178,
+    "lon": 21.2413329
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C13 UVT",
+    "operator": "Universitatea de Vest Timișoara",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259285,
+  "center": {
+    "lat": 45.7473795,
+    "lon": 21.2408145
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul C16 UVT",
+    "roof:colour": "#c8666d",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 110259291,
+  "center": {
+    "lat": 45.7496959,
+    "lon": 21.2426893
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "11",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C11 UPT",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259294,
+  "center": {
+    "lat": 45.7497930,
+    "lon": 21.2397436
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul G4",
+    "operator": "Universitatea de Vest Timișoara",
+    "roof:colour": "#c8666d",
+    "roof:shape": "gabled",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259299,
+  "center": {
+    "lat": 45.7494746,
+    "lon": 21.2421886
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "10",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C10 UPT",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259303,
+  "center": {
+    "lat": 45.7491268,
+    "lon": 21.2409220
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "1",
+    "roof:colour": "#7a798c"
+  }
+},
+{
+  "type": "way",
+  "id": 110259304,
+  "center": {
+    "lat": 45.7498522,
+    "lon": 21.2402805
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "12",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C12 UVT",
+    "operator": "Universitatea de Vest Timișoara",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 110259309,
+  "center": {
+    "lat": 45.7469772,
+    "lon": 21.2396990
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:street": "Aleea F.C. Ripensia",
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul C1 UPT",
+    "operator": "UPT",
+    "residential": "university",
+    "roof:colour": "#a56362",
+    "roof:shape": "hipped",
+    "wikidata": "Q1475126",
+    "wikipedia": "en:Politehnica University of Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 110259310,
+  "center": {
+    "lat": 45.7469538,
+    "lon": 21.2388925
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "4",
+    "addr:street": "Bulevardul Vasile Pârvan",
+    "amenity": "university",
+    "building": "yes",
+    "building:levels": "4",
+    "education": "university",
+    "name": "Facultatea de Drept",
+    "roof:colour": "white",
+    "roof:shape": "flat",
+    "website": "https://drept.uvt.ro/",
+    "wikidata": "Q18540072",
+    "wikipedia": "ro:Facultatea de Drept a Universitații de Vest din Timișoara"
+  }
+},
+{
+  "type": "way",
+  "id": 110259333,
+  "center": {
+    "lat": 45.7471593,
+    "lon": 21.2391597
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9A",
+    "addr:postcode": "300575",
+    "addr:street": "Bulevardul Eroilor de la Tisa",
+    "building": "dormitory",
+    "building:levels": "4",
+    "name": "Cămin Drept UVT",
+    "residential": "university",
+    "roof:colour": "#7a798c",
+    "roof:shape": "flat"
+  }
+},
+{
+  "type": "way",
+  "id": 110259336,
+  "center": {
+    "lat": 45.7501849,
+    "lon": 21.2406972
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "17",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:levels": "5",
+    "name": "Căminul C17 UVT",
+    "operator": "Universitatea de Vest Timișoara",
+    "roof:colour": "#c8666d",
+    "roof:levels": "0",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 110971396,
+  "center": {
+    "lat": 45.7541110,
+    "lon": 21.2448920
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "16",
+    "addr:street": "Strada Johann Heinrich Pestalozzi",
+    "alt_name": "CBG",
+    "amenity": "university",
+    "building": "university",
+    "education": "university",
+    "name": "Facultatea de Chimie-Biologie-Geografie"
+  }
+},
+{
+  "type": "way",
+  "id": 110971425,
+  "center": {
+    "lat": 45.7538703,
+    "lon": 21.2449322
+  },
+  "tags": {
+    "addr:housenumber": "16",
+    "addr:street": "Strada Johann Heinrich Pestalozzi",
+    "alt_name": "FEAA",
+    "amenity": "university",
+    "building": "university",
+    "education": "university",
+    "name": "Facultatea de Economie și de Administrarea a Afacerilor"
+  }
+},
+{
+  "type": "way",
+  "id": 113052682,
+  "center": {
+    "lat": 45.7340079,
+    "lon": 21.2368262
+  },
+  "tags": {
+    "building": "dormitory"
+  }
+},
+{
+  "type": "way",
+  "id": 117230316,
+  "center": {
+    "lat": 45.7489202,
+    "lon": 21.2286735
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1a",
+    "addr:street": "Strada George Enescu",
+    "alt_name": "Corp H",
+    "amenity": "university",
+    "building": "yes",
+    "check_date": "2025-09-26",
+    "name": "Facultatea de Hidrotehnică",
+    "operator": "Universitatea Politehnica Timișoara",
+    "operator:type": "public"
+  }
+},
+{
+  "type": "way",
+  "id": 117230706,
+  "center": {
+    "lat": 45.7451634,
+    "lon": 21.2266784
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "alt_name": "Corp U",
+    "building": "dormitory",
+    "building:colour": "#a56362",
+    "building:levels": "6",
+    "building:material": "brick",
+    "name": "Căminul 1MV",
+    "roof:shape": "hipped"
+  }
+},
+{
+  "type": "way",
+  "id": 117230710,
+  "center": {
+    "lat": 45.7450774,
+    "lon": 21.2286515
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "1",
+    "addr:street": "Bulevardul Mihai Viteazu",
+    "alt_name": "Corp Z",
+    "building": "dormitory",
+    "building:material": "brick",
+    "name": "Căminul 2MV"
+  }
+},
+{
+  "type": "way",
+  "id": 154483395,
+  "center": {
+    "lat": 45.7446665,
+    "lon": 21.2522501
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "144",
+    "addr:street": "Strada Profesor Doctor Aurel Păunescu Podeanu",
+    "amenity": "university",
+    "building": "university",
+    "building:levels": "3",
+    "name": "Universitatea Ioan Slavici",
+    "website": "https://islavici.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 154520938,
+  "center": {
+    "lat": 45.7583245,
+    "lon": 21.2461990
+  },
+  "tags": {
+    "boat": "yes",
+    "motorboat": "permissive",
+    "name": "Bega",
+    "name:hu": "Béga",
+    "name:ro": "Bega",
+    "name:sr": "Бегеј",
+    "name:sr-Latn": "Begej",
+    "waterway": "canal"
+  }
+},
+{
+  "type": "way",
+  "id": 181176872,
+  "center": {
+    "lat": 45.7548213,
+    "lon": 21.2205533
+  },
+  "tags": {
+    "building": "dormitory",
+    "height": "10",
+    "name": "Liceul Teoretic Nikolaus Lenau - cantină și internat",
+    "roof:colour": "#f46d55",
+    "roof:shape": "gabled"
+  }
+},
+{
+  "type": "way",
+  "id": 194482496,
+  "center": {
+    "lat": 45.7535399,
+    "lon": 21.2249632
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "2",
+    "addr:street": "Piața Victoriei",
+    "alt_name": "Palatul Lloyd",
+    "alt_name:de": "Palais Lloyd",
+    "amenity": "university",
+    "building": "yes",
+    "building:facade:colour": "#f7f7f7",
+    "building:material": "brick",
+    "education": "university",
+    "height": "25",
+    "name": "Rectoratul Universității Politehnica Timișoara",
+    "roof:colour": "#cacdd2",
+    "roof:shape": "hipped",
+    "wikidata": "Q1247933",
+    "wikipedia": "ro:Palatul Lloyd"
+  }
+},
+{
+  "type": "way",
+  "id": 199402305,
+  "center": {
+    "lat": 45.7573062,
+    "lon": 21.2367178
+  },
+  "tags": {
+    "amenity": "university",
+    "name": "Universitatea de Medicină și Farmacie Victor Babeș",
+    "wikidata": "Q851648"
+  }
+},
+{
+  "type": "way",
+  "id": 219166243,
+  "center": {
+    "lat": 45.7500290,
+    "lon": 21.2412178
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "1",
+    "roof:colour": "#7a798c"
+  }
+},
+{
+  "type": "way",
+  "id": 464303947,
+  "center": {
+    "lat": 45.7455845,
+    "lon": 21.2225893
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "14",
+    "addr:street": "Strada Remus",
+    "alt_name": "MPT",
+    "amenity": "university",
+    "check_date": "2026-09-06",
+    "name": "Facultatea de Management în Producție și Transporturi",
+    "website": "https://www.mpt.upt.ro/"
+  }
+},
+{
+  "type": "way",
+  "id": 681675639,
+  "center": {
+    "lat": 45.7490426,
+    "lon": 21.2423169
+  },
+  "tags": {
+    "name": "Complex Studențesc",
+    "place": "suburb"
+  }
+},
+{
+  "type": "way",
+  "id": 740711149,
+  "center": {
+    "lat": 45.7492606,
+    "lon": 21.2387771
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "5",
+    "addr:street": "Piața Sfântul Petru",
+    "building": "dormitory",
+    "building:colour": "#2024ff",
+    "building:levels": "7",
+    "name": "Cămin Piața Sfântul Petru",
+    "operator": "Universitatea de Vest Timișoara",
+    "roof:colour": "white",
+    "roof:shape": "flat"
+  }
+},
+{
+  "type": "way",
+  "id": 941065175,
+  "center": {
+    "lat": 45.7466291,
+    "lon": 21.2377160
+  },
+  "tags": {
+    "building": "garages",
+    "description": "Garaje utilizate drept xerox-uri",
+    "name": "Garaje Complexul Studentesc"
+  }
+},
+{
+  "type": "way",
+  "id": 1274595146,
+  "center": {
+    "lat": 45.7498327,
+    "lon": 21.2187234
+  },
+  "tags": {
+    "amenity": "university"
+  }
+},
+{
+  "type": "way",
+  "id": 1562218196,
+  "center": {
+    "lat": 45.7489260,
+    "lon": 21.2292546
+  },
+  "tags": {
+    "amenity": "university"
+  }
+},
+{
+  "type": "way",
+  "id": 1575815023,
+  "center": {
+    "lat": 45.7507502,
+    "lon": 21.2408943
+  },
+  "tags": {
+    "building": "dormitory",
+    "name": "Căminul G18",
+    "roof:colour": "#a56362"
+  }
+},
+{
+  "type": "way",
+  "id": 1575856007,
+  "center": {
+    "lat": 45.7493534,
+    "lon": 21.2413995
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "1",
+    "roof:colour": "#7a798c"
+  }
+},
+{
+  "type": "way",
+  "id": 1575856008,
+  "center": {
+    "lat": 45.7490325,
+    "lon": 21.2411988
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "8",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels": "5",
+    "building:levels:underground": "0",
+    "name": "Căminul C8 UPT",
+    "roof:colour": "#a56362",
+    "roof:height": "4",
+    "roof:shape": "hipped",
+    "smoking": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1575856009,
+  "center": {
+    "lat": 45.7495813,
+    "lon": 21.2419012
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "1",
+    "roof:colour": "#7a798c"
+  }
+},
+{
+  "type": "way",
+  "id": 1575856010,
+  "center": {
+    "lat": 45.7497921,
+    "lon": 21.2424051
+  },
+  "tags": {
+    "building": "dormitory",
+    "building:levels": "1",
+    "roof:colour": "#7a798c"
+  }
+},
+{
+  "type": "relation",
+  "id": 4450591,
+  "center": {
+    "lat": 45.5363694,
+    "lon": 21.3142898
+  },
+  "tags": {
+    "name": "Bega",
+    "name:be": "Бега",
+    "name:bs": "Begej",
+    "name:ca": "Riu Bega",
+    "name:cs": "Bega",
+    "name:de": "Bega",
+    "name:el": "Μπέγκα",
+    "name:en": "Bega",
+    "name:eo": "Bega",
+    "name:es": "Río Begej",
+    "name:fr": "Bega",
+    "name:he": "בגה",
+    "name:hr": "Begej",
+    "name:hu": "Béga",
+    "name:jv": "Kali Begej",
+    "name:nl": "Bega",
+    "name:nn": "Bega ved Tisza",
+    "name:pt": "Rio Bega",
+    "name:ro": "Bega",
+    "name:ru": "Бега",
+    "name:sl": "Begej",
+    "name:sr": "Бегеј",
+    "name:sr-Latn": "Begej",
+    "name:uk": "Бега",
+    "type": "waterway",
+    "waterway": "river",
+    "wikidata": "Q615051",
+    "wikipedia": "sr:Бегеј"
+  }
+},
+{
+  "type": "relation",
+  "id": 17925018,
+  "center": {
+    "lat": 45.6035396,
+    "lon": 20.8906213
+  },
+  "tags": {
+    "name": "Canalul Bega",
+    "name:hu": "Béga-csatórnal",
+    "name:ro": "Canalul Bega",
+    "type": "waterway",
+    "waterway": "canal",
+    "wikidata": "Q838822",
+    "wikipedia": "en:Bega Canal"
+  }
+},
+{
+  "type": "relation",
+  "id": 21910261,
+  "center": {
+    "lat": 45.7502178,
+    "lon": 21.2413329
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "13",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 21910262,
+  "center": {
+    "lat": 45.7498522,
+    "lon": 21.2402805
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "12",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "atm": "yes",
+    "building": "dormitory",
+    "building:levels": "1",
+    "type": "multipolygon"
+  }
+},
+{
+  "type": "relation",
+  "id": 21910263,
+  "center": {
+    "lat": 45.7492484,
+    "lon": 21.2416426
+  },
+  "tags": {
+    "addr:city": "Timișoara",
+    "addr:housenumber": "9",
+    "addr:postcode": "300551",
+    "addr:street": "Aleea Studenților",
+    "building": "dormitory",
+    "building:colour": "white",
+    "building:levels:underground": "0",
+    "name": "Căminul C9 UPT",
+    "roof:height": "4",
+    "smoking": "no",
+    "type": "multipolygon"
+  }
+}
+
+  ]
+}

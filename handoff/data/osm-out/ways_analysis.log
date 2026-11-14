@@ -1,0 +1,202 @@
+# OSM timestamp 2026-11-14T03:26:33Z | highway ways in generous extract: 7896
+excluded by rule: {'access=private': 404, 'highway=construction': 98, 'access=no': 73, 'area=yes': 50, 'highway=proposed': 6}
+street-class ways: total 1674 | excluded {'access=no': 8} | access private/no but kept through foot/bicycle: 2
+lit values, all highway ways of the generous extract (before exclusions): {'(missing)': 6884, 'yes': 962, 'no': 50}
+
+## T1d variants
+compact [45.7432, 21.2248, 45.7512, 21.244] area km2 1.327 | width m 1496 height m 893
+   zone overlap (zone, km2 inside bbox, % of bbox, % of zone): [('Complex Studențesc', 0.602, 45.3, 77.8), ('Cetate', 0.31, 23.4, 15.1), ('Stadion', 0.221, 16.6, 22.9), ('Elisabetin', 0.17, 12.8, 7.7)]
+extended [45.7405, 21.2103, 45.7512, 21.244] area km2 3.116 | width m 2625 height m 1196
+   zone overlap (zone, km2 inside bbox, % of bbox, % of zone): [('Elisabetin', 0.648, 20.8, 29.5), ('Complex Studențesc', 0.602, 19.3, 77.8), ('Odobescu', 0.494, 15.8, 75.3), ('Cetate', 0.463, 14.9, 22.6), ('Iosefin', 0.372, 11.9, 29.2), ('Stadion', 0.357, 11.4, 37.0), ('Gara de Nord', 0.111, 3.6, 5.0)]
+zone [45.74441, 21.22535, 45.75447, 21.24678] area km2 1.863 | width m 1670 height m 1123
+   zone overlap (zone, km2 inside bbox, % of bbox, % of zone): [('Complex Studențesc', 0.773, 41.5, 100.0), ('Cetate', 0.685, 36.8, 33.4), ('Stadion', 0.243, 13.1, 25.3), ('Fabric', 0.093, 5.0, 9.5), ('Elisabetin', 0.029, 1.6, 1.3)]
+
+## T2 composition
+
+### T2 - compact [45.7432, 21.2248, 45.7512, 21.244]
+| class | n_ways | km | lit yes km | lit no km | lit missing km | lit other km | lit-tagged share | named share of km |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| streets | 190 | 16.86 | 8.88 | 0.02 | 7.95 | 0.00 | 52.8% | 97.7% |
+| pedestrian | 3 | 0.69 | 0.68 | 0.00 | 0.01 | 0.00 | 98.2% | 100.0% |
+| footway_sidewalk | 161 | 15.20 | 6.41 | 0.21 | 8.58 | 0.00 | 43.6% | 61.1% |
+| footway_crossing | 106 | 1.30 | 0.77 | 0.00 | 0.54 | 0.00 | 58.8% | 6.0% |
+| footway_other | 359 | 13.81 | 1.19 | 0.32 | 12.30 | 0.00 | 10.9% | 0.1% |
+| cycleway | 3 | 0.63 | 0.00 | 0.00 | 0.63 | 0.00 | 0.0% | 0.0% |
+| path | 29 | 2.45 | 1.00 | 0.28 | 1.17 | 0.00 | 52.1% | 0.0% |
+| steps | 30 | 0.27 | 0.04 | 0.03 | 0.20 | 0.00 | 26.2% | 0.0% |
+| service | 126 | 8.82 | 0.52 | 0.09 | 8.22 | 0.00 | 6.9% | 24.0% |
+| allnet | 1007 | 60.04 | 19.49 | 0.94 | 39.61 | 0.00 | 34.0% | 47.7% |
+headline: lit-tagged share of streets km = 52.8% ; of allnet km = 34.0%
+streets ways with a lit tag: 122 of 190 (64.2% of ways)
+distinct street NAMES in variant: 59 | names with any lit-tagged way: 24
+lit values (allnet ways): {'(missing)': 718, 'yes': 272, 'no': 17}
+lit values (streets ways): {'yes': 121, '(missing)': 68, 'no': 1}
+street WAY lengths m (clipped): n 190 p10 9.5 p50 60.3 p75 113.8 p90 180.5 p99 415.6 max 794.0 | >200 m: 16 ways 5.25 km | >400 m: 3 ways 1.65 km
+allnet WAY lengths m (clipped): n 1007 p10 5.9 p50 34.0 p75 77.1 p90 150.1 p99 357.9 max 794.0
+
+### T2 - extended [45.7405, 21.2103, 45.7512, 21.244]
+| class | n_ways | km | lit yes km | lit no km | lit missing km | lit other km | lit-tagged share | named share of km |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| streets | 422 | 40.77 | 17.20 | 0.02 | 23.55 | -0.00 | 42.2% | 98.5% |
+| pedestrian | 8 | 0.96 | 0.89 | 0.00 | 0.07 | -0.00 | 92.7% | 78.2% |
+| footway_sidewalk | 265 | 25.64 | 7.68 | 0.32 | 17.64 | 0.00 | 31.2% | 58.1% |
+| footway_crossing | 177 | 2.65 | 0.98 | 0.00 | 1.66 | -0.00 | 37.1% | 3.4% |
+| footway_other | 560 | 24.20 | 1.98 | 0.84 | 21.39 | 0.00 | 11.6% | 4.4% |
+| cycleway | 10 | 1.87 | 0.00 | 0.00 | 1.87 | 0.00 | 0.0% | 29.3% |
+| path | 70 | 5.33 | 1.15 | 0.29 | 3.90 | -0.00 | 26.9% | 31.2% |
+| steps | 72 | 0.60 | 0.08 | 0.03 | 0.49 | -0.00 | 17.1% | 11.7% |
+| service | 254 | 15.49 | 0.52 | 0.09 | 14.89 | 0.00 | 3.9% | 16.2% |
+| track | 2 | 0.08 | 0.00 | 0.00 | 0.08 | 0.00 | 0.0% | 0.0% |
+| allnet | 1840 | 117.58 | 30.47 | 1.58 | 85.54 | 0.00 | 27.3% | 52.5% |
+headline: lit-tagged share of streets km = 42.2% ; of allnet km = 27.3%
+streets ways with a lit tag: 215 of 422 (50.9% of ways)
+distinct street NAMES in variant: 111 | names with any lit-tagged way: 51
+lit values (allnet ways): {'(missing)': 1405, 'yes': 414, 'no': 21}
+lit values (streets ways): {'yes': 214, '(missing)': 207, 'no': 1}
+street WAY lengths m (clipped): n 422 p10 11.7 p50 59.1 p75 125.7 p90 222.9 p99 515.3 max 794.3 | >200 m: 50 ways 16.50 km | >400 m: 10 ways 5.70 km
+allnet WAY lengths m (clipped): n 1840 p10 6.4 p50 33.3 p75 79.9 p90 166.0 p99 420.8 max 855.4
+
+### T2 - zone [45.74441, 21.22535, 45.75447, 21.24678]
+| class | n_ways | km | lit yes km | lit no km | lit missing km | lit other km | lit-tagged share | named share of km |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| streets | 269 | 22.57 | 9.25 | 0.09 | 13.24 | 0.00 | 41.4% | 98.0% |
+| pedestrian | 22 | 1.50 | 1.31 | 0.01 | 0.18 | 0.00 | 88.3% | 99.4% |
+| footway_sidewalk | 208 | 20.93 | 7.44 | 0.21 | 13.28 | 0.00 | 36.5% | 61.3% |
+| footway_crossing | 136 | 1.84 | 1.03 | 0.00 | 0.80 | 0.00 | 56.2% | 7.8% |
+| footway_other | 489 | 21.64 | 3.52 | 0.32 | 17.80 | 0.00 | 17.7% | 0.5% |
+| cycleway | 4 | 0.59 | 0.00 | 0.00 | 0.59 | 0.00 | 0.0% | 19.0% |
+| path | 35 | 3.60 | 1.50 | 0.38 | 1.73 | -0.00 | 52.1% | 0.0% |
+| steps | 35 | 0.26 | 0.03 | 0.02 | 0.20 | -0.00 | 21.3% | 0.0% |
+| service | 168 | 11.64 | 0.44 | 0.09 | 11.12 | 0.00 | 4.5% | 22.8% |
+| allnet | 1366 | 84.57 | 24.52 | 1.11 | 58.94 | 0.00 | 30.3% | 46.7% |
+headline: lit-tagged share of streets km = 41.4% ; of allnet km = 30.3%
+streets ways with a lit tag: 124 of 269 (46.1% of ways)
+distinct street NAMES in variant: 74 | names with any lit-tagged way: 26
+lit values (allnet ways): {'(missing)': 1011, 'yes': 337, 'no': 18}
+lit values (streets ways): {'(missing)': 145, 'yes': 123, 'no': 1}
+street WAY lengths m (clipped): n 269 p10 9.0 p50 55.9 p75 109.5 p90 180.8 p99 423.4 max 743.9 | >200 m: 20 ways 6.74 km | >400 m: 4 ways 2.07 km
+allnet WAY lengths m (clipped): n 1366 p10 5.9 p50 35.6 p75 82.8 p90 147.7 p99 360.7 max 747.1
+
+### reference: generous bbox [45.728, 21.2, 45.758, 21.258] area km2 15.04
+| streets | 1666 | 181.42 | 38.29 | 0.09 | 143.04 | 0.00 | 21.2% | 98.4% |
+| pedestrian | 96 | 9.29 | 5.01 | 0.09 | 4.19 | -0.00 | 54.9% | 63.5% |
+| footway_sidewalk | 1070 | 109.58 | 16.10 | 0.44 | 93.04 | 0.00 | 15.1% | 67.6% |
+| footway_crossing | 782 | 12.04 | 2.18 | 0.04 | 9.81 | 0.00 | 18.5% | 2.3% |
+| footway_other | 1632 | 77.63 | 6.40 | 1.41 | 69.82 | 0.00 | 10.1% | 2.5% |
+| cycleway | 64 | 10.80 | 0.29 | 0.00 | 10.51 | 0.00 | 2.7% | 70.0% |
+| path | 275 | 26.14 | 5.17 | 0.60 | 20.37 | 0.00 | 22.0% | 53.8% |
+| steps | 163 | 1.24 | 0.10 | 0.03 | 1.11 | 0.00 | 10.7% | 9.0% |
+| service | 1509 | 91.50 | 1.44 | 0.18 | 89.88 | 0.00 | 1.8% | 20.2% |
+| track | 8 | 0.53 | 0.00 | 0.00 | 0.53 | 0.00 | 0.0% | 0.0% |
+| allnet | 7265 | 520.17 | 75.00 | 2.87 | 442.30 | -0.00 | 15.0% | 57.9% |
+
+## T1e 250 m grid
+grid cells 266 ( 19 x 14 ) with streets: 264 -> saved C:/Users/Timur/AppData/Local/Temp/claude/50203f85cc2bb294/f38f5737-e8f0-41ee-9a1b-f8fc47f8cf66/scratchpad/osm/out\grid250_streets_lit.csv
+grid total street km 181.42 (generous clipped streets km 181.42)
+cells with centre in extended and >20 m of street: 55 | share >=90% tagged: 4 | 50-90%: 19 | 10-50%: 18 | <10%: 14
+same over the generous bbox: cells 261 | >=90%: 6 | 50-90%: 30 | 10-50%: 73 | <10%: 152
+grid map, cells with centre in extended; rows north->south, cols west->east; value = lit-tagged share in tenths (., = no street), u = untagged km*10
+  lat 45.7507 |  0  0  0  3  7  6  3  5  8  6  6 |   untagged km x10:   3   7   9   6   4   4   7   4   1   3   3
+  lat 45.7485 |  0  1  7  2  2 10  8 10 10  7  7 |   untagged km x10:   7   7   3  10   4   0   1   0   0   1   2
+  lat 45.7462 |  7  4  4  3  0  9  0  0  3  3  5 |   untagged km x10:   2   5   5   5   9   1   5  10   6   5   3
+  lat 45.7440 | 10  4  6  1  7  6  0  0  4  2  4 |   untagged km x10:   0   6   3   6   2   4  10  11   7   8   4
+  lat 45.7417 |  9  5  8  0  3  4  0  0  1  6  2 |   untagged km x10:   1   4   1   3   6   9   9   9   6   4   4
+  lon centres: [np.float64(21.2105), np.float64(21.2137), np.float64(21.2169), np.float64(21.2202), np.float64(21.2234), np.float64(21.2266), np.float64(21.2298), np.float64(21.233), np.float64(21.2362), np.float64(21.2394), np.float64(21.2427)]
+extended bbox split by Bega centreline into 2 parts; areas km2: [2.669, 0.447]
+| sub-area of extended | area km2 | streets km | untagged km | lit-tagged share | share of all untagged street km |
+|---|---:|---:|---:|---:|---:|
+| north bank (between Bega centreline and north edge) | 0.447 | 5.06 | 3.10 | 38.8% | 13.2% |
+| west: 16 Decembrie..Mihai Viteazu / north of Bd. V. Babes line (lat 45.7444), south of Bega | 0.634 | 8.85 | 5.35 | 39.5% | 22.7% |
+| west: 16 Decembrie..Mihai Viteazu / south of lat 45.7444 | 0.512 | 6.50 | 2.94 | 54.7% | 12.5% |
+| middle: Mihai Viteazu..Strada Cluj / north of Bd. V. Babes line (lat 45.7444), south of Bega | 0.403 | 5.08 | 2.67 | 47.4% | 11.3% |
+| middle: Mihai Viteazu..Strada Cluj / south of lat 45.7444 | 0.337 | 5.22 | 4.53 | 13.3% | 19.2% |
+| east: Strada Cluj..Aleea F.C. Ripensia / north of Bd. V. Babes line (lat 45.7444), south of Bega | 0.497 | 5.79 | 2.31 | 60.1% | 9.8% |
+| east: Strada Cluj..Aleea F.C. Ripensia / south of lat 45.7444 | 0.287 | 4.28 | 2.65 | 38.1% | 11.2% |
+untagged street names in extended: 82 | total untagged km 23.55
+| # | untagged street (extended) | untagged km | n ways | highway | km of same name tagged in extended |
+|---:|---|---:|---:|---|---:|
+| 1 | Bulevardul 16 Decembrie 1989 | 1.335 | 18 | secondary | 1.267 |
+| 2 | Splaiul Nicolae Titulescu | 1.328 | 16 | secondary,secondary_link,tertiary | 0.181 |
+| 3 | Splaiul Tudor Vladimirescu | 1.139 | 6 | secondary,tertiary | 0.231 |
+| 4 | Strada 1 Decembrie 1918 | 1.058 | 5 | residential | 0.578 |
+| 5 | Bulevardul Doctor Victor Babeș | 0.794 | 1 | tertiary | 0.021 |
+| 6 | Strada Alexandru Odobescu | 0.725 | 4 | residential | 0.179 |
+| 7 | Strada Virgil Madgearu | 0.703 | 3 | residential | 0.000 |
+| 8 | Strada Romulus | 0.578 | 2 | residential | 0.304 |
+| 9 | Strada Memorandului | 0.508 | 2 | residential | 0.000 |
+| 10 | Strada Petre Râmneanțu | 0.484 | 5 | residential | 0.000 |
+| 11 | Bulevardul Eroilor de la Tisa | 0.478 | 4 | tertiary | 0.222 |
+| 12 | (unnamed) | 0.418 | 6 | residential,secondary_link,tertiary | 0.176 |
+| 13 | Bulevardul Constantin Brâncoveanu | 0.413 | 8 | secondary | 0.000 |
+| 14 | Bulevardul Constantin Diaconovici Loga | 0.407 | 3 | residential,tertiary | 0.091 |
+| 15 | Strada Alexandru Vaida Voievod | 0.405 | 3 | residential | 0.000 |
+untagged streets km by highway value (extended): {'living_street': 0.16, 'primary': 0.2, 'residential': 15.9, 'secondary': 2.95, 'secondary_link': 0.27, 'tertiary': 3.76, 'tertiary_link': 0.04, 'unclassified': 0.27} | all streets km by highway: {'living_street': 0.16, 'primary': 0.2, 'residential': 22.12, 'secondary': 10.43, 'secondary_link': 0.66, 'tertiary': 6.67, 'tertiary_link': 0.26, 'unclassified': 0.27}
+
+## T5 sidewalks and non-street paths (extended)
+footway_sidewalk km: 25.64 (n ways 265)
+| sidewalk tag on streets | n ways | km | share of streets km |
+|---|---:|---:|---:|
+| sidewalk | 241 | 20.09 | 49.3% |
+| sidewalk:left | 1 | 0.01 | 0.0% |
+| sidewalk:right | 3 | 0.19 | 0.5% |
+| sidewalk:both | 22 | 2.40 | 5.9% |
+| any of the four | 266 | 22.68 | 55.6% |
+sidewalk tag values on streets (ways, km): {'sidewalk=separate': (166, 11.66), 'sidewalk=both': (34, 4.81), 'sidewalk=right': (21, 1.22), 'sidewalk:both=separate': (20, 2.23), 'sidewalk=no': (12, 0.91), 'sidewalk=left': (8, 1.49), 'sidewalk:right=separate': (3, 0.19), 'sidewalk:both=yes': (2, 0.18), 'sidewalk:left=no': (1, 0.01)}
+non-street share of allnet km: 65.3% (76.81 of 117.58 km) ; lit-tagged share of non-street km: 19.3%
+non-street walk/bike classes (pedestrian, footway_*, cycleway, path, steps): 61.25 km, lit-tagged 23.2%
+| group | km | share of non-street walk/bike km | lit-tagged share | lit=yes share | lit=no share |
+|---|---:|---:|---:|---:|---:|
+| within 15 m of a street centreline | 34.87 | 56.9% | 25.3% | 23.6% | 1.7% |
+| farther than 15 m (park/campus/embankment paths) | 26.38 | 43.1% | 20.5% | 17.2% | 3.3% |
+| within 25 m of a street centreline | 40.98 | 66.9% | 25.2% | 23.2% | 1.9% |
+| farther than 25 m (park/campus/embankment paths) | 20.27 | 33.1% | 19.3% | 16.0% | 3.3% |
+per class (km, km within 15 m, km within 25 m, lit-tagged share):
+| class | km | within 15 m | within 25 m | lit-tagged share |
+|---|---:|---:|---:|---:|
+| pedestrian | 0.96 | 18.3% | 28.3% | 92.7% |
+| footway_sidewalk | 25.64 | 92.2% | 97.5% | 31.2% |
+| footway_crossing | 2.65 | 97.7% | 99.1% | 37.1% |
+| footway_other | 24.20 | 19.8% | 35.0% | 11.6% |
+| cycleway | 1.87 | 77.4% | 80.6% | 0.0% |
+| path | 5.33 | 37.7% | 50.6% | 26.9% |
+| steps | 0.60 | 40.5% | 68.4% | 17.1% |
+service: 15.49 km; service=* values (km): {'(none)': 4.32, 'alley': 2.05, 'driveway': 4.97, 'parking_aisle': 4.15}
+
+## T6 same-name propagation (extended, streets)
+[extended] streets km 40.77 | ways 422 | named km 40.17 | unnamed km 0.59 (untagged 0.42)
+names: 111 | names with >=1 lit=yes way: 51 | of those also having missing ways: 21 (9.66 km missing) | fully tagged names: 30 | names with no tagged way: 60 (13.47 km)
+names with >=1 lit=no way: 0 | of those also having missing ways: 0 (0.00 km missing)
+names with BOTH yes and no: 0
+untagged streets km now: 23.55 (57.8% of streets km)
+  after propagating lit=yes along same name: 13.89 km (34.1%) ; excluding yes/no-conflict names: 13.89 km (34.1%)
+  after propagating lit=no along same name: 23.55 km (57.8%)
+  after propagating both (non-conflicting names only): 13.89 km (34.1%)
+  leave-one-out check on tagged ways (names with >=2 tagged ways): 183 ways tested, 183 agree (100.0%); km 12.90 of 12.90 (100.0%); lit=no ways tested 0, predicted no 0
+  gap between an untagged way and the nearest lit=yes way of the same name: n 84 | touching (0 m): 40 (4.68 km) | <=50 m: 52 (6.49 km) | >50 m: 32 (3.17 km) | max 820 m
+[compact] streets km 16.86 | ways 190 | named km 16.46 | unnamed km 0.39 (untagged 0.26)
+names: 59 | names with >=1 lit=yes way: 24 | of those also having missing ways: 7 (1.96 km missing) | fully tagged names: 17 | names with no tagged way: 35 (5.74 km)
+names with >=1 lit=no way: 0 | of those also having missing ways: 0 (0.00 km missing)
+names with BOTH yes and no: 0
+untagged streets km now: 7.95 (47.2% of streets km)
+  after propagating lit=yes along same name: 6.00 km (35.6%) ; excluding yes/no-conflict names: 6.00 km (35.6%)
+  after propagating lit=no along same name: 7.95 km (47.2%)
+  after propagating both (non-conflicting names only): 6.00 km (35.6%)
+  leave-one-out check on tagged ways (names with >=2 tagged ways): 106 ways tested, 106 agree (100.0%); km 7.18 of 7.18 (100.0%); lit=no ways tested 0, predicted no 0
+  gap between an untagged way and the nearest lit=yes way of the same name: n 14 | touching (0 m): 8 (1.14 km) | <=50 m: 9 (1.31 km) | >50 m: 5 (0.64 km) | max 203 m
+[generous bbox (reference)] streets km 181.42 | ways 1666 | named km 178.55 | unnamed km 2.88 (untagged 2.50)
+names: 414 | names with >=1 lit=yes way: 102 | of those also having missing ways: 66 (37.95 km missing) | fully tagged names: 36 | names with no tagged way: 312 (102.59 km)
+names with >=1 lit=no way: 0 | of those also having missing ways: 0 (0.00 km missing)
+names with BOTH yes and no: 0
+untagged streets km now: 143.04 (78.8% of streets km)
+  after propagating lit=yes along same name: 105.09 km (57.9%) ; excluding yes/no-conflict names: 105.09 km (57.9%)
+  after propagating lit=no along same name: 143.04 km (78.8%)
+  after propagating both (non-conflicting names only): 105.09 km (57.9%)
+  leave-one-out check on tagged ways (names with >=2 tagged ways): 389 ways tested, 389 agree (100.0%); km 30.12 of 30.12 (100.0%); lit=no ways tested 0, predicted no 0
+  gap between an untagged way and the nearest lit=yes way of the same name: n 410 | touching (0 m): 141 (12.57 km) | <=50 m: 232 (21.32 km) | >50 m: 178 (16.63 km) | max 1258 m
+
+## T7 street lamps
+lamps timestamp 2026-11-14T03:28:17Z | highway=street_lamp nodes in generous bbox: 17
+    compact 2
+    extended 4
+    zone 3
+lamp nodes (lat, lon): [(45.75769, 21.22937), (45.75774, 21.22944), (45.75774, 21.22865), (45.75776, 21.22949), (45.75777, 21.22959), (45.7578, 21.2286), (45.75782, 21.22857), (45.75784, 21.22847), (45.75266, 21.22501), (45.75338, 21.22573), (45.75398, 21.22612), (45.75296, 21.22516), (45.75348, 21.22542), (45.74758, 21.22117), (45.75068, 21.22467), (45.75058, 21.22492), (45.75099, 21.2253)]

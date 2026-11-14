@@ -1,0 +1,726 @@
+{
+ "timestamp_osm_base": "2026-11-14T03:26:33Z",
+ "variants": {
+  "compact": {
+   "bbox_swne": [
+    45.7432,
+    21.2248,
+    45.7512,
+    21.244
+   ],
+   "area_km2": 1.327,
+   "zone_overlap": [
+    [
+     "Complex Studențesc",
+     0.602,
+     45.3,
+     77.8
+    ],
+    [
+     "Cetate",
+     0.31,
+     23.4,
+     15.1
+    ],
+    [
+     "Stadion",
+     0.221,
+     16.6,
+     22.9
+    ],
+    [
+     "Elisabetin",
+     0.17,
+     12.8,
+     7.7
+    ]
+   ],
+   "composition": [
+    {
+     "class": "streets",
+     "n_ways": 190,
+     "km": 16.8563,
+     "lit_yes_km": 8.8821,
+     "lit_no_km": 0.0216,
+     "lit_missing_km": 7.9526,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.5282,
+     "named_share": 0.9767
+    },
+    {
+     "class": "pedestrian",
+     "n_ways": 3,
+     "km": 0.6926,
+     "lit_yes_km": 0.6802,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.0124,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.9821,
+     "named_share": 1.0
+    },
+    {
+     "class": "footway_sidewalk",
+     "n_ways": 161,
+     "km": 15.2022,
+     "lit_yes_km": 6.4103,
+     "lit_no_km": 0.2103,
+     "lit_missing_km": 8.5816,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.4355,
+     "named_share": 0.6111
+    },
+    {
+     "class": "footway_crossing",
+     "n_ways": 106,
+     "km": 1.3034,
+     "lit_yes_km": 0.7668,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.5366,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.5883,
+     "named_share": 0.0605
+    },
+    {
+     "class": "footway_other",
+     "n_ways": 359,
+     "km": 13.8106,
+     "lit_yes_km": 1.1942,
+     "lit_no_km": 0.3166,
+     "lit_missing_km": 12.2998,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.1094,
+     "named_share": 0.0013
+    },
+    {
+     "class": "cycleway",
+     "n_ways": 3,
+     "km": 0.6347,
+     "lit_yes_km": 0.0,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.6347,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0,
+     "named_share": 0.0
+    },
+    {
+     "class": "path",
+     "n_ways": 29,
+     "km": 2.4483,
+     "lit_yes_km": 0.9957,
+     "lit_no_km": 0.2801,
+     "lit_missing_km": 1.1725,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.5211,
+     "named_share": 0.0
+    },
+    {
+     "class": "steps",
+     "n_ways": 30,
+     "km": 0.2676,
+     "lit_yes_km": 0.0448,
+     "lit_no_km": 0.0252,
+     "lit_missing_km": 0.1976,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.2615,
+     "named_share": 0.0
+    },
+    {
+     "class": "service",
+     "n_ways": 126,
+     "km": 8.8234,
+     "lit_yes_km": 0.5166,
+     "lit_no_km": 0.0884,
+     "lit_missing_km": 8.2184,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0686,
+     "named_share": 0.2401
+    },
+    {
+     "class": "allnet",
+     "n_ways": 1007,
+     "km": 60.0391,
+     "lit_yes_km": 19.4907,
+     "lit_no_km": 0.9421,
+     "lit_missing_km": 39.6062,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.3403,
+     "named_share": 0.4774
+    }
+   ],
+   "lit_values_allnet_ways": {
+    "(missing)": 718,
+    "yes": 272,
+    "no": 17
+   },
+   "lit_values_streets_ways": {
+    "yes": 121,
+    "(missing)": 68,
+    "no": 1
+   },
+   "street_way_len_m": {
+    "n": 190,
+    "p10": 9.477351098034928,
+    "p50": 60.302380086756315,
+    "p75": 113.75282253805318,
+    "p90": 180.52604738358824,
+    "p99": 415.62337622835594,
+    "max": 793.9875120332849,
+    "n_gt200": 16,
+    "km_gt200": 5.249617839070047,
+    "n_gt400": 3,
+    "km_gt400": 1.6473870064357647
+   }
+  },
+  "extended": {
+   "bbox_swne": [
+    45.7405,
+    21.2103,
+    45.7512,
+    21.244
+   ],
+   "area_km2": 3.116,
+   "zone_overlap": [
+    [
+     "Elisabetin",
+     0.648,
+     20.8,
+     29.5
+    ],
+    [
+     "Complex Studențesc",
+     0.602,
+     19.3,
+     77.8
+    ],
+    [
+     "Odobescu",
+     0.494,
+     15.8,
+     75.3
+    ],
+    [
+     "Cetate",
+     0.463,
+     14.9,
+     22.6
+    ],
+    [
+     "Iosefin",
+     0.372,
+     11.9,
+     29.2
+    ],
+    [
+     "Stadion",
+     0.357,
+     11.4,
+     37.0
+    ],
+    [
+     "Gara de Nord",
+     0.111,
+     3.6,
+     5.0
+    ]
+   ],
+   "composition": [
+    {
+     "class": "streets",
+     "n_ways": 422,
+     "km": 40.7666,
+     "lit_yes_km": 17.1961,
+     "lit_no_km": 0.0216,
+     "lit_missing_km": 23.5489,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.4223,
+     "named_share": 0.9854
+    },
+    {
+     "class": "pedestrian",
+     "n_ways": 8,
+     "km": 0.9598,
+     "lit_yes_km": 0.8898,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.07,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.9271,
+     "named_share": 0.7816
+    },
+    {
+     "class": "footway_sidewalk",
+     "n_ways": 265,
+     "km": 25.6386,
+     "lit_yes_km": 7.6802,
+     "lit_no_km": 0.3202,
+     "lit_missing_km": 17.6383,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.312,
+     "named_share": 0.5811
+    },
+    {
+     "class": "footway_crossing",
+     "n_ways": 177,
+     "km": 2.6463,
+     "lit_yes_km": 0.982,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 1.6644,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.3711,
+     "named_share": 0.0335
+    },
+    {
+     "class": "footway_other",
+     "n_ways": 560,
+     "km": 24.2045,
+     "lit_yes_km": 1.9764,
+     "lit_no_km": 0.8384,
+     "lit_missing_km": 21.3897,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.1163,
+     "named_share": 0.0438
+    },
+    {
+     "class": "cycleway",
+     "n_ways": 10,
+     "km": 1.8668,
+     "lit_yes_km": 0.0,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 1.8668,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0,
+     "named_share": 0.2932
+    },
+    {
+     "class": "path",
+     "n_ways": 70,
+     "km": 5.3327,
+     "lit_yes_km": 1.1483,
+     "lit_no_km": 0.286,
+     "lit_missing_km": 3.8985,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.269,
+     "named_share": 0.3125
+    },
+    {
+     "class": "steps",
+     "n_ways": 72,
+     "km": 0.5964,
+     "lit_yes_km": 0.077,
+     "lit_no_km": 0.0252,
+     "lit_missing_km": 0.4942,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.1713,
+     "named_share": 0.1167
+    },
+    {
+     "class": "service",
+     "n_ways": 254,
+     "km": 15.4933,
+     "lit_yes_km": 0.5166,
+     "lit_no_km": 0.0884,
+     "lit_missing_km": 14.8884,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.039,
+     "named_share": 0.1622
+    },
+    {
+     "class": "track",
+     "n_ways": 2,
+     "km": 0.076,
+     "lit_yes_km": 0.0,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.076,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0,
+     "named_share": 0.0
+    },
+    {
+     "class": "allnet",
+     "n_ways": 1840,
+     "km": 117.5811,
+     "lit_yes_km": 30.4663,
+     "lit_no_km": 1.5797,
+     "lit_missing_km": 85.5352,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.2725,
+     "named_share": 0.5253
+    }
+   ],
+   "lit_values_allnet_ways": {
+    "(missing)": 1405,
+    "yes": 414,
+    "no": 21
+   },
+   "lit_values_streets_ways": {
+    "yes": 214,
+    "(missing)": 207,
+    "no": 1
+   },
+   "street_way_len_m": {
+    "n": 422,
+    "p10": 11.741729204117625,
+    "p50": 59.05190449376383,
+    "p75": 125.6993935435081,
+    "p90": 222.8941029746778,
+    "p99": 515.2950211380473,
+    "max": 794.2513250757509,
+    "n_gt200": 50,
+    "km_gt200": 16.501507086973586,
+    "n_gt400": 10,
+    "km_gt400": 5.698865179562563
+   }
+  },
+  "zone": {
+   "bbox_swne": [
+    45.74441,
+    21.22535,
+    45.75447,
+    21.24678
+   ],
+   "area_km2": 1.863,
+   "zone_overlap": [
+    [
+     "Complex Studențesc",
+     0.773,
+     41.5,
+     100.0
+    ],
+    [
+     "Cetate",
+     0.685,
+     36.8,
+     33.4
+    ],
+    [
+     "Stadion",
+     0.243,
+     13.1,
+     25.3
+    ],
+    [
+     "Fabric",
+     0.093,
+     5.0,
+     9.5
+    ],
+    [
+     "Elisabetin",
+     0.029,
+     1.6,
+     1.3
+    ]
+   ],
+   "composition": [
+    {
+     "class": "streets",
+     "n_ways": 269,
+     "km": 22.572,
+     "lit_yes_km": 9.2475,
+     "lit_no_km": 0.0881,
+     "lit_missing_km": 13.2365,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.4136,
+     "named_share": 0.9798
+    },
+    {
+     "class": "pedestrian",
+     "n_ways": 22,
+     "km": 1.4968,
+     "lit_yes_km": 1.3111,
+     "lit_no_km": 0.0104,
+     "lit_missing_km": 0.1753,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.8829,
+     "named_share": 0.9942
+    },
+    {
+     "class": "footway_sidewalk",
+     "n_ways": 208,
+     "km": 20.9325,
+     "lit_yes_km": 7.4376,
+     "lit_no_km": 0.2103,
+     "lit_missing_km": 13.2846,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.3654,
+     "named_share": 0.6125
+    },
+    {
+     "class": "footway_crossing",
+     "n_ways": 136,
+     "km": 1.835,
+     "lit_yes_km": 1.0312,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.8038,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.562,
+     "named_share": 0.0779
+    },
+    {
+     "class": "footway_other",
+     "n_ways": 489,
+     "km": 21.6369,
+     "lit_yes_km": 3.5191,
+     "lit_no_km": 0.3166,
+     "lit_missing_km": 17.8012,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.1773,
+     "named_share": 0.0055
+    },
+    {
+     "class": "cycleway",
+     "n_ways": 4,
+     "km": 0.5946,
+     "lit_yes_km": 0.0,
+     "lit_no_km": 0.0,
+     "lit_missing_km": 0.5946,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0,
+     "named_share": 0.1905
+    },
+    {
+     "class": "path",
+     "n_ways": 35,
+     "km": 3.6049,
+     "lit_yes_km": 1.4998,
+     "lit_no_km": 0.3787,
+     "lit_missing_km": 1.7263,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.5211,
+     "named_share": 0.0
+    },
+    {
+     "class": "steps",
+     "n_ways": 35,
+     "km": 0.2585,
+     "lit_yes_km": 0.035,
+     "lit_no_km": 0.0201,
+     "lit_missing_km": 0.2034,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.2132,
+     "named_share": 0.0
+    },
+    {
+     "class": "service",
+     "n_ways": 168,
+     "km": 11.6427,
+     "lit_yes_km": 0.4368,
+     "lit_no_km": 0.0884,
+     "lit_missing_km": 11.1175,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.0451,
+     "named_share": 0.2281
+    },
+    {
+     "class": "allnet",
+     "n_ways": 1366,
+     "km": 84.5739,
+     "lit_yes_km": 24.518,
+     "lit_no_km": 1.1126,
+     "lit_missing_km": 58.9433,
+     "lit_other_km": 0.0,
+     "lit_tagged_share": 0.3031,
+     "named_share": 0.4665
+    }
+   ],
+   "lit_values_allnet_ways": {
+    "(missing)": 1011,
+    "yes": 337,
+    "no": 18
+   },
+   "lit_values_streets_ways": {
+    "(missing)": 145,
+    "yes": 123,
+    "no": 1
+   },
+   "street_way_len_m": {
+    "n": 269,
+    "p10": 8.969341194288734,
+    "p50": 55.905913606868516,
+    "p75": 109.49436471803314,
+    "p90": 180.80266209575709,
+    "p99": 423.42562892876055,
+    "max": 743.8599106729828,
+    "n_gt200": 20,
+    "km_gt200": 6.7416037949463306,
+    "n_gt400": 4,
+    "km_gt400": 2.0723588816559064
+   }
+  }
+ },
+ "subareas_extended": [
+  {
+   "name": "north bank (between Bega centreline and north edge)",
+   "area_km2": 0.4467252208664061,
+   "streets_km": 5.060682078661335,
+   "untagged_km": 3.097319872962167
+  },
+  {
+   "name": "west: 16 Decembrie..Mihai Viteazu / north of Bd. V. Babes line (lat 45.7444), south of Bega",
+   "area_km2": 0.6335077199482039,
+   "streets_km": 8.848786210004716,
+   "untagged_km": 5.352362492822575
+  },
+  {
+   "name": "west: 16 Decembrie..Mihai Viteazu / south of lat 45.7444",
+   "area_km2": 0.5123428076963936,
+   "streets_km": 6.497003512997282,
+   "untagged_km": 2.941364599350736
+  },
+  {
+   "name": "middle: Mihai Viteazu..Strada Cluj / north of Bd. V. Babes line (lat 45.7444), south of Bega",
+   "area_km2": 0.40349760205552515,
+   "streets_km": 5.0760706908421165,
+   "untagged_km": 2.672153029312126
+  },
+  {
+   "name": "middle: Mihai Viteazu..Strada Cluj / south of lat 45.7444",
+   "area_km2": 0.3370679201603882,
+   "streets_km": 5.220811677982712,
+   "untagged_km": 4.526772024026719
+  },
+  {
+   "name": "east: Strada Cluj..Aleea F.C. Ripensia / north of Bd. V. Babes line (lat 45.7444), south of Bega",
+   "area_km2": 0.4967425793330639,
+   "streets_km": 5.786475099823471,
+   "untagged_km": 2.3097289980323934
+  },
+  {
+   "name": "east: Strada Cluj..Aleea F.C. Ripensia / south of lat 45.7444",
+   "area_km2": 0.28650791764967065,
+   "streets_km": 4.276763143736107,
+   "untagged_km": 2.64923941288009
+  }
+ ],
+ "top_untagged_extended": [
+  {
+   "name": "Bulevardul 16 Decembrie 1989",
+   "km": 1.335
+  },
+  {
+   "name": "Splaiul Nicolae Titulescu",
+   "km": 1.328
+  },
+  {
+   "name": "Splaiul Tudor Vladimirescu",
+   "km": 1.139
+  },
+  {
+   "name": "Strada 1 Decembrie 1918",
+   "km": 1.058
+  },
+  {
+   "name": "Bulevardul Doctor Victor Babeș",
+   "km": 0.794
+  },
+  {
+   "name": "Strada Alexandru Odobescu",
+   "km": 0.725
+  },
+  {
+   "name": "Strada Virgil Madgearu",
+   "km": 0.703
+  },
+  {
+   "name": "Strada Romulus",
+   "km": 0.578
+  },
+  {
+   "name": "Strada Memorandului",
+   "km": 0.508
+  },
+  {
+   "name": "Strada Petre Râmneanțu",
+   "km": 0.484
+  },
+  {
+   "name": "Bulevardul Eroilor de la Tisa",
+   "km": 0.478
+  },
+  {
+   "name": "(unnamed)",
+   "km": 0.418
+  },
+  {
+   "name": "Bulevardul Constantin Brâncoveanu",
+   "km": 0.413
+  },
+  {
+   "name": "Bulevardul Constantin Diaconovici Loga",
+   "km": 0.407
+  },
+  {
+   "name": "Strada Alexandru Vaida Voievod",
+   "km": 0.405
+  }
+ ],
+ "t5": {
+  "footway_sidewalk_km": 25.63861687599696,
+  "streets_any_sidewalk_tag_share": 0.5563702122052977,
+  "nonstreet_share_allnet": 0.6532896821585553,
+  "nonstreet_lit_tagged_share": 0.19303995252233067,
+  "proximity": {
+   "15": {
+    "km": 34.86629325892652,
+    "share": 0.5692903481382556,
+    "lit_tagged_share": 0.25305271174235633,
+    "rest_km": 26.378892739658216,
+    "rest_lit_tagged_share": 0.20472089191924955
+   },
+   "25": {
+    "km": 40.97728903419309,
+    "share": 0.6690695499747524,
+    "lit_tagged_share": 0.251645452454962,
+    "rest_km": 20.267896964391635,
+    "rest_lit_tagged_share": 0.19299348494644256
+   }
+  }
+ },
+ "t6_extended": {
+  "names": 111,
+  "names_with_yes": 51,
+  "names_with_yes_and_missing": 21,
+  "missing_km_on_yes_names": 9.660126476241523,
+  "names_both": [],
+  "untagged_now_km": 23.54894042937962,
+  "untagged_after_yes_km": 13.888813953138097,
+  "untagged_after_no_km": 23.54894042937962,
+  "untagged_after_both_nonconflict_km": 13.888813953138097,
+  "streets_km": 40.76659241403813,
+  "loo_n": 183,
+  "loo_ok": 183
+ },
+ "t6_compact": {
+  "names": 59,
+  "names_with_yes": 24,
+  "names_with_yes_and_missing": 7,
+  "missing_km_on_yes_names": 1.9567708167849622,
+  "names_both": [],
+  "untagged_now_km": 7.952641611911822,
+  "untagged_after_yes_km": 5.99587079512686,
+  "untagged_after_no_km": 7.952641611911822,
+  "untagged_after_both_nonconflict_km": 5.99587079512686,
+  "streets_km": 16.856269191470957,
+  "loo_n": 106,
+  "loo_ok": 106
+ },
+ "t6_generous": {
+  "names": 414,
+  "names_with_yes": 102,
+  "names_with_yes_and_missing": 66,
+  "missing_km_on_yes_names": 37.950551426167884,
+  "names_both": [],
+  "untagged_now_km": 143.04215140106967,
+  "untagged_after_yes_km": 105.09159997490178,
+  "untagged_after_no_km": 143.04215140106967,
+  "untagged_after_both_nonconflict_km": 105.09159997490178,
+  "streets_km": 181.42227079724,
+  "loo_n": 389,
+  "loo_ok": 389
+ },
+ "lamps": {
+  "generous": 17,
+  "compact": 2,
+  "extended": 4,
+  "zone": 3
+ }
+}

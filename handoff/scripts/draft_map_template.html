@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Черновая карта освещённости — UniHack</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  html, body, #map { height: 100%; margin: 0; }
+  body { font: 14px/1.4 system-ui, "Segoe UI", Arial, sans-serif; }
+  #map { background: #f3f3f1; }
+  .gray-tiles { filter: grayscale(1) brightness(1.06) contrast(.9); }
+  .panel { background: #fff; color: #111; padding: 10px 12px; border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.35); max-width: 340px; }
+  .panel h1 { font-size: 15px; margin: 0 0 6px; }
+  .panel table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 6px; }
+  .panel td, .panel th { padding: 2px 4px; text-align: right; border-bottom: 1px solid #eee; }
+  .panel td:first-child, .panel th:first-child { text-align: left; }
+  .leg { display: flex; align-items: center; gap: 8px; margin: 3px 0; font-size: 13px; }
+  .sw { flex: 0 0 38px; height: 0; border-top: 4px solid; }
+  .note { font-size: 12px; color: #444; margin-top: 6px; }
+  .ok { color: #006b4f; font-weight: 600; } .bad { color: #a13d00; font-weight: 600; }
+  .leaflet-popup-content { font-size: 13px; }
+  .leaflet-popup-content ul { margin: 6px 0 4px 16px; padding: 0; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="../../demo/layers/layers.js"></script>
+<script>
+const DATA = __DATA__;
+const SUMMARY = __SUMMARY__;
+const LAMPS = __LAMPS__;
+const EVENTS = __EVENTS__;
+const BBOX = __BBOX__;
+
+const ST = {
+  lit_confirmed: { c: '#009E73', d: null,        w: 4, css: 'solid',  t: 'Освещено — есть прямое свидетельство (тег OSM или фонари на съёмке)' },
+  lit_likely:    { c: '#E69F00', d: '9 6',       w: 4, css: 'dashed', t: 'Вероятно освещено — только косвенные признаки или жалоба' },
+  dark_reported: { c: '#D55E00', d: '13 5 2 5',  w: 5, css: 'double', t: 'Сообщали, что темно' },
+  unknown:       { c: '#7F7F7F', d: '1 7',       w: 3, css: 'dotted', t: 'Нет данных' }
+};
+const ORDER = ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported'];
+const KIND = { street: 'улица', sidewalk: 'тротуар', crossing: 'переход', path: 'дорожка', service: 'проезд' };
+const EV_STATE = { fixed: 'закрыта', open_area_outage: 'открыта: темно в районе', open_lamp_out: 'открыта: не горит лампа', open_other: 'открыта: прочее', declined: 'отклонена, не засчитана' };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function evidenceLine(e) {
+  if (e.s === 'osm') return `OSM: lit=${esc(e.k)} (путь ${e.ways.map(esc).join(', ')})`;
+  if (e.s === 'mapillary') return `Mapillary: фонарей в 20 м — ${e.n}, ближайший в ${e.near} м, покрыто ${Math.round(e.cov * 100)}% длины, сняты в ${e.y0}${e.y1 !== e.y0 ? '–' + e.y1 : ''}` + (e.cov < 0.5 ? ' — меньше половины, источник не засчитан' : '');
+  if (e.s === 'sesizari') return `Sesizări ${esc(e.nr)}${e.n > 1 ? ' (+' + (e.n - 1) + ')' : ''}: ${esc(e.sub)} — ${EV_STATE[e.k] || esc(e.k)}, подана ${esc(e.created)}` + (e.closed ? `, закрыта ${esc(e.closed)}` : '') + (e.age != null ? `, ${e.age} дн. назад` : '') + `, ${e.d} м от отрезка`;
+  if (e.k === 'same_name') return `Косвенно: улица «${esc(e.ref)}» размечена lit=yes в другом месте участка`;
+  if (e.k === 'near_lit_street') return 'Косвенно: рядом улица со свидетельствами освещения';
+  if (e.k === 'partial_lamps') return 'Косвенно: фонари есть только на части отрезка';
+  if (e.k === 'inherited_dark') return 'Соседняя улица отмечена тёмной по жалобам';
+  return esc(JSON.stringify(e));
+}
+function popup(p) {
+  const s = ST[p.status];
+  const items = p.ev.length ? p.ev.map(e => `<li>${evidenceLine(e)}</li>`).join('') : '<li>Свидетельств нет</li>';
+  return `<b>${esc(p.name || 'без названия')}</b> · ${KIND[p.kind] || esc(p.kind)} · ${Math.round(p.len)} м<br>` +
+    `<span style="color:${s.c}">&#9632;</span> <b>${s.t}</b><br>Независимых источников: ${p.conf}<ul>${items}</ul><small>${esc(p.id)}</small>`;
+}
+
+const map = L.map('map', { preferCanvas: true, renderer: L.canvas({ tolerance: 6 }) }).fitBounds([[BBOX[0], BBOX[1]], [BBOX[2], BBOX[3]]]);
+// Two basemaps. OSM raster tiles need a Referer, so they only work when the page is served over HTTP;
+// OpenFreeMap vector tiles need WebGL but no key and no Referer. The overlay still draws if both fail.
+const osmRaster = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'gray-tiles' });
+let vector = null;
+try { vector = L.maplibreGL({ style: 'https://tiles.openfreemap.org/styles/positron' }); } catch (err) { console.warn('vector basemap unavailable', err); }
+(location.protocol === 'file:' && vector ? vector : osmRaster).addTo(map);
+const BASE = { 'Подложка: OpenStreetMap': osmRaster };
+if (vector) BASE['Подложка: OpenFreeMap'] = vector;
+map.attributionControl.addAttribution('&copy; OpenStreetMap contributors · OpenMapTiles · OpenFreeMap · Mapillary · Primăria Timișoara, Sesizări');
+L.rectangle([[BBOX[0], BBOX[1]], [BBOX[2], BBOX[3]]], { color: '#333', weight: 1, dashArray: '4 4', fill: false, interactive: false }).addTo(map);
+
+const groups = { street: L.layerGroup(), sidewalk: L.layerGroup(), path: L.layerGroup(), service: L.layerGroup() };
+const feats = DATA.features.slice().sort((a, b) => ORDER.indexOf(a.properties.status) - ORDER.indexOf(b.properties.status));
+for (const f of feats) {
+  const p = f.properties, s = ST[p.status];
+  const ll = f.geometry.coordinates.map(c => [c[1], c[0]]);
+  const g = groups[p.kind === 'crossing' ? 'sidewalk' : p.kind] || groups.service;
+  const thin = p.kind === 'street' ? 0 : 1.5;
+  L.polyline(ll, { color: '#1b1b1b', weight: s.w + 2 - thin, opacity: .5, interactive: false }).addTo(g);
+  L.polyline(ll, { color: s.c, weight: s.w - thin, dashArray: s.d, lineCap: p.status === 'unknown' ? 'round' : 'butt' }).bindPopup(() => popup(p), { maxWidth: 380 }).addTo(g);
+}
+groups.street.addTo(map); groups.sidewalk.addTo(map); groups.path.addTo(map);
+
+const lampLayer = L.layerGroup(LAMPS.map(l => L.circleMarker([l[1], l[0]], { radius: 2.5, color: '#000', weight: .6, fillColor: l[2] >= 2022 ? '#ffe600' : '#fff', fillOpacity: .95, interactive: false })));
+const EV_COL = { fixed: '#0072B2', open_area_outage: '#D55E00', open_lamp_out: '#CC79A7', open_other: '#56B4E9', declined: '#999' };
+const eventLayer = L.layerGroup(EVENTS.map(e => L.circleMarker([e.ll[1], e.ll[0]], { radius: 6, color: '#111', weight: 1, fillColor: EV_COL[e.k] || '#999', fillOpacity: .9 })
+  .bindPopup(`<b>Sesizări ${esc(e.nr)}</b>${e.n > 1 ? ' (+' + (e.n - 1) + ' в том же событии)' : ''}<br>${esc(e.sub)}<br>${EV_STATE[e.k] || esc(e.k)}; подана ${esc(e.created)}` + (e.closed ? `, закрыта ${esc(e.closed)}` : '') + (e.age != null ? `, ${e.age} дн. назад` : '') + (e.att ? '' : '<br><i>не привязана: в 30 м нет отрезка</i>'))));
+const layerCtl = L.control.layers(BASE, { 'Улицы': groups.street, 'Тротуары и переходы': groups.sidewalk, 'Дорожки (парки, кампус)': groups.path, 'Проезды и дворы': groups.service,
+  'Фонари Mapillary (жёлтые — сняты с 2022 года)': lampLayer, 'Жалобы на освещение': eventLayer }, { collapsed: false }).addTo(map);
+
+const panel = L.control({ position: 'bottomleft' });
+panel.onAdd = () => {
+  const d = L.DomUtil.create('div', 'panel');
+  const g = SUMMARY.groups, c = SUMMARY.checks;
+  const row = (label, x) => `<tr><td>${label}</td><td>${x.km}</td><td>${x.lit_confirmed}</td><td>${x.lit_likely}</td><td>${x.dark_reported}</td><td>${x.unknown}</td></tr>`;
+  d.innerHTML = '<h1>Черновая карта освещённости</h1>' +
+    ORDER.slice().reverse().map(k => `<div class="leg"><span class="sw" style="border-top-style:${ST[k].css};border-top-color:${ST[k].c}"></span>${ST[k].t}</div>`).join('') +
+    '<table><tr><th>Доля длины, %</th><th>км</th><th>подтв.</th><th>вероятно</th><th>темно</th><th>нет данных</th></tr>' +
+    row('Улицы', g.streets) + row('Тротуары', g.sidewalks) + row('Улицы и тротуары', g.streets_and_sidewalks) + row('Дорожки', g.paths) + row('Проезды', g.service) + '</table>' +
+    `<div class="note">Порог: «нет данных» на улицах и тротуарах не больше 33,3% — <span class="${c.unknown_ok ? 'ok' : 'bad'}">${c.unknown_share_streets_sidewalks}%</span>. ` +
+    `Фонари Mapillary у улиц с lit=yes: <span class="${c.lamp_recall_ok ? 'ok' : 'bad'}">${c.lamp_recall_on_lit_yes}%</span> (порог 50%).</div>` +
+    `<div class="note">Отрезков: ${SUMMARY.segments}. Фонарей в участке: ${SUMMARY.lamps_in_area}. Жалоб: ${SUMMARY.complaints_in_area}, событий: ${SUMMARY.events}. Срезы данных: 14.11.2026. Черновик, не код проекта. Нажмите на отрезок, чтобы увидеть свидетельства.</div>`;
+  L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+  return d;
+};
+panel.addTo(map);
+// Extra city-wide layers from unihack-data (demo/layers/). Needs the page at data/out/ served over HTTP; skipped otherwise.
+if (window.ExtraLayers) ExtraLayers.add(map, layerCtl, 'layers/');
+</script>
+</body>
+</html>

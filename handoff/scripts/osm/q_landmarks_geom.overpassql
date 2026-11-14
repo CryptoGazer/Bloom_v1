@@ -1,0 +1,1 @@
+[out:json][timeout:60];(way["waterway"]["name"~"Bega"](45.728,21.200,45.758,21.258);nwr["name"~"Complex(ul)? Studen",i](45.728,21.200,45.758,21.258);nwr["building"="dormitory"](45.728,21.200,45.758,21.258););out tags geom;

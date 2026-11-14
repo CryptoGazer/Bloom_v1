@@ -1,0 +1,12 @@
+.DS_Store
+# API keys (Gemini, ElevenLabs, Tiger Data, Vultr) live only here
+.env
+.env.*
+.venv/
+__pycache__/
+# raw inputs (Mapillary licence, residents' complaint numbers), osmnx cache, transit logs
+unihack-data/
+smtt-timisoara-ro/
+data/raw/
+data/cache/
+data/transit/
