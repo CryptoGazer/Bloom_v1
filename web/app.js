@@ -40,6 +40,9 @@ function renderStatic() {
   $('subtitle').textContent = t('subtitle');
   $('modes').setAttribute('aria-label', t('modesLabel'));
   $('modes-caption').textContent = t('modesLabel') + ':';
+  $('travel').setAttribute('aria-label', t('travelLabel'));
+  $('travel-walk').textContent = t('travelWalk');
+  $('travel-bike').textContent = t('travelBike');
   $('label-a').textContent = LETTER.A;
   $('label-b').textContent = LETTER.B;
   for (const [id, key] of [['from', 'from'], ['to', 'to']]) {
@@ -77,6 +80,7 @@ const routeLayer = L.featureGroup().addTo(map);
 map.on('overlayadd', () => routeLayer.bringToFront());
 
 let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
+let travel = 'walk';  // 'walk' | 'bike': how the person goes; "mode" above is what a map click does
 const markers = { A: null, B: null };
 const labels = { A: '', B: '' };
 const box = {
@@ -227,6 +231,11 @@ function swap() {
   if (A && B) compute(); else { routeLayer.clearLayers(); $('cards').innerHTML = ''; }
 }
 
+function setTravel(value) {
+  travel = value;
+  for (const r of document.querySelectorAll('input[name="travel"]')) r.checked = r.value === value;
+}
+
 function onMapClick(e) {
   if (mode !== 'route' || !summary) return;
   if (A && B) reset();
@@ -246,10 +255,10 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
-  const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B });
+  const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
   history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',')}`);
   say(esc(t('computing')));
-  getJSON(`/api/route?from=${f(A)}&to=${f(B)}`)
+  getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}`)
     .then(d => {
       plan = d;
       selected = d.verdict.kind === 'same' ? 'fastest' : 'better_lit';
@@ -342,6 +351,7 @@ function readHash() {
   const point = v => { const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(v || ''); return m ? [+m[1], +m[2]] : null; };
   const a = point(h.get('a')), b = point(h.get('b'));
   if (!a || !b) return false;
+  if (h.get('m') === 'bike') setTravel('bike');
   setPoint('A', a, h.get('an'));
   setPoint('B', b, h.get('bn'));
   map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
@@ -360,7 +370,7 @@ getJSON('/api/summary')
     $('meta').textContent = t('meta', {
       km: dec(g.km), lit: dec(g.lit_confirmed), likely: dec(g.lit_likely), dark: dec(g.dark_reported), unknown: dec(g.unknown), asof: s.as_of,
       osm: (s.network.fetched_at || '').slice(0, 10), mly: (src.mapillary.last_seen_range || []).join('…'),
-      ses: (src.sesizari.created_range || []).join('…'), speed: dec((3.6 * 1.35).toFixed(1)),
+      ses: (src.sesizari.created_range || []).join('…'), walk: dec((3.6 * 1.35).toFixed(1)), bike: dec((3.6 * 4.2).toFixed(0)),
     });
     if (window.ExtraLayers) {
       const ctl = L.control.layers(null, {}, { collapsed: window.innerWidth < 800, position: 'topright' }).addTo(map);
@@ -371,6 +381,9 @@ getJSON('/api/summary')
     $('reset').addEventListener('click', reset);
     $('locate').addEventListener('click', locate);
     $('swap').addEventListener('click', swap);
+    for (const r of document.querySelectorAll('input[name="travel"]')) {
+      r.addEventListener('change', () => { setTravel(r.value); if (A && B) compute(); });
+    }
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {

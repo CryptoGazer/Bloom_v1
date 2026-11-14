@@ -5,7 +5,8 @@
 const I18N = {
   ro: {
     htmlLang: 'ro', decimal: ',', m: 'm', km: 'km', min: 'min', letters: { A: 'A', B: 'B' },
-    title: 'Traseu de noapte', subtitle: 'Timișoara, pe jos', langLabel: 'Limba',
+    title: 'Traseu de noapte', subtitle: 'Timișoara', langLabel: 'Limba',
+    travelLabel: 'Cum mergeți', travelWalk: 'Pe jos', travelBike: 'Cu bicicleta',
     mapLabel: 'Hartă: segmente de stradă colorate după starea iluminatului',
     modesLabel: 'Clic pe hartă', modeRoute: 'pune punctele traseului', modeInspect: 'arată de ce strada are culoarea ei',
     fromLabel: 'De unde', toLabel: 'Unde', fromPlaceholder: 'De unde: adresă, loc sau stație', toPlaceholder: 'Unde: adresă, loc sau stație',
@@ -68,11 +69,12 @@ const I18N = {
     warn: 'Atenție: fără date sau semnalat ca neiluminat pe {bad} din {total} ({share})', warnRun: '; cea mai lungă porțiune semnalată ca neiluminată — {run}',
     via: 'Prin: ', snapNote: 'De la punct până la cea mai apropiată alee, în linie dreaptă (nu intră în calcul): {list}.',
     meta: 'Străzi și trotuare în zonă: {km} km; iluminat {lit}%, probabil {likely}%, semnalat ca neiluminat {dark}%, fără date {unknown}%. ' +
-      'Date la {asof}: OpenStreetMap {osm}, stâlpi Mapillary (imagini {mly}), Sesizări ({ses}). Viteză de mers {speed} km/h.',
+      'Date la {asof}: OpenStreetMap {osm}, stâlpi Mapillary (imagini {mly}), Sesizări ({ses}). Viteze: pe jos {walk} km/h, cu bicicleta {bike} km/h.',
   },
   en: {
     htmlLang: 'en', decimal: '.', m: 'm', km: 'km', min: 'min', letters: { A: 'A', B: 'B' },
-    title: 'Night route', subtitle: 'Timișoara, on foot', langLabel: 'Language',
+    title: 'Night route', subtitle: 'Timișoara', langLabel: 'Language',
+    travelLabel: 'How you go', travelWalk: 'On foot', travelBike: 'By bike',
     mapLabel: 'Map: street segments coloured by lighting status',
     modesLabel: 'A click on the map', modeRoute: 'sets route points', modeInspect: 'explains a street’s colour',
     fromLabel: 'From', toLabel: 'To', fromPlaceholder: 'From: address, place or stop', toPlaceholder: 'To: address, place or stop',
@@ -135,11 +137,12 @@ const I18N = {
     warn: 'Warning: no data or reported dark on {bad} of {total} ({share})', warnRun: '; longest reported-dark stretch — {run}',
     via: 'Via: ', snapNote: 'Straight-line distance from the point to the nearest path (not included): {list}.',
     meta: 'Streets and sidewalks in the area: {km} km; lit {lit}%, probably lit {likely}%, reported dark {dark}%, no data {unknown}%. ' +
-      'Data as of {asof}: OpenStreetMap {osm}, Mapillary street lights (imagery {mly}), Sesizări complaints ({ses}). Walking speed {speed} km/h.',
+      'Data as of {asof}: OpenStreetMap {osm}, Mapillary street lights (imagery {mly}), Sesizări complaints ({ses}). Speeds: on foot {walk} km/h, by bike {bike} km/h.',
   },
   ru: {
     htmlLang: 'ru', decimal: ',', m: 'м', km: 'км', min: 'мин', letters: { A: 'А', B: 'Б' },
-    title: 'Ночной маршрут', subtitle: 'Тимишоара, пешком', langLabel: 'Язык',
+    title: 'Ночной маршрут', subtitle: 'Тимишоара', langLabel: 'Язык',
+    travelLabel: 'Как добираться', travelWalk: 'Пешком', travelBike: 'На велосипеде',
     mapLabel: 'Карта: отрезки улиц, окрашенные по освещённости',
     modesLabel: 'Клик по карте', modeRoute: 'ставит точки маршрута', modeInspect: 'объясняет цвет улицы',
     fromLabel: 'Откуда', toLabel: 'Куда', fromPlaceholder: 'Откуда: адрес, место или остановка', toPlaceholder: 'Куда: адрес, место или остановка',
@@ -202,7 +205,7 @@ const I18N = {
     warn: 'Внимание: нет данных или сообщали о темноте на {bad} из {total} ({share})', warnRun: '; самый длинный участок «сообщали, что темно» — {run}',
     via: 'Через: ', snapNote: 'От точки до ближайшей дорожки по прямой (не входит в расчёт): {list}.',
     meta: 'Улицы и тротуары области: {km} км; освещено {lit}%, вероятно {likely}%, сообщали о темноте {dark}%, нет данных {unknown}%. ' +
-      'Данные на {asof}: OpenStreetMap {osm}, фонари Mapillary (снимки {mly}), жалобы Sesizări ({ses}). Скорость пешком {speed} км/ч.',
+      'Данные на {asof}: OpenStreetMap {osm}, фонари Mapillary (снимки {mly}), жалобы Sesizări ({ses}). Скорость: пешком {walk} км/ч, на велосипеде {bike} км/ч.',
   },
 };
 

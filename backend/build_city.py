@@ -46,8 +46,9 @@ STREET = {"trunk", "primary", "secondary", "tertiary", "unclassified", "resident
 STREET |= {s + "_link" for s in ("trunk", "primary", "secondary", "tertiary")}
 LIT_YES = {"yes", "24/7", "automatic", "limited", "interval", "sunset-sunrise", "dusk-dawn"}
 CLOSED = {"Finalizata", "Rezolvata"}
-EXTRA_WAY_TAGS = ["lit", "footway", "foot", "bicycle", "cycleway", "surface"]
-KEEP_TAGS = ("foot", "bicycle", "cycleway", "surface", "access")
+EXTRA_WAY_TAGS = ["lit", "footway", "foot", "bicycle", "cycleway", "surface", "oneway:bicycle", "cycleway:left", "cycleway:right", "cycleway:both"]
+# tags the router needs; "oneway" is osmnx's own flag (True/False): a one-way segment is stored in its driving direction
+KEEP_TAGS = ("foot", "bicycle", "cycleway", "surface", "access", "oneway", "oneway:bicycle", "cycleway:left", "cycleway:right", "cycleway:both")
 OVERPASS_MIRRORS = [
     "https://overpass-api.de/api",
     "https://maps.mail.ru/osm/tools/overpass/api",
