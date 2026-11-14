@@ -1,5 +1,5 @@
 {
- "built_at": "2026-11-14T16:51:30",
+ "built_at": "2026-11-14T17:51:27",
  "as_of": "2026-11-14",
  "area": {
   "type": "polygon",
@@ -117,7 +117,7 @@
  "segments": 5405,
  "network": {
   "source": "OpenStreetMap via osmnx 2.1.1",
-  "fetched_at": "2026-11-14T14:49:52Z",
+  "fetched_at": "2026-11-14T15:51:26Z",
   "licence": "ODbL, © OpenStreetMap contributors"
  },
  "sources": {

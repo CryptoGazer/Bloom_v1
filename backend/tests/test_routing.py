@@ -179,6 +179,13 @@ def test_api_route(client):
     assert body["from"]["snap_m"] == pytest.approx(0, abs=0.5)
 
 
+def test_api_route_by_bike_and_unknown_modes(client):
+    body = client.get("/api/route", params={"from": point(0, 0), "to": point(200, 0), "mode": "bike"}).json()
+    assert body["mode"] == "bike" and body["routes"]["fastest"]["minutes"] == pytest.approx(200 / 4.2 / 60, abs=0.1)
+    r = client.get("/api/route", params={"from": point(0, 0), "to": point(200, 0), "mode": "car"})
+    assert r.status_code == 422 and r.json()["detail"]["code"] == "mode_not_supported"
+
+
 def test_api_route_outside_coverage(client):
     r = client.get("/api/route", params={"from": point(0, 0), "to": point(100, 1000)})
     assert r.status_code == 422

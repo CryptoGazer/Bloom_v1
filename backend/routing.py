@@ -23,6 +23,7 @@ UNKNOWN, DARK = STATUSES.index("unknown"), STATUSES.index("dark_reported")
 # Spec section 12. All numbers are settings; check them with real walkers.
 SETTINGS = {
     "walk_mps": 1.35,                       # ~4.9 km/h
+    "bike_mps": 4.2,                        # ~15 km/h in town; pushing the bike ("dismount") counts at walking speed
     "factor_better_lit": {"lit_confirmed": 1.0, "lit_likely": 1.2, "unknown": 1.6, "dark_reported": 3.0},
     "hide_if_extra_min": 5.0,               # the lit route is not worth showing if it is longer by more than this
     "hide_if_extra_share": 0.30,            # ...or by more than this share
@@ -34,8 +35,12 @@ SETTINGS = {
     "snap_max_m": 300.0,                    # a point farther than this from the network is outside coverage
                                             # (300 m still reaches the middle of a mall, a yard or a park lawn)
 }
+MODES = ("walk", "bike")
 NO_WALK_HIGHWAYS = {"motorway", "motorway_link"}
 FOOT_ALLOWED = {"yes", "designated", "permissive"}
+NO_BIKE_HIGHWAYS = {"motorway", "motorway_link", "steps", "corridor", "elevator", "platform", "bus_stop"}
+BIKE_ALLOWED = {"yes", "designated", "permissive"}
+FOOT_ONLY_HIGHWAYS = {"footway", "pedestrian"}  # a bike needs an explicit bicycle=yes/designated here
 
 
 @dataclass
@@ -59,6 +64,33 @@ def walk_allowed(props):
     if access and access <= {"no"} and not (foot & FOOT_ALLOWED):
         return False
     return True
+
+
+def bike_access(props):
+    """'ride', 'push' (bicycle=dismount: walk the bike) or None (not for bikes), from OSM tags."""
+    hw, bike = _values(props, "hw"), _values(props, "bicycle")
+    if hw & NO_BIKE_HIGHWAYS:
+        return None
+    if bike & {"no", "use_sidepath"} and not (bike & BIKE_ALLOWED):
+        return None
+    access = _values(props, "access")
+    if access and access <= {"no", "private"} and not (bike & BIKE_ALLOWED):
+        return None
+    if "dismount" in bike:
+        return "push"
+    if hw and hw <= FOOT_ONLY_HIGHWAYS and not (bike & BIKE_ALLOWED):
+        return None
+    return "ride"
+
+
+def bike_both_ways(props):
+    """A one-way segment (stored in its driving direction) is two-way for bikes only with a contraflow sign."""
+    if _values(props, "oneway") != {"True"}:
+        return True
+    if "no" in _values(props, "oneway:bicycle"):
+        return True
+    lanes = set().union(*(_values(props, k) for k in ("cycleway", "cycleway:left", "cycleway:right", "cycleway:both")))
+    return any(v.startswith("opposite") for v in lanes)
 
 
 class Network:
@@ -89,35 +121,55 @@ class Network:
                 self.a.append(node(tuple(c[0]), c[0]))
                 self.b.append(node(tuple(c[-1]), c[-1]))
 
-        # walking graph; routing is limited to its largest connected part, so a point never lands on an island
-        usable = [self.len[i] > 0 and self.a[i] != self.b[i] and walk_allowed(self.props[i]) for i in range(len(self.props))]
-        adj = [[] for _ in self.node_xy]
+        self.graphs = {mode: self._build_graph(mode) for mode in MODES}
+        self.routable, self.adj = self.graphs["walk"]["routable"], self.graphs["walk"]["adj"]  # walking, as before
+        self._all_tree = STRtree(self.lines)
+        self._cum = {}
+
+    def _build_graph(self, mode):
+        """Graph of one travel mode, limited to its largest connected part so a point never lands on an island.
+        walk: every walkable segment, both ways. bike: segments open to bikes; one-way ones only in their
+        stored direction unless bikes may ride against it; "dismount" segments cost walking time."""
+        n = len(self.props)
+        if mode == "walk":
+            usable = [self.len[i] > 0 and self.a[i] != self.b[i] and walk_allowed(self.props[i]) for i in range(n)]
+            both, slow = [True] * n, [1.0] * n
+        else:
+            access = [bike_access(p) for p in self.props]
+            usable = [self.len[i] > 0 and self.a[i] != self.b[i] and access[i] is not None for i in range(n)]
+            both = [bike_both_ways(p) for p in self.props]
+            push = SETTINGS["bike_mps"] / SETTINGS["walk_mps"]
+            slow = [push if access[i] == "push" else 1.0 for i in range(n)]
+        und = [[] for _ in self.node_xy]
         for i, ok in enumerate(usable):
             if ok:
-                adj[self.a[i]].append((self.b[i], i))
-                adj[self.b[i]].append((self.a[i], i))
-        comp, sizes = [-1] * len(adj), []
-        for start in range(len(adj)):
-            if comp[start] != -1 or not adj[start]:
+                und[self.a[i]].append(self.b[i])
+                und[self.b[i]].append(self.a[i])
+        comp, sizes = [-1] * len(und), []
+        for start in range(len(und)):
+            if comp[start] != -1 or not und[start]:
                 continue
             cid, stack, size = len(sizes), [start], 0
             comp[start] = cid
             while stack:
                 u = stack.pop()
                 size += 1
-                for v, _ in adj[u]:
+                for v in und[u]:
                     if comp[v] == -1:
                         comp[v] = cid
                         stack.append(v)
             sizes.append(size)
         main = max(range(len(sizes)), key=sizes.__getitem__) if sizes else -1
-        self.routable = [ok and comp[self.a[i]] == main for i, ok in enumerate(usable)]
-        self.adj = [[(v, s) for v, s in nbrs if self.routable[s]] for nbrs in adj]
-
-        self._snap_idx = np.array([i for i, ok in enumerate(self.routable) if ok], dtype=int)
-        self._snap_tree = STRtree(self.lines[self._snap_idx]) if len(self._snap_idx) else None
-        self._all_tree = STRtree(self.lines)
-        self._cum = {}
+        routable = [ok and comp[self.a[i]] == main for i, ok in enumerate(usable)]
+        adj = [[] for _ in self.node_xy]
+        for i, ok in enumerate(routable):
+            if ok:
+                adj[self.a[i]].append((self.b[i], i))
+                if both[i]:
+                    adj[self.b[i]].append((self.a[i], i))
+        snap_idx = np.array([i for i, ok in enumerate(routable) if ok], dtype=int)
+        return {"routable": routable, "adj": adj, "slow": slow, "both": both, "mps": SETTINGS[mode + "_mps"], "snap_idx": snap_idx,
+                "snap_tree": STRtree(self.lines[snap_idx]) if len(snap_idx) else None}
 
     @classmethod
     def load(cls, path):
@@ -154,22 +206,24 @@ class Network:
         return {"seg": i, "coords": coords if t0 <= t1 else coords[::-1], "len": hi - lo, "st": self.st[i]}
 
     # ---------- snapping and bbox ----------
-    def nearest_m(self, lat, lon):
-        """Distance in metres from a point to the routable network (None if the network is empty)."""
-        if self._snap_tree is None:
+    def nearest_m(self, lat, lon, mode="walk"):
+        """Distance in metres from a point to the routable network of a mode (None if that network is empty)."""
+        g = self.graphs[mode]
+        if g["snap_tree"] is None:
             return None
         p = Point(lon * KX, lat * KY)
-        return float(self.lines[self._snap_idx[self._snap_tree.nearest(p)]].distance(p))
+        return float(self.lines[g["snap_idx"][g["snap_tree"].nearest(p)]].distance(p))
 
-    def snap(self, lat, lon, max_m=None):
-        if self._snap_tree is None:
+    def snap(self, lat, lon, max_m=None, mode="walk"):
+        g = self.graphs[mode]
+        if g["snap_tree"] is None:
             return None
         max_m = SETTINGS["snap_max_m"] if max_m is None else max_m
         p = Point(lon * KX, lat * KY)
-        hits = self._snap_tree.query_nearest(p, max_distance=max_m, all_matches=False)
+        hits = g["snap_tree"].query_nearest(p, max_distance=max_m, all_matches=False)
         if len(hits) == 0:
             return None
-        i = int(self._snap_idx[hits[0]])
+        i = int(g["snap_idx"][hits[0]])
         line = self.lines[i]
         t = min(max(float(line.project(p)), 0.0), self.len[i])
         q = line.interpolate(t)
@@ -184,13 +238,17 @@ class Network:
         return {"type": "Feature", "geometry": {"type": "LineString", "coordinates": self.ll[i]}, "properties": props}
 
     # ---------- routing ----------
-    def _search(self, A, B, factor):
-        """A* from snapped point A to snapped point B; cost = length x factor[status]. Returns pieces or None."""
-        a, b, ln, st, adj, xy = self.a, self.b, self.len, self.st, self.adj, self.node_xy
-        fa, fb = factor[st[A.seg]], factor[st[B.seg]]
+    def _search(self, A, B, factor, mode="walk"):
+        """A* from snapped point A to snapped point B; cost = length x factor[status] x slowness. Returns pieces or None."""
+        g = self.graphs[mode]
+        a, b, ln, st, adj, xy, slow, both = self.a, self.b, self.len, self.st, g["adj"], self.node_xy, g["slow"], g["both"]
+        fa, fb = factor[st[A.seg]] * slow[A.seg], factor[st[B.seg]] * slow[B.seg]
+        # a one-way segment (bike mode) may only be ridden from a to b, also on the first and the last piece
         remaining = {a[B.seg]: B.t * fb}
-        remaining[b[B.seg]] = min(remaining.get(b[B.seg], math.inf), (ln[B.seg] - B.t) * fb)
-        best, best_end = (abs(A.t - B.t) * fb, "direct") if A.seg == B.seg else (math.inf, None)
+        if both[B.seg]:
+            remaining[b[B.seg]] = min(remaining.get(b[B.seg], math.inf), (ln[B.seg] - B.t) * fb)
+        direct = A.seg == B.seg and (B.t >= A.t or both[A.seg])
+        best, best_end = (abs(A.t - B.t) * fb, "direct") if direct else (math.inf, None)
         bx, by, fmin = B.lon * KX, B.lat * KY, min(factor)
         dist, prev, heap = {}, {}, []
 
@@ -200,7 +258,8 @@ class Network:
                 x, y = xy[node]
                 heapq.heappush(heap, (cost + fmin * math.hypot(x - bx, y - by), cost, node))
 
-        push(a[A.seg], A.t * fa, None)
+        if both[A.seg]:
+            push(a[A.seg], A.t * fa, None)
         push(b[A.seg], (ln[A.seg] - A.t) * fa, None)
         while heap:
             estimate, d, u = heapq.heappop(heap)
@@ -211,7 +270,7 @@ class Network:
             if u in remaining and d + remaining[u] < best:
                 best, best_end = d + remaining[u], u
             for v, s in adj[u]:
-                push(v, d + ln[s] * factor[st[s]], (u, s))
+                push(v, d + ln[s] * factor[st[s]] * slow[s], (u, s))
         if best_end is None:
             return None
         if best_end == "direct":
@@ -227,21 +286,23 @@ class Network:
         pieces.append(self._piece(B.seg, 0.0 if best_end == a[B.seg] else ln[B.seg], B.t))
         return pieces
 
-    def route(self, A, B, factors=None):
+    def route(self, A, B, factors=None, mode="walk"):
         """One route as a summary dict, or None. factors: {status: multiplier}; None means the fastest route."""
         factor = [1.0] * len(STATUSES) if factors is None else [float(factors[s]) for s in STATUSES]
-        pieces = self._search(A, B, factor)
+        pieces = self._search(A, B, factor, mode)
         if pieces is None:
             return None
         kept = [p for p in pieces if p["len"] > 0.5] or pieces[:1]
-        return self._summarize(kept)
+        return self._summarize(kept, mode)
 
-    def _summarize(self, pieces):
+    def _summarize(self, pieces, mode="walk"):
+        g = self.graphs[mode]
         by = [0.0] * len(STATUSES)
-        total = run = max_dark_run = 0.0
+        total = run = max_dark_run = seconds = 0.0
         for p in pieces:
             by[p["st"]] += p["len"]
             total += p["len"]
+            seconds += p["len"] * g["slow"][p["seg"]] / g["mps"]
             run = run + p["len"] if p["st"] == DARK else 0.0
             max_dark_run = max(max_dark_run, run)
         share = (by[DARK] + by[UNKNOWN]) / total if total else 0.0
@@ -259,7 +320,7 @@ class Network:
                 merged.append({"type": "Feature", "geometry": {"type": "LineString", "coordinates": list(p["coords"])},
                                "properties": {"status": STATUSES[p["st"]], "name": name, "len": round(p["len"], 1), "ids": [self.props[p["seg"]].get("id")]}})
         return {
-            "length_m": round(total, 1), "minutes": round(total / SETTINGS["walk_mps"] / 60, 1),
+            "length_m": round(total, 1), "minutes": round(seconds / 60, 1), "_sec": seconds,
             "by_status_m": {s: round(by[i], 1) for i, s in enumerate(STATUSES)},
             "max_dark_run_m": round(max_dark_run, 1), "dark_unknown_share": round(share, 3),
             "warn": max_dark_run > SETTINGS["warn_dark_run_m"] or share > SETTINGS["warn_dark_unknown_share"],
@@ -277,9 +338,10 @@ class Network:
         bad = share(fastest, ("dark_reported", "unknown")) - share(lit, ("dark_reported", "unknown"))
         return max(confirmed, bad)
 
-    def plan(self, A, B):
-        """Fastest and better-lit routes plus the verdict whether the lit one is worth showing (spec section 12)."""
-        fastest, lit = self.route(A, B), self.route(A, B, SETTINGS["factor_better_lit"])
+    def plan(self, A, B, mode="walk"):
+        """Fastest and better-lit routes plus the verdict whether the lit one is worth showing (spec section 12).
+        A and B must be snapped with the same mode."""
+        fastest, lit = self.route(A, B, mode=mode), self.route(A, B, SETTINGS["factor_better_lit"], mode=mode)
         if fastest is None or lit is None:
             return None
         gain = self.lit_gain(fastest, lit)
@@ -290,10 +352,10 @@ class Network:
             # different streets, but practically the same lighting: one card, the shorter route
             verdict = {"kind": "same", "near": True, "lit_gain": round(gain, 3)}
         else:
-            extra_min = (lit["length_m"] - fastest["length_m"]) / SETTINGS["walk_mps"] / 60
-            extra_share = (lit["length_m"] - fastest["length_m"]) / fastest["length_m"] if fastest["length_m"] else 0.0
+            extra_min = (lit["_sec"] - fastest["_sec"]) / 60
+            extra_share = (lit["_sec"] - fastest["_sec"]) / fastest["_sec"] if fastest["_sec"] else 0.0
             too_long = extra_min > SETTINGS["hide_if_extra_min"] or extra_share > SETTINGS["hide_if_extra_share"]
             verdict = {"kind": "too_long" if too_long else "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
         for r in (fastest, lit):
-            del r["_key"]
+            del r["_key"], r["_sec"]
         return {"routes": {"fastest": fastest, "better_lit": lit}, "verdict": verdict}

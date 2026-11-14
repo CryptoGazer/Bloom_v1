@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.geocode import Places
-from backend.routing import SETTINGS, Network
+from backend.routing import MODES, SETTINGS, Network
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEGMENTS = ROOT / "data/out/city/segments.geojson.gz"
@@ -123,24 +123,25 @@ def create_app(segments_path=None):
     @app.get("/api/route")
     def route(from_: str = Query(alias="from", description="start as lat,lon"),
               to: str = Query(description="destination as lat,lon"),
-              mode: str = Query("walk", description="only 'walk' for now")):
-        """Fastest and better-lit walking routes. Darkness never blocks a route, it only makes it costlier."""
-        if mode != "walk":
-            raise HTTPException(422, detail={"code": "mode_not_supported", "message": "only mode=walk is available yet"})
+              mode: str = Query("walk", description="'walk' or 'bike'")):
+        """Fastest and better-lit routes on foot or by bike. Darkness never blocks a route, it only makes it costlier.
+        By bike: only segments open to bikes, one-way streets in their direction, "dismount" at walking speed."""
+        if mode not in MODES:
+            raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES)}"})
         net = network()
         snapped = {}
         for name, value in (("from", from_), ("to", to)):
             lat, lon = parse_point(value, name)
-            snap = net.snap(lat, lon)
+            snap = net.snap(lat, lon, mode=mode)
             if snap is None:
-                nearest = net.nearest_m(lat, lon)
+                nearest = net.nearest_m(lat, lon, mode=mode)
                 raise HTTPException(422, detail={"code": "outside_coverage", "point": name,
                                                  "nearest_m": None if nearest is None else round(nearest),
                                                  "message": f"'{name}' is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
             snapped[name] = (lat, lon, snap)
-        plan = net.plan(snapped["from"][2], snapped["to"][2])
+        plan = net.plan(snapped["from"][2], snapped["to"][2], mode=mode)
         if plan is None:
-            raise HTTPException(404, detail={"code": "no_route", "message": "no walking route between these points"})
+            raise HTTPException(404, detail={"code": "no_route", "message": f"no {mode} route between these points"})
         point = lambda lat, lon, s: {"lat": lat, "lon": lon, "snapped": [s.lat, s.lon], "snap_m": round(s.d, 1)}
         return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan,
                 "settings": SETTINGS, "data_as_of": net.meta.get("as_of")}
