@@ -1,11 +1,11 @@
-"""Lighting status for every segment of the walking and cycling network of an area (default: the whole city).
+"""Lighting status for every segment of the walking and cycling network of an area.
 
-Same rules as handoff/scripts/draft_map.py (spec sections 5-7), restructured to scale to the city and to
-write files the backend reads instead of one HTML page.
+Same rules as the spec (sections 5-7); the status rule itself is in backend/rules.py.
 
-usage: .venv/bin/python -I backend/build_city.py [--data unihack-data] [--out data/out/city]
+usage: .venv/bin/python -I backend/build_city.py [--data unihack-data] [--out data/out/city] [--area FILE.geojson]
                                                  [--bbox south,west,north,east] [--as-of YYYY-MM-DD] [--refresh-network]
-Default area: config/city_boundary.geojson (Timișoara administrative boundary).
+Default area: config/area.geojson (the university district south of the Bega and the centre, Cetate).
+The whole city: --area config/city_boundary.geojson --out data/out/city-full
 Outputs: <out>/segments.geojson.gz  one LineString per segment with status and evidence
          <out>/summary.json         shares by status, checks, per-district table, sources
 The street network is downloaded once with osmnx and kept in data/cache/city/; later runs work offline.
@@ -308,7 +308,9 @@ def shares(sel):
     return out
 
 
-def zone_table(segs, lines, zones_path):
+def zone_table(segs, lines, zones_path, area):
+    """Shares per city district. "inside" is the share of the district's surface inside the built area:
+    for a district only partly inside, the shares describe that part only."""
     if not zones_path.exists():
         return []
     zones = json.loads(zones_path.read_text(encoding="utf-8"))["features"]
@@ -326,6 +328,8 @@ def zone_table(segs, lines, zones_path):
         row = shares(by_zone.get(z_, []))
         row["name"] = zone["properties"]["name"]
         row["known"] = round(100 - row["unknown"], 1) if row["n"] else None
+        polygon = shape(zone["geometry"])
+        row["inside"] = round(polygon.intersection(area).area / polygon.area, 3) if polygon.area else 0.0
         table.append(row)
     return sorted(table, key=lambda r: r["name"])
 
@@ -338,8 +342,9 @@ def date_range(values):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data", default=str(ROOT / "unihack-data"))
-    ap.add_argument("--out", help="default data/out/city (required with --bbox)")
-    ap.add_argument("--bbox", help="south,west,north,east instead of the city boundary")
+    ap.add_argument("--out", help="default data/out/city (required with --bbox or another --area)")
+    ap.add_argument("--area", default="config/area.geojson", help="polygon of the area (GeoJSON, first feature); default config/area.geojson")
+    ap.add_argument("--bbox", help="south,west,north,east instead of an area polygon")
     ap.add_argument("--as-of", default=dt.date.today().isoformat(), help="date used for the age of open complaints")
     ap.add_argument("--refresh-network", action="store_true", help="download the street network again")
     args = ap.parse_args()
@@ -351,9 +356,12 @@ def main():
         s, w, n, e = (float(x) for x in args.bbox.split(","))
         area, key, area_meta = box(w, s, e, n), f"bbox-{s}_{w}_{n}_{e}", {"type": "bbox", "south": s, "west": w, "north": n, "east": e}
     else:
-        boundary = ROOT / "config/city_boundary.geojson"
+        default_area = ap.get_default("area")
+        if args.area != default_area and not args.out:
+            sys.exit("--area other than the default needs --out, so that data/out/city is not overwritten")
+        boundary = ROOT / args.area
         feature = json.loads(boundary.read_text(encoding="utf-8"))["features"][0]
-        area, key, area_meta = shape(feature["geometry"]), "city", {"type": "boundary", "file": "config/city_boundary.geojson", **feature["properties"]}
+        area, key, area_meta = shape(feature["geometry"]), boundary.stem, {"type": "polygon", "file": args.area, **feature["properties"]}
     out = Path(args.out) if args.out else ROOT / "data/out/city"
     bounds = area.bounds  # west, south, east, north
 
@@ -370,6 +378,7 @@ def main():
     unknown_core = groups["streets_and_sidewalks"]["unknown"]
     summary = {
         "built_at": dt.datetime.now().isoformat(timespec="seconds"), "as_of": str(as_of), "area": area_meta,
+        "area_geometry": shapely.geometry.mapping(area.simplify(0.0001, preserve_topology=True)),  # outline for the page, ~10 m
         "bounds_wsen": [round(x, 6) for x in bounds], "params": PARAMS, "segments": len(segs),
         "network": {"source": "OpenStreetMap via osmnx " + net["osmnx"], "fetched_at": net["fetched_at"], "licence": "ODbL, © OpenStreetMap contributors"},
         "sources": {
@@ -384,7 +393,7 @@ def main():
         "checks": {"unknown_share_streets_sidewalks": unknown_core, "unknown_ok": unknown_core <= PARAMS["max_unknown_share"],
                    "lit_no_but_confirmed": sum(1 for s in segs if s["lit"] == "no" and s["status"] == "lit_confirmed"),
                    "lamp_recall_on_lit_yes": round(100 * recall, 1), "lamp_recall_ok": recall >= PARAMS["min_lamp_recall"]},
-        "zones": zone_table(segs, lines, data / "geojson/city_zones.geojson"),
+        "zones": zone_table(segs, lines, data / "geojson/city_zones.geojson", area),
     }
     if lamps:
         lon = [f["geometry"]["coordinates"][0] for f in lamps]
