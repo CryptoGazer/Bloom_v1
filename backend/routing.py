@@ -286,6 +286,49 @@ class Network:
         pieces.append(self._piece(B.seg, 0.0 if best_end == a[B.seg] else ln[B.seg], B.t))
         return pieces
 
+    def tree(self, S, factors=None, max_cost=math.inf, mode="walk"):
+        """Dijkstra from snapped point S: {node: (cost, metres)} for nodes within max_cost.
+        cost = length x factor[status] x slowness, as in route(); used to find stops within walking distance."""
+        g = self.graphs[mode]
+        factor = [1.0] * len(STATUSES) if factors is None else [float(factors[s]) for s in STATUSES]
+        a, b, ln, st, slow, both = self.a, self.b, self.len, self.st, g["slow"], g["both"]
+        f = factor[st[S.seg]] * slow[S.seg]
+        best, heap = {}, []
+
+        def push(node, cost, metres):
+            if cost <= max_cost and cost < best.get(node, (math.inf, 0))[0]:
+                best[node] = (cost, metres)
+                heapq.heappush(heap, (cost, metres, node))
+
+        if both[S.seg]:
+            push(a[S.seg], S.t * f, S.t)
+        push(b[S.seg], (ln[S.seg] - S.t) * f, ln[S.seg] - S.t)
+        while heap:
+            cost, metres, u = heapq.heappop(heap)
+            if cost > best[u][0]:
+                continue
+            for v, s in g["adj"][u]:
+                push(v, cost + ln[s] * factor[st[s]] * slow[s], metres + ln[s])
+        return best
+
+    def reach(self, tree, T, factors=None, S=None, mode="walk"):
+        """(cost, metres) from the source of tree() to snapped point T, or None if T is out of reach.
+        Pass the source S to allow the direct way when both points lie on one segment."""
+        g = self.graphs[mode]
+        factor = [1.0] * len(STATUSES) if factors is None else [float(factors[s]) for s in STATUSES]
+        a, b, ln, both = self.a, self.b, self.len, g["both"]
+        f = factor[self.st[T.seg]] * g["slow"][T.seg]
+        options = []
+        if a[T.seg] in tree:
+            cost, metres = tree[a[T.seg]]
+            options.append((cost + T.t * f, metres + T.t))
+        if both[T.seg] and b[T.seg] in tree:
+            cost, metres = tree[b[T.seg]]
+            options.append((cost + (ln[T.seg] - T.t) * f, metres + ln[T.seg] - T.t))
+        if S is not None and S.seg == T.seg and (T.t >= S.t or both[S.seg]):
+            options.append((abs(T.t - S.t) * f, abs(T.t - S.t)))
+        return min(options) if options else None
+
     def route(self, A, B, factors=None, mode="walk"):
         """One route as a summary dict, or None. factors: {status: multiplier}; None means the fastest route."""
         factor = [1.0] * len(STATUSES) if factors is None else [float(factors[s]) for s in STATUSES]

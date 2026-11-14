@@ -14,8 +14,14 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
+import datetime as dt
+from zoneinfo import ZoneInfo
+
 from backend.geocode import Places
 from backend.routing import MODES, SETTINGS, Network
+from backend.transit import TRANSIT, Timetable, Transit
+
+LOCAL_TZ = ZoneInfo("Europe/Bucharest")
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEGMENTS = ROOT / "data/out/city/segments.geojson.gz"
@@ -46,10 +52,25 @@ def parse_point(value, name):
     return lat, lon
 
 
+def leaving_time(at):
+    """Local wall-clock time in Timișoara: now, 'HH:MM' today, or 'YYYY-MM-DDTHH:MM'."""
+    now = dt.datetime.now(LOCAL_TZ).replace(tzinfo=None)
+    if not at:
+        return now
+    try:
+        if "T" in at:
+            return dt.datetime.fromisoformat(at)
+        hour, minute = (int(x) for x in at.split(":"))
+        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    except ValueError:
+        raise HTTPException(422, detail={"code": "bad_time", "message": "at must be 'HH:MM' or 'YYYY-MM-DDTHH:MM'"})
+
+
 def create_app(segments_path=None):
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
-    state = {"net": None, "places": None}
+    transit_path = segments_path.parent / "transit.json.gz"
+    state = {"net": None, "places": None, "transit": None}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -57,6 +78,8 @@ def create_app(segments_path=None):
             state["net"] = Network.load(segments_path)
         if places_path.exists():
             state["places"] = Places.load(places_path)
+        if state["net"] is not None and transit_path.exists():
+            state["transit"] = Transit(state["net"], Timetable.load(transit_path))
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
@@ -123,28 +146,38 @@ def create_app(segments_path=None):
     @app.get("/api/route")
     def route(from_: str = Query(alias="from", description="start as lat,lon"),
               to: str = Query(description="destination as lat,lon"),
-              mode: str = Query("walk", description="'walk' or 'bike'")):
+              mode: str = Query("walk", description="'walk', 'bike' or 'transit' (on foot + public transport)"),
+              at: str = Query("", description="transit only: leaving time 'HH:MM' today or 'YYYY-MM-DDTHH:MM'; empty = now")):
         """Fastest and better-lit routes on foot or by bike. Darkness never blocks a route, it only makes it costlier.
-        By bike: only segments open to bikes, one-way streets in their direction, "dismount" at walking speed."""
-        if mode not in MODES:
-            raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES)}"})
+        By bike: only segments open to bikes, one-way streets in their direction, "dismount" at walking speed.
+        transit: the walking routes plus "transit": walk (better lit) to a stop, one line, walk to the door."""
+        if mode not in MODES + ("transit",):
+            raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES + ('transit',))}"})
         net = network()
+        net_mode = "walk" if mode == "transit" else mode
         snapped = {}
         for name, value in (("from", from_), ("to", to)):
             lat, lon = parse_point(value, name)
-            snap = net.snap(lat, lon, mode=mode)
+            snap = net.snap(lat, lon, mode=net_mode)
             if snap is None:
-                nearest = net.nearest_m(lat, lon, mode=mode)
+                nearest = net.nearest_m(lat, lon, mode=net_mode)
                 raise HTTPException(422, detail={"code": "outside_coverage", "point": name,
                                                  "nearest_m": None if nearest is None else round(nearest),
                                                  "message": f"'{name}' is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
             snapped[name] = (lat, lon, snap)
-        plan = net.plan(snapped["from"][2], snapped["to"][2], mode=mode)
+        plan = net.plan(snapped["from"][2], snapped["to"][2], mode=net_mode)
         if plan is None:
-            raise HTTPException(404, detail={"code": "no_route", "message": f"no {mode} route between these points"})
+            raise HTTPException(404, detail={"code": "no_route", "message": f"no {net_mode} route between these points"})
         point = lambda lat, lon, s: {"lat": lat, "lon": lon, "snapped": [s.lat, s.lon], "snap_m": round(s.d, 1)}
-        return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan,
-                "settings": SETTINGS, "data_as_of": net.meta.get("as_of")}
+        extra = {}
+        if mode == "transit":
+            if state["transit"] is None:
+                raise HTTPException(503, detail={"code": "no_timetable", "message": f"{transit_path} not found. Build it: backend/build_transit.py"})
+            when = leaving_time(at)
+            extra = {"transit": state["transit"].plan(snapped["from"][2], snapped["to"][2], when),
+                     "at": when.strftime("%Y-%m-%d %H:%M")}
+        return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
+                "settings": {**SETTINGS, "transit": TRANSIT}, "data_as_of": net.meta.get("as_of")}
 
     # The city page (web/) at "/", the older demos under /demo and /data/out. Only these folders are exposed.
     # "/" must be mounted last: it catches every path the API routes above did not.
