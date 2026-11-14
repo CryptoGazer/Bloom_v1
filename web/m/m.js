@@ -1373,7 +1373,9 @@ map.on('click', e => {
   if (tip || legendOpen || aboutOpen) closeOverlays();
 });
 map.on('moveend', () => { clearTimeout(map._netT); map._netT = setTimeout(refreshNet, 200); });
-window.addEventListener('resize', () => { map.invalidateSize(); placePlusChip(); });
+// the phone's height changes when the browser hides its address bar (100dvh), or the tab was laid out while hidden
+const onResize = () => { map.invalidateSize(); placePlusChip(); refreshNet(); };
+if (window.ResizeObserver) new ResizeObserver(onResize).observe($('phone')); else window.addEventListener('resize', onResize);
 
 // ---------- start ----------
 document.documentElement.lang = t('htmlLang');
