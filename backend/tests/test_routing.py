@@ -155,6 +155,11 @@ def client(tmp_path_factory):
     lon, lat = ll(0, 60)
     with gzip.open(path.parent / "places.json.gz", "wt", encoding="utf-8") as f:
         json.dump({"meta": {}, "entries": [{"k": "street", "n": "Strada Vest", "lat": lat, "lon": lon}]}, f)
+    (x1_lon, x1_lat), (x2_lon, x2_lat) = ll(0, 62), ll(200, 62)
+    with gzip.open(path.parent / "transit.json.gz", "wt", encoding="utf-8") as f:   # a tram from U to V at 22:00
+        json.dump({"stops": {"X1": ["Stația U", x1_lat, x1_lon], "X2": ["Stația V", x2_lat, x2_lon]},
+                   "routes": {"R1": ["1", 0, "e3a900"]}, "patterns": [["R1", "Spre V", ["X1", "X2"]]],
+                   "days": {"2026-11-14": [[0, [79200, 79320]]]}, "feed_of_day": {"2026-11-14": "4.31"}}, f)
     with TestClient(create_app(path)) as c:
         yield c
 
@@ -184,6 +189,15 @@ def test_api_route_by_bike_and_unknown_modes(client):
     assert body["mode"] == "bike" and body["routes"]["fastest"]["minutes"] == pytest.approx(200 / 4.2 / 60, abs=0.1)
     r = client.get("/api/route", params={"from": point(0, 0), "to": point(200, 0), "mode": "car"})
     assert r.status_code == 422 and r.json()["detail"]["code"] == "mode_not_supported"
+
+
+def test_api_route_on_foot_plus_transit(client):
+    body = client.get("/api/route", params={"from": point(0, 0), "to": point(200, 0), "mode": "transit", "at": "2026-11-14T21:55"}).json()
+    assert body["mode"] == "transit" and body["at"] == "2026-11-14 21:55"
+    assert "fastest" in body["routes"] and body["transit"]["kind"] == "ok"
+    ride = body["transit"]["legs"][1]
+    assert (ride["line"], ride["dep"], ride["arr"], ride["from"]["name"]) == ("1", "22:00", "22:02", "Stația U")
+    assert client.get("/api/route", params={"from": point(0, 0), "to": point(200, 0), "mode": "transit", "at": "nonsense"}).status_code == 422
 
 
 def test_api_route_outside_coverage(client):

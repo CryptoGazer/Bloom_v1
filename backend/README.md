@@ -29,7 +29,7 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 
 | Запрос | Что возвращает |
 |---|---|
-| `GET /api/route?from=lat,lon&to=lat,lon&mode=walk` | `mode=walk` (по умолчанию) или `mode=bike`; два маршрута, `fastest` и `better_lit`: минуты, метры, метры по статусам освещённости, предупреждение, улицы по ходу, геометрия кусками по статусу; `verdict` говорит, стоит ли показывать освещённый (`same` / `show` / `too_long`) |
+| `GET /api/route?from=lat,lon&to=lat,lon&mode=walk` | `mode=walk` (по умолчанию), `mode=bike` или `mode=transit` (пешком + транспорт; `at=HH:MM` — время выхода, иначе сейчас; в ответе `transit`: шаги поездки, последний рейс или причина, почему поездки нет); два маршрута, `fastest` и `better_lit`: минуты, метры, метры по статусам освещённости, предупреждение, улицы по ходу, геометрия кусками по статусу; `verdict` говорит, стоит ли показывать освещённый (`same` / `show` / `too_long`) |
 | `GET /api/geocode?q=camin c12&limit=8` | подсказки для полей адреса: улицы, адреса с номером дома, места, остановки внутри области; `number_missing`, если такого номера нет на карте. Индекс — `data/out/city/places.json.gz` от `backend/build_places.py` (адреса и места из Overpass, кеш в `data/cache/places/`) |
 | `GET /api/segments?bbox=west,south,east,north` | отрезки в окне карты (id, вид, название, длина, статус). Если их больше `limit` (по умолчанию 4000), список пустой и `truncated: true`: нужно приблизить карту или показать районы |
 | `GET /api/segments/{id}` | один отрезок со свидетельствами: тег OSM, фонари Mapillary, жалобы, косвенные признаки |
@@ -59,6 +59,8 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 | `backend/build_places.py` | индекс поиска: улицы, адреса, места, остановки области → `data/out/city/places.json.gz` |
 | `backend/geocode.py` | поиск по индексу: без диакритики, номер дома, ранжирование; без сети |
 | `backend/tests/test_geocode.py` | 15 тестов поиска на рукотворном списке |
+| `backend/transit.py`, `backend/build_transit.py` | пешком + транспорт: планировщик и расписание области из GTFS SMTT (`data/out/city/transit.json.gz`) |
+| `backend/tests/test_transit.py` | 6 тестов: выбор рейса, «уже уехал», рейсы после полуночи, нет остановки рядом, направление |
 | `backend/tests/test_bike.py` | 16 тестов велосипеда: доступ по тегам OSM, односторонние улицы, «dismount», ступеньки |
 | `backend/routing.py` | граф, привязка точки, маршруты, выборка по окну; без веб-кода |
 | `backend/app.py` | HTTP-обёртка на FastAPI |

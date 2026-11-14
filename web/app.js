@@ -43,6 +43,9 @@ function renderStatic() {
   $('travel').setAttribute('aria-label', t('travelLabel'));
   $('travel-walk').textContent = t('travelWalk');
   $('travel-bike').textContent = t('travelBike');
+  $('travel-transit').textContent = t('travelTransit');
+  $('at-label').textContent = t('atLabel');
+  $('at-hint').textContent = t('atHint');
   $('label-a').textContent = LETTER.A;
   $('label-b').textContent = LETTER.B;
   for (const [id, key] of [['from', 'from'], ['to', 'to']]) {
@@ -80,7 +83,7 @@ const routeLayer = L.featureGroup().addTo(map);
 map.on('overlayadd', () => routeLayer.bringToFront());
 
 let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
-let travel = 'walk';  // 'walk' | 'bike': how the person goes; "mode" above is what a map click does
+let travel = 'walk';  // 'walk' | 'bike' | 'transit': how the person goes; "mode" above is what a map click does
 const markers = { A: null, B: null };
 const labels = { A: '', B: '' };
 const box = {
@@ -234,6 +237,7 @@ function swap() {
 function setTravel(value) {
   travel = value;
   for (const r of document.querySelectorAll('input[name="travel"]')) r.checked = r.value === value;
+  $('at-wrap').hidden = value !== 'transit';
 }
 
 function onMapClick(e) {
@@ -255,13 +259,15 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
+  const at = travel === 'transit' ? $('at').value : '';
   const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
-  history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',')}`);
+  if (at) hash.set('at', at);
+  history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
   say(esc(t('computing')));
-  getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}`)
+  getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
       plan = d;
-      selected = d.verdict.kind === 'same' ? 'fastest' : 'better_lit';
+      selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? 'fastest' : 'better_lit';
       say(esc(t('afterRoute')));
       drawRoute();
       renderCards();
@@ -287,6 +293,28 @@ function drawRoute() {
     if (end.snap_m > 3) L.polyline([[p.lat, p.lng], end.snapped], { color: '#111', weight: 2, dashArray: '2 5', interactive: false }).addTo(routeLayer);
   }
   const lines = r => r.geometry.features.map(f => f.geometry.coordinates.map(c => [c[1], c[0]]));
+  const pieces = r => {
+    L.polyline(lines(r), { color: '#111', weight: 11, opacity: 0.75, interactive: false }).addTo(routeLayer);
+    for (const f of r.geometry.features) {
+      const p = f.properties, s = ST[p.status] || ST.unknown;
+      L.polyline(f.geometry.coordinates.map(c => [c[1], c[0]]), { color: s.c, weight: 7, dashArray: s.d, lineCap: 'butt' })
+        .bindTooltip(`${esc(p.name || t('noName'))}: ${esc(t('status.' + p.status))}, ${fmtM(p.len)}`, { sticky: true })
+        .addTo(routeLayer);
+    }
+  };
+  if (selected === 'transit' && plan.transit && plan.transit.kind === 'ok') {
+    const [walk1, ride, walk2] = plan.transit.legs;
+    const ll = ride.coords.map(c => [c[1], c[0]]);
+    L.polyline(ll, { color: '#111', weight: 10, opacity: 0.7, interactive: false }).addTo(routeLayer);
+    L.polyline(ll, { color: ride.color, weight: 6 }).bindTooltip(esc(`${t('rt.' + ride.route_type)} ${ride.line}: ${ride.from.name} ${ride.dep} → ${ride.to.name} ${ride.arr}`), { sticky: true }).addTo(routeLayer);
+    pieces(walk1);
+    pieces(walk2);
+    for (const s of [ride.from, ride.to]) {
+      L.circleMarker([s.lat, s.lon], { radius: 7, color: '#111', weight: 3, fillColor: '#fff', fillOpacity: 1 }).bindTooltip(esc(s.name)).addTo(routeLayer);
+    }
+    routeLayer.bringToFront();
+    return;
+  }
   if (plan.verdict.kind !== 'same') {
     const other = plan.routes[selected === 'better_lit' ? 'fastest' : 'better_lit'];
     L.polyline(lines(other), { color: '#fff', weight: 7, opacity: 0.9, interactive: false }).addTo(routeLayer);
@@ -294,15 +322,39 @@ function drawRoute() {
       .on('click', () => select(selected === 'better_lit' ? 'fastest' : 'better_lit'))
       .addTo(routeLayer);
   }
-  const cur = plan.routes[selected];
-  L.polyline(lines(cur), { color: '#111', weight: 11, opacity: 0.75, interactive: false }).addTo(routeLayer);
-  for (const f of cur.geometry.features) {
-    const p = f.properties, s = ST[p.status] || ST.unknown;
-    L.polyline(f.geometry.coordinates.map(c => [c[1], c[0]]), { color: s.c, weight: 7, dashArray: s.d, lineCap: 'butt' })
-      .bindTooltip(`${esc(p.name || t('noName'))}: ${esc(t('status.' + p.status))}, ${fmtM(p.len)}`, { sticky: true })
-      .addTo(routeLayer);
-  }
+  pieces(plan.routes[selected]);
   routeLayer.bringToFront();
+}
+
+// the "on foot + public transport" card: the trip, or why there is none (the walking cards follow)
+function transitCard() {
+  const tr = plan.transit, s = plan.settings.transit;
+  if (!tr) return '';
+  if (tr.kind !== 'ok') {
+    const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m })
+      : tr.reason === 'no_line' ? t('noLine') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
+    const text = [why, tr.last ? t('lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
+    return `<div class="card info"><span class="title">${esc(t('transitTitle'))}</span><p class="warn">${esc(text)}</p>` +
+      `<p class="small">${esc(t('walkInstead'))}</p></div>`;
+  }
+  const [walk1, ride, walk2] = tr.legs;
+  const lit = r => pct(r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 1);
+  const legs = [
+    t('legWalkTo', { min: fmtMin(walk1.minutes), dist: fmtM(walk1.length_m), stop: ride.from.name, lit: lit(walk1) }),
+    t('legRide', { type: t('rt.' + ride.route_type), line: ride.line, headsign: ride.headsign, from: ride.from.name, dep: ride.dep,
+      to: ride.to.name, arr: ride.arr, stops: ride.stops }),
+    t('legWalkFrom', { min: fmtMin(walk2.minutes), dist: fmtM(walk2.length_m), stop: ride.to.name, lit: lit(walk2) }),
+  ].map(x => `<li>${esc(x)}</li>`).join('');
+  const warn = [walk1, walk2].filter(w => w.warn).length
+    ? `<p class="warn">${esc(t('warn', { bad: fmtM(walk1.by_status_m.unknown + walk1.by_status_m.dark_reported + walk2.by_status_m.unknown + walk2.by_status_m.dark_reported),
+      total: fmtM(walk1.length_m + walk2.length_m), share: pct((walk1.dark_unknown_share * walk1.length_m + walk2.dark_unknown_share * walk2.length_m) / Math.max(1, walk1.length_m + walk2.length_m)) }))}.</p>`
+    : '';
+  const slower = plan.routes.fastest.minutes <= tr.wait_min + tr.minutes ? `<p class="verdict bad">${esc(t('walkFaster'))}</p>` : '';
+  return `<button type="button" class="card${selected === 'transit' ? ' selected' : ''}" data-kind="transit" aria-pressed="${selected === 'transit'}">` +
+    `<span class="title">${esc(t('transitTitle'))}</span><span class="main">${fmtMin(tr.minutes)} · ${tr.leave_at} → ${tr.arrive_at}</span>` +
+    `<ul class="legs">${legs}</ul>${warn}` +
+    `<p class="verdict ok">${esc(t('leaveIn', { min: fmtMin(Math.max(0, tr.wait_min)), time: tr.leave_at }))} ${tr.last ? esc(t('lastDep', tr.last)) : ''}</p>` +
+    `${slower}<p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p></button>`;
 }
 
 function card(kind, r, title, note) {
@@ -333,6 +385,7 @@ function renderCards() {
       : `<p class="verdict ok">${esc(t('extraOk', { extra, lit: pct(litShare(lit)), fast: pct(litShare(fastest)) }))}</p>`;
     html = card('better_lit', lit, t('litTitle'), note) + card('fastest', fastest, t('fastTitle'));
   }
+  html = transitCard() + html;
   const off = [['A', plan.from], ['B', plan.to]].filter(([, p]) => p.snap_m > 20).map(([n, p]) => `${LETTER[n]}: ${Math.round(p.snap_m)} ${t('m')}`);
   if (off.length) html += `<p class="small">${esc(t('snapNote', { list: off.join(', ') }))}</p>`;
   $('cards').innerHTML = html;
@@ -340,7 +393,8 @@ function renderCards() {
 }
 
 function select(kind) {
-  if (!plan || !plan.routes[kind]) return;
+  const ok = kind === 'transit' ? plan && plan.transit && plan.transit.kind === 'ok' : plan && plan.routes[kind];
+  if (!ok) return;
   selected = kind;
   drawRoute();
   renderCards();
@@ -351,7 +405,8 @@ function readHash() {
   const point = v => { const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(v || ''); return m ? [+m[1], +m[2]] : null; };
   const a = point(h.get('a')), b = point(h.get('b'));
   if (!a || !b) return false;
-  if (h.get('m') === 'bike') setTravel('bike');
+  if (['bike', 'transit'].includes(h.get('m'))) setTravel(h.get('m'));
+  if (h.get('at')) $('at').value = h.get('at');
   setPoint('A', a, h.get('an'));
   setPoint('B', b, h.get('bn'));
   map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
@@ -384,6 +439,7 @@ getJSON('/api/summary')
     for (const r of document.querySelectorAll('input[name="travel"]')) {
       r.addEventListener('change', () => { setTravel(r.value); if (A && B) compute(); });
     }
+    $('at').addEventListener('change', () => { if (A && B && travel === 'transit') compute(); });
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {
