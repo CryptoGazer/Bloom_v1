@@ -59,11 +59,13 @@ function renderStatic() {
   $('mode-inspect').textContent = t('modeInspect');
   $('reset').textContent = t('reset');
   $('net-label').textContent = t('showNet');
+  $('live-net-label').textContent = t('live.show');
   $('legend-title').textContent = t('legendTitle');
   $('area-note').textContent = t('areaNote');
   $('legend').innerHTML = ['lit_confirmed', 'lit_likely', 'unknown', 'dark_reported']
     .map(k => `<li><span class="sw" style="border-top-color:${ST[k].c};border-top-style:${ST[k].css}"></span>${esc(t('legend.' + k))}</li>`).join('') +
-    `<li><span class="sw" style="border-top-color:#2b4fb3;border-top-style:dashed"></span>${esc(t('legend.second'))}</li>`;
+    `<li><span class="sw" style="border-top-color:#2b4fb3;border-top-style:dashed"></span>${esc(t('legend.second'))}</li>` +
+    `<li><span class="veh-num" style="position:static;flex:0 0 22px;width:22px;height:22px;background:#6f2095;color:#fff">16</span>${esc(t('live.legend'))}</li>`;
   const langs = $('langs');
   langs.setAttribute('aria-label', t('langLabel'));
   langs.innerHTML = LANGS.map(l => `<button type="button" lang="${l}" data-lang="${l}" aria-pressed="${l === LANG}">${l.toUpperCase()}</button>`).join('');
@@ -80,7 +82,9 @@ const areaLayer = L.layerGroup().addTo(map);
 const areaLabel = L.layerGroup();
 const segLayer = L.layerGroup().addTo(map);
 const routeLayer = L.featureGroup().addTo(map);
+const liveLayer = L.layerGroup().addTo(map);   // live vehicles: markers (DOM), always above the route lines
 map.on('overlayadd', () => routeLayer.bringToFront());
+let live = null, liveTimer = null, liveReq = 0;   // the last /api/transit/live answer, the next poll, the request in flight
 
 let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
 let travel = 'walk';  // 'walk' | 'bike' | 'transit': how the person goes; "mode" above is what a map click does
@@ -263,6 +267,7 @@ function onMapClick(e) {
 
 function reset() {
   plan = null;
+  liveTick();
   clearPoint('A');
   clearPoint('B');
   routeLayer.clearLayers();
@@ -283,11 +288,14 @@ function compute() {
       plan = d;
       selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? (d.verdict.pick || 'fastest') : 'better_lit';
       say(esc(t('afterRoute')));
+      live = null;   // the old answer was about another trip
       drawRoute();
       renderCards();
+      liveTick();
     })
     .catch(err => {
       plan = null;
+      liveTick();
       routeLayer.clearLayers();
       $('cards').innerHTML = '';
       // texts come from i18n.js by error code; the server's English message is only a fallback detail
@@ -434,11 +442,141 @@ function renderCards() {
       : `<p class="verdict ok">${esc(t('extraOk', { extra, lit: pct(litShare(lit)), fast: pct(litShare(fastest)) }))}</p>`;
     html = card('better_lit', lit, t('litTitle'), note) + card('fastest', fastest, t('fastTitle'));
   }
-  html = transitCard() + html;
+  html = transitCard() + liveBox() + html;
   const off = [['A', plan.from], ['B', plan.to]].filter(([, p]) => p.snap_m > 20).map(([n, p]) => `${LETTER[n]}: ${Math.round(p.snap_m)} ${t('m')}`);
   if (off.length) html += `<p class="small">${esc(t('snapNote', { list: off.join(', ') }))}</p>`;
   $('cards').innerHTML = html;
   for (const el of document.querySelectorAll('.card')) el.addEventListener('click', () => select(el.dataset.kind));
+  const box = $('live-box');
+  if (box) box.addEventListener('click', e => { if (e.target.id === 'live-recalc') compute(); });
+  updateLiveBox();
+}
+
+// ---------- live public transport (backend/live.py through /api/transit/live) ----------
+// Polled only while a "walk + transit" trip is shown or the "live transport on the map" box is ticked, and never
+// in a hidden tab. Every number says how old it is; without a live forecast the page says it shows the timetable.
+const clockFmt = new Intl.DateTimeFormat('ro-RO', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Bucharest' });
+const clockOf = ts => clockFmt.format(new Date(ts * 1000));
+const ago = s => s == null ? '?' : s < 60 ? t('live.ago.s', { n: Math.round(s) }) : t('live.ago.min', { n: Math.round(s / 60) });
+const minOff = s => Math.max(1, Math.round(Math.abs(s) / 60)) + ' ' + t('min');
+const safeColor = c => /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : '#555555';
+const inkOn = hex => { const n = parseInt(hex.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150 ? '#111' : '#fff'; };
+
+function ride() {
+  const tr = plan && plan.transit;
+  return tr && tr.kind === 'ok' ? tr.legs[1] : null;
+}
+
+function liveQuery() {
+  const r = ride(), all = $('live-net').checked;
+  if (!r && !all) return null;
+  const q = {};
+  if (r && !all) q.route = r.route_id;
+  if (r && r.trip_id && r.dep_ts) {
+    Object.assign(q, { trip: r.trip_id, dep: r.dep_ts, day: r.day });
+    if (r.board_seq != null) q.seq = r.board_seq;
+  }
+  return q;
+}
+
+function liveTick() {
+  clearTimeout(liveTimer);
+  const q = liveQuery();
+  if (!q) { live = null; liveReq++; liveLayer.clearLayers(); return; }
+  if (document.hidden) return;   // visibilitychange starts it again
+  const req = ++liveReq;
+  getJSON('/api/transit/live?' + new URLSearchParams(q))
+    .then(d => { if (req === liveReq) live = d; })
+    .catch(err => { if (req === liveReq) live = { failed: err.message }; })
+    .finally(() => {
+      if (req !== liveReq) return;
+      drawVehicles();
+      updateLiveBox();
+      // ask again just after the server's shared copy is due for a refresh
+      const wait = live && live.refresh_s ? Math.max(5, live.refresh_s - ((live.source && live.source.age_s) || 0) + 1) : 30;
+      liveTimer = setTimeout(liveTick, wait * 1000);
+    });
+}
+
+function vehicleTip(v) {
+  let s = t('live.tip', { type: t('rt.' + v.route_type), line: v.line, headsign: v.headsign || '?', age: ago(v.age_s) });
+  if (!v.live) s += t('live.tipOld');
+  else if (v.delay_s != null) s += Math.abs(v.delay_s) < 60 ? t('live.tipOnTime') : t(v.delay_s > 0 ? 'live.tipLate' : 'live.tipEarly', { d: minOff(v.delay_s) });
+  if (v.wheelchair) s += t('live.wheelchair');
+  return s;
+}
+
+function drawVehicles() {
+  liveLayer.clearLayers();
+  if (!live || !live.vehicles) return;
+  const r = ride(), mineId = live.trip && live.trip.vehicle;
+  for (const v of live.vehicles) {
+    if (typeof v.lat !== 'number' || typeof v.lon !== 'number') continue;
+    const mine = v.id === mineId, onLine = r && v.route_id === r.route_id, color = safeColor(v.color);
+    const cls = 'veh' + (v.live ? '' : ' old') + (mine ? ' mine' : '') + (r && !onLine ? ' dim' : '');
+    const arrow = typeof v.bearing === 'number' ? `<span class="veh-arrow" style="transform:rotate(${v.bearing}deg)"></span>` : '';
+    const icon = L.divIcon({ className: cls, iconSize: [30, 30], iconAnchor: [15, 15],
+      html: `${arrow}<span class="veh-num" style="background:${color};color:${inkOn(color)}">${esc(v.line)}</span>` });
+    L.marker([v.lat, v.lon], { icon, keyboard: false, zIndexOffset: mine ? 1000 : onLine ? 500 : 0 })
+      .bindTooltip(esc(vehicleTip(v)), { direction: 'top', offset: [0, -14] })
+      .addTo(liveLayer);
+  }
+}
+
+function liveBox() {
+  return ride() ? '<div class="live-box" id="live-box"><span class="live-tag off" id="live-tag"></span>' +
+    '<p class="live-main" id="live-main" role="status" aria-live="polite"></p><div id="live-more"></div><p class="small" id="live-src"></p></div>' : '';
+}
+
+function liveTexts(r) {
+  const type = t('rt.' + r.route_type), stop = r.from.name, out = { on: false, main: '', more: [], src: '' };
+  if (!live) { out.main = esc(t('live.loading')); return out; }
+  if (live.failed) { out.main = esc(t('live.noData')); return out; }
+  const T = live.trip || { status: 'no_vehicle' }, s = plan.settings;
+  if (T.expected_ts != null) {   // a forecast: "live" on the trip, or "previous_trip" right before it
+    out.on = true;
+    out.main = esc(T.stops_away === 0 ? t('live.atStop', { type, line: r.line, stop })
+      : t('live.arrives', { type, line: r.line, stop, min: fmtMin(Math.max(0, T.eta_s) / 60), time: clockOf(T.expected_ts) }));
+    out.more.push(Math.abs(T.delay_s) < 60 ? t('live.onTime', { sched: r.dep })
+      : t(T.delay_s > 0 ? 'live.late' : 'live.early', { min: minOff(T.delay_s), sched: r.dep }));
+    if (T.stops_away > 1) out.more.push(t('live.stopsAway', { n: T.stops_away }));
+    if (T.stops_away === 1) out.more.push(t('live.oneStop'));
+    if (T.status === 'previous_trip') out.more.push(t('live.previous', { headsign: T.now_headsign || '?' }));
+    const walk = plan.transit.legs[0].minutes * 60 + s.transit.board_margin_s, slack = T.eta_s - walk;
+    if (T.stops_away !== 0 && slack < 0) out.more.push(t('live.tooLate', { walk: fmtMin(plan.transit.legs[0].minutes) }));
+    else if (slack < 20 * 60) out.more.push(t('live.leaveBy', { time: clockOf(T.expected_ts - walk) }));
+    out.more.push(t('live.estimate'));
+    out.more = out.more.map(esc);
+  } else {
+    const why = {
+      previous_trip: T.trips_before > 1 ? t('live.previousMany', { n: T.trips_before }) : t('live.previous', { headsign: T.now_headsign || '?' }),
+      no_vehicle: t('live.noVehicle'), stale: t('live.stale', { age: ago(T.age_s) }), no_forecast: t('live.noForecast'),
+      passed: t('live.passed', { stop }), later: t('live.later'), no_data: t('live.noData'),
+    }[T.status] || t('live.noVehicle');
+    out.main = esc(why);
+    if (T.status === 'no_forecast' && T.stops_away > 1) out.more.push(esc(t('live.stopsAway', { n: T.stops_away })));
+    if (T.status === 'passed') out.more.push(`<button type="button" id="live-recalc">${esc(t('live.recalc'))}</button>`);
+  }
+  const src = live.source || {};
+  out.src = src.error && src.age_s > 2 * (live.refresh_s || 15) ? t('live.sourceDown', { age: ago(src.age_s) })
+    : t('live.source', { age: ago(src.age_s), every: live.refresh_s });
+  if (T.age_s != null) out.src += ' · ' + t('live.vehAge', { age: ago(T.age_s) });
+  out.src = esc(out.src);
+  return out;
+}
+
+function updateLiveBox() {
+  const r = ride(), box = $('live-box');
+  if (!r || !box) return;
+  const x = liveTexts(r);
+  // only touch what changed: the main line is a live region and must not be re-announced every poll
+  const set = (el, html) => { if (el.dataset.v !== html) { el.dataset.v = html; el.innerHTML = html; } };
+  const tag = $('live-tag');
+  tag.className = 'live-tag ' + (x.on ? 'on' : 'off');
+  set(tag, esc(t(x.on ? 'live.on' : 'live.off')));
+  set($('live-main'), x.main);
+  set($('live-more'), x.more.map(m => `<p>${m}</p>`).join(''));
+  set($('live-src'), x.src);
 }
 
 function select(kind) {
@@ -491,6 +629,8 @@ getJSON('/api/summary')
     $('at').addEventListener('input', () => { delete $('at').dataset.datetime; });
     $('at').addEventListener('change', () => { if (A && B) compute(); });
     $('net').addEventListener('change', refresh);
+    $('live-net').addEventListener('change', liveTick);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) liveTick(); });
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {
         mode = r.value;

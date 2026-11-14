@@ -79,7 +79,7 @@ class Signs:
             near = {self.stop_ids[i] for i in self._stop_tree.query(line, predicate="dwithin", distance=LIVELY["stop_radius_m"])}
             t0 = when.hour * 3600 + when.minute * 60 + when.second
             found = {}
-            for p, times in self.tt.trips(when.date()):
+            for p, times, _ in self.tt.trips(when.date()):
                 rid, _, stops = self.tt.patterns[p][:3]
                 for sid, t in zip(stops, times):
                     if sid in near and abs(t - t0) <= LIVELY["departure_window_s"]:

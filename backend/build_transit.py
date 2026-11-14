@@ -7,6 +7,7 @@ For every day from --start, the first GTFS feed (newest first) that runs service
 publishes a new feed every few weeks and an old one may be the only one valid for the weekend (v4.31 for
 14-15.11.2026, v4.32 from 16.11). Only trips that stop at least twice inside the area (plus a margin) are
 kept, and only the part of each trip between its first and last stop there. Rebuild before the demo day.
+A trip is [pattern, [departure seconds per stop], trip_id, GTFS stop_sequence of its first stop here].
 """
 import argparse
 import csv
@@ -94,9 +95,11 @@ class Feed:
 
 def build(feeds, area, start, days):
     near = area.buffer(PAD_DEG)
-    out = {"stops": {}, "routes": {}, "patterns": [], "days": {}, "feed_of_day": {}}
+    out = {"stops": {}, "routes": {}, "patterns": [], "days": {}, "feed_of_day": {}, "blocks": {}}
     pattern_index = {}
     cache = {}
+    running = defaultdict(dict)   # feed version -> {trip_id: [block_id, first, last departure]} of every trip run on a built day
+    kept_ids = defaultdict(set)   # feed version -> trip ids kept for the area
     for offset in range(days):
         day = start + dt.timedelta(days=offset)
         feed = next((f for f in feeds if f.services(day)), None)
@@ -117,10 +120,13 @@ def build(feeds, area, start, days):
         stops, inside, routes, trips, times, shapes = cache[feed.path]
         services = feed.services(day)
         kept = []
+        version = feed.info["feed_version"]
         for trip in trips:
             if trip["service_id"] not in services:
                 continue
             seq = [x for x in sorted(times[trip["trip_id"]])]
+            if trip.get("block_id") and seq:
+                running[version][trip["trip_id"]] = [trip["block_id"], seq[0][2], seq[-1][2]]
             idx = [i for i, (_, sid, _) in enumerate(seq) if sid in inside]
             if len(idx) < 2:
                 continue
@@ -140,11 +146,19 @@ def build(feeds, area, start, days):
                 for sid in key[2]:
                     s = stops[sid]
                     out["stops"][sid] = [s["stop_name"], round(float(s["stop_lat"]), 6), round(float(s["stop_lon"]), 6)]
-            kept.append([pattern_index[key], [t for _, _, t in part]])
+            # trip_id and the GTFS stop_sequence of the first stop kept: the live vehicles feed names the trip
+            # and the vehicle's next stop by these (backend/live.py)
+            kept.append([pattern_index[key], [t for _, _, t in part], trip["trip_id"], part[0][0]])
+            kept_ids[version].add(trip["trip_id"])
         kept.sort(key=lambda trip: trip[1][0])
         out["days"][day.isoformat()] = kept
-        out["feed_of_day"][day.isoformat()] = feed.info["feed_version"]
-        log(f"transit: {day} feed {feed.info['feed_version']}: {len(kept)} trips through the area")
+        out["feed_of_day"][day.isoformat()] = version
+        log(f"transit: {day} feed {version}: {len(kept)} trips through the area")
+    # Vehicle blocks: the vehicle that will run a planned trip is often still on its previous trip of the same block
+    # (backend/live.py). Only the blocks that include a trip through the area are kept.
+    for version, trips in running.items():
+        blocks = {trips[t][0] for t in kept_ids[version] if t in trips}
+        out["blocks"][version] = {t: b for t, b in trips.items() if b[0] in blocks}
     return out
 
 
