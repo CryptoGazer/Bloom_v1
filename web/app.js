@@ -343,6 +343,16 @@ function transitCard() {
   }
   const [walk1, ride, walk2] = tr.legs;
   const lit = r => pct(r.length_m ? r.by_status_m.lit_confirmed / r.length_m : 1);
+  // bar over the whole trip by time: the walks coloured by lighting, the ride in the line's colour
+  const total = walk1.minutes + ride.minutes + walk2.minutes || 1;
+  const walkPart = w => ORDER.filter(k => w.by_status_m[k] > 0).map(k =>
+    `<span style="width:${(100 * w.minutes * w.by_status_m[k] / (w.length_m || 1) / total).toFixed(2)}%;background:${ST[k].c}" title="${esc(t('status.' + k))}"></span>`).join('');
+  const bar = walkPart(walk1) + `<span style="width:${(100 * ride.minutes / total).toFixed(2)}%;background:${ride.color}" title="${esc(t('rt.' + ride.route_type) + ' ' + ride.line)}"></span>` + walkPart(walk2);
+  const walkLen = walk1.length_m + walk2.length_m || 1;
+  const rows = ORDER.map(k => {
+    const m = walk1.by_status_m[k] + walk2.by_status_m[k];
+    return `<li><span class="sw" style="border-top-color:${ST[k].c};border-top-style:${ST[k].css}"></span>${esc(t('status.' + k))}: ${fmtM(m)} (${pct(m / walkLen)})</li>`;
+  }).join('') + `<li><span class="sw" style="border-top-color:${ride.color};border-top-style:solid"></span>${esc(t('rideRow', { min: fmtMin(ride.minutes) }))}</li>`;
   const legs = [
     t('legWalkTo', { min: fmtMin(walk1.minutes), dist: fmtM(walk1.length_m), stop: ride.from.name, lit: lit(walk1) }),
     t('legRide', { type: t('rt.' + ride.route_type), line: ride.line, headsign: ride.headsign, from: ride.from.name, dep: ride.dep,
@@ -356,6 +366,7 @@ function transitCard() {
   const slower = plan.routes.fastest.minutes <= tr.wait_min + tr.minutes ? `<p class="verdict bad">${esc(t('walkFaster'))}</p>` : '';
   return `<button type="button" class="card${selected === 'transit' ? ' selected' : ''}" data-kind="transit" aria-pressed="${selected === 'transit'}">` +
     `<span class="title">${esc(t('transitTitle'))}</span><span class="main">${fmtMin(tr.minutes)} · ${tr.leave_at} → ${tr.arrive_at}</span>` +
+    `<span class="bar">${bar}</span><ul>${rows}</ul><p class="small">${esc(t('walkPartNote'))}</p>` +
     `<ul class="legs">${legs}</ul>${warn}` +
     `<p class="verdict ok">${esc(t('leaveIn', { min: fmtMin(Math.max(0, tr.wait_min)), time: tr.leave_at }))} ${tr.last ? esc(t('lastDep', tr.last)) : ''}</p>` +
     `${slower}<p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p></button>`;
