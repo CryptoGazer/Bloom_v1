@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ночной маршрут — Тимишоара</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --ink: #141414; --muted: #555; --line: #ddd; --focus: #0b57d0; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: #fff; }
+  #app { display: flex; height: 100%; }
+  #map { flex: 1; min-height: 320px; background: #f3f3f1; }
+  #panel { width: 380px; max-width: 100%; overflow: auto; padding: 14px 16px; border-left: 1px solid var(--line); box-sizing: border-box; }
+  h1 { font-size: 17px; margin: 0 0 6px; }
+  h1 small { font-weight: 400; color: var(--muted); font-size: 13px; }
+  #hint { margin: 6px 0 10px; }
+  .gray-tiles { filter: grayscale(1) brightness(1.05) contrast(.9); }
+  .modes { display: flex; gap: 6px; margin: 4px 0 10px; flex-wrap: wrap; }
+  .modes label { border: 1px solid #888; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  .modes input { margin-right: 4px; }
+  .card { display: block; width: 100%; text-align: left; font: inherit; color: inherit; background: #fff; border: 2px solid var(--line);
+          border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; cursor: pointer; }
+  .card.selected { border-color: #111; box-shadow: 0 1px 6px rgba(0,0,0,.18); }
+  .card:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .card .title { display: block; font-weight: 600; }
+  .card .main { display: block; font-size: 20px; font-weight: 600; margin: 2px 0 6px; }
+  .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: #eee; margin-bottom: 6px; }
+  .bar span { display: block; height: 100%; }
+  .card ul, .legend { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  .card li, .legend li { display: flex; align-items: center; gap: 8px; }
+  .sw { flex: 0 0 26px; height: 0; border-top-width: 4px; }
+  .warn { margin: 6px 0 0; padding: 6px 8px; background: #fff3e6; border-left: 4px solid #D55E00; font-size: 13px; }
+  .error { margin: 6px 0 10px; padding: 6px 8px; background: #fdecea; border-left: 4px solid #b3261e; }
+  .verdict { margin: 6px 0 0; font-size: 13px; }
+  .verdict.ok { color: #006b4f; } .verdict.bad { color: #a13d00; }
+  .via, .small { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+  .controls { display: flex; gap: 14px; align-items: center; margin: 4px 0 10px; flex-wrap: wrap; }
+  .controls button { font: inherit; padding: 6px 12px; border: 1px solid #555; border-radius: 6px; background: #fff; cursor: pointer; }
+  details { margin: 6px 0; font-size: 13px; }
+  code { font-size: 12px; background: #f2f2f2; padding: 1px 4px; border-radius: 4px; }
+  .pin { background: #111; color: #fff; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,.5);
+         display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .leaflet-tooltip.zone-name { background: rgba(255,255,255,.88); border: 1px solid #1d3f8f; box-shadow: none; color: #10245a;
+         font-size: 11px; line-height: 1.2; text-align: center; padding: 2px 5px; }
+  .leaflet-tooltip.zone-name:before { display: none; }
+  .leaflet-popup-content ul { margin: 6px 0 4px 16px; padding: 0; }
+  @media (max-width: 800px) {
+    #app { flex-direction: column; }
+    #map { flex: 0 0 55vh; }
+    #panel { width: 100%; border-left: 0; border-top: 1px solid var(--line); padding-inline: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map" aria-label="Карта Тимишоары с освещённостью улиц"></div>
+  <aside id="panel">
+    <h1>Ночной маршрут <small>Тимишоара, пешком</small></h1>
+    <div class="modes" role="radiogroup" aria-label="Что делает клик по карте">
+      <label><input type="radio" name="mode" value="route" checked>Маршрут: клик ставит точки</label>
+      <label><input type="radio" name="mode" value="inspect">Почему такой цвет: клик по улице</label>
+    </div>
+    <p id="hint" aria-live="polite">Загружаю данные…</p>
+    <div id="cards"></div>
+    <div class="controls">
+      <button id="reset" type="button">Сбросить</button>
+      <label><input type="checkbox" id="net" checked> Показывать освещённость улиц</label>
+    </div>
+    <details>
+      <summary>Обозначения</summary>
+      <ul class="legend">
+        <li><span class="sw" style="border-top-color:#009E73;border-top-style:solid"></span>освещено — тег OSM или фонари на съёмке Mapillary</li>
+        <li><span class="sw" style="border-top-color:#E69F00;border-top-style:dashed"></span>вероятно освещено — косвенные признаки или жалоба</li>
+        <li><span class="sw" style="border-top-color:#7F7F7F;border-top-style:dotted"></span>нет данных (не значит «темно»)</li>
+        <li><span class="sw" style="border-top-color:#D55E00;border-top-style:dashed"></span>сообщали, что темно (свежая жалоба или lit=no)</li>
+        <li><span class="sw" style="border-top-color:#2b4fb3;border-top-style:dashed"></span>второй маршрут; нажмите, чтобы переключить</li>
+      </ul>
+      <p class="small">При отдалении карта показывает районы: цифра — доля улиц и тротуаров района, по которым есть данные об освещении.</p>
+    </details>
+    <p id="meta" class="small"></p>
+  </aside>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/demo/layers/layers.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

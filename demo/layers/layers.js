@@ -98,7 +98,8 @@
       // ?layers=bike,stops,routes,zones in the page URL switches layers on, e.g. for a link sent to testers
       const fromUrl = (new URLSearchParams(location.search).get('layers') || '').split(',').filter(Boolean);
       const on = new Set([...(opts.on || []), ...fromUrl]);
-      return Promise.all(LAYERS.map(def => getJSON(base + def.file)
+      const skip = new Set(opts.skip || []);
+      return Promise.all(LAYERS.filter(def => !skip.has(def.key)).map(def => getJSON(base + def.file)
         .then(fc => {
           const layer = def.build(fc, map);
           control.addOverlay(layer, def.label);

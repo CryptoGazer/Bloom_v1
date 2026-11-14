@@ -21,9 +21,8 @@ const ST = {
 };
 const ORDER = ['lit_confirmed', 'lit_likely', 'unknown', 'dark_reported'];
 
-// Local planar projection in metres (good to a few cm over a 3 km area).
-const LAT0 = 45.746;
-const KX = 111320 * Math.cos(LAT0 * Math.PI / 180), KY = 110574;
+// Local planar projection: metres per degree of lon / lat at 45.748 N, same constants as backend/routing.py.
+const KX = 77811, KY = 111147;
 const toXY = (lon, lat) => [lon * KX, lat * KY];
 const toLL = (x, y) => [y / KY, x / KX]; // [lat, lon]
 

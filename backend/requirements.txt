@@ -1,0 +1,9 @@
+# Python 3.12. osmnx is pinned: segment ids come from its graph simplification.
+osmnx==2.1.1
+numpy
+shapely>=2.0
+fastapi
+uvicorn[standard]
+# tests
+pytest
+httpx

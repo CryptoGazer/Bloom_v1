@@ -6,6 +6,9 @@
 #   ./scripts/mac/lightmap.sh dryrun [data dir]   whole-city rule dry run -> data/out/dryrun.txt
 #   ./scripts/mac/lightmap.sh fallback            stand-in inputs from repo files (if unihack-data is missing)
 #   ./scripts/mac/lightmap.sh serve               http://localhost:8000 (pages need http, not file://)
+#   ./scripts/mac/lightmap.sh city   [data dir]   WHOLE CITY: lighting status of every segment -> data/out/city/
+#   ./scripts/mac/lightmap.sh api                 backend on http://localhost:8001 (API + the demo pages)
+#   ./scripts/mac/lightmap.sh test                backend tests
 # Another area: LIGHTMAP_BBOX="south,west,north,east" ./scripts/mac/lightmap.sh draft
 set -euo pipefail
 
@@ -50,8 +53,8 @@ case "$cmd" in
     fi
     "$PYBIN" -m venv "$VENV"
     "$PY" -m pip install --quiet --upgrade pip
-    "$PY" -m pip install --quiet "osmnx==2.1.1" numpy shapely
-    "$PY" -c "import osmnx, shapely, numpy; print('ok: osmnx', osmnx.__version__, '| shapely', shapely.__version__, '| numpy', numpy.__version__)"
+    "$PY" -m pip install --quiet -r "$ROOT/backend/requirements.txt"
+    "$PY" -c "import osmnx, shapely, numpy, fastapi; print('ok: osmnx', osmnx.__version__, '| shapely', shapely.__version__, '| numpy', numpy.__version__, '| fastapi', fastapi.__version__)"
     ;;
 
   fallback)
@@ -85,6 +88,28 @@ case "$cmd" in
     "$PY" -I "$ROOT/scripts/mac/run_osmnx.py" "$ROOT/handoff/scripts/dryrun.py" "$data" "$CACHE" | tee "$OUT/dryrun.txt"
     ;;
 
+  city)
+    need_venv
+    need_files "$data" mapillary_street_lights.geojson sesizari_iluminat.geojson
+    "$PY" -I "$ROOT/backend/build_city.py" --data "$data"
+    echo "Дальше: $0 api"
+    ;;
+
+  api)
+    need_venv
+    if [[ ! -f "$OUT/city/segments.geojson.gz" ]]; then
+      echo "Нет данных по городу. Сначала: $0 city" >&2
+      exit 1
+    fi
+    echo "API: http://localhost:${PORT:-8001}/  (запросы руками: http://localhost:${PORT:-8001}/docs)"
+    cd "$ROOT" && "$PY" -m uvicorn backend.app:app --host 127.0.0.1 --port "${PORT:-8001}"
+    ;;
+
+  test)
+    need_venv
+    cd "$ROOT" && "$PY" -m pytest backend/tests -q
+    ;;
+
   serve)
     echo "Карта освещённости: http://localhost:8000/data/out/draft-map.html"
     echo "Демо маршрута:      http://localhost:8000/demo/route/"
@@ -92,6 +117,6 @@ case "$cmd" in
     ;;
 
   *)
-    sed -n '2,10p' "$0"
+    sed -n '2,13p' "$0"
     ;;
 esac
