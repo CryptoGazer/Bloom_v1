@@ -46,8 +46,6 @@ class Snap:
 
 def _values(props, key):
     return set(str(props.get(key) or "").split(";")) - {""}
-
-
 def walk_allowed(props):
     if _values(props, "hw") & NO_WALK_HIGHWAYS:
         return False
