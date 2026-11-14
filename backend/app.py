@@ -56,16 +56,20 @@ def parse_point(value, name):
     return lat, lon
 
 
-def leaving_time(at):
-    """Local wall-clock time in Timișoara: now, 'HH:MM' today, or 'YYYY-MM-DDTHH:MM'."""
-    now = dt.datetime.now(LOCAL_TZ).replace(tzinfo=None)
+LATE_GRACE = dt.timedelta(hours=1)   # 'HH:MM' more than this before now means the next day: at 23:59, "00:05" is tonight
+
+
+def leaving_time(at, now=None):
+    """Local wall-clock time in Timișoara: now, 'HH:MM' (today, or tomorrow if it is over an hour ago), or 'YYYY-MM-DDTHH:MM'."""
+    now = now or dt.datetime.now(LOCAL_TZ).replace(tzinfo=None)
     if not at:
         return now
     try:
         if "T" in at:
             return dt.datetime.fromisoformat(at)
         hour, minute = (int(x) for x in at.split(":"))
-        return now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        when = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        return when + dt.timedelta(days=1) if when < now - LATE_GRACE else when
     except ValueError:
         raise HTTPException(422, detail={"code": "bad_time", "message": "at must be 'HH:MM' or 'YYYY-MM-DDTHH:MM'"})
 
