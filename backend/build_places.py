@@ -115,7 +115,10 @@ def osm_entries(data, area):
             key = ("place", normalize(name), category, round(lat * 600), round(lon * 420))
             if key not in seen:
                 seen.add(key)
-                places.append({"k": "place", "n": name, "c": category, "lat": round(lat, 6), "lon": round(lon, 6)})
+                entry = {"k": "place", "n": name, "c": category, "lat": round(lat, 6), "lon": round(lon, 6)}
+                if tags.get("opening_hours"):
+                    entry["oh"] = tags["opening_hours"]  # for "open now" along a route (backend/liveliness.py)
+                places.append(entry)
     return addresses, places
 
 

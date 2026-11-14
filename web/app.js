@@ -237,7 +237,7 @@ function swap() {
 function setTravel(value) {
   travel = value;
   for (const r of document.querySelectorAll('input[name="travel"]')) r.checked = r.value === value;
-  $('at-wrap').hidden = value !== 'transit';
+  $('at-wrap').hidden = false;  // the leaving time matters for every mode: signs of life, transit
 }
 
 function onMapClick(e) {
@@ -259,7 +259,7 @@ function reset() {
 
 function compute() {
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
-  const at = travel === 'transit' ? $('at').value : '';
+  const at = $('at').value;
   const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
   if (at) hash.set('at', at);
   history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
@@ -327,7 +327,26 @@ function drawRoute() {
       .addTo(routeLayer);
   }
   pieces(plan.routes[selected]);
+  for (const p of (plan.routes[selected].signs || {}).open_places || []) {
+    L.circleMarker([p.lat, p.lon], { radius: 6, color: '#6a3d9a', weight: 3, fillColor: '#fff', fillOpacity: 1 })
+      .bindTooltip(esc(p.name + (p.always ? ' (' + t('signsAlways') + ')' : '')), { direction: 'top' }).addTo(routeLayer);
+  }
   routeLayer.bringToFront();
+}
+
+// signs of life along a route at the leaving time: evidence, never a score (backend/liveliness.py)
+function signsBlock(sg) {
+  const items = [];
+  const open = sg.open_places.map(p => p.name + (p.always ? ' (' + t('signsAlways') + ')' : '')).join(', ');
+  let first = open ? t('signsOpen', { list: open }) : t('signsNoneOpen');
+  if (sg.places_unknown_hours) first += ' · ' + t('signsUnknown', { n: sg.places_unknown_hours });
+  items.push(first);
+  if (sg.stops.length) {
+    items.push(t('signsStops', { list: sg.stops.slice(0, 3).map(s => `${s.name} (${s.departures.slice(0, 3).map(d => d.line + ' ' + d.time).join(', ')})`).join('; ') }));
+  }
+  items.push(t('signsMain', { pct: pct(sg.main_share) }));
+  return `<div class="signs"><span class="signs-title">${esc(t('signsTitle', { time: (plan.at || '').slice(11, 16) }))}</span>` +
+    `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul><p class="small">${esc(t('signsNote'))}</p></div>`;
 }
 
 // the "on foot + public transport" card: the trip, or why there is none (the walking cards follow)
@@ -384,7 +403,7 @@ function card(kind, r, title, note) {
   const via = r.streets.length ? `<p class="via">${esc(t('via'))}${r.streets.slice(0, 4).map(esc).join(' → ')}${r.streets.length > 4 ? ' → …' : ''}</p>` : '';
   return `<button type="button" class="card${selected === kind ? ' selected' : ''}" data-kind="${kind}" aria-pressed="${selected === kind}">` +
     `<span class="title">${esc(title)}</span><span class="main">${fmtMin(r.minutes)} · ${fmtM(r.length_m)}</span>` +
-    `<span class="bar">${bar}</span><ul>${rows}</ul>${warn}${via}${note || ''}</button>`;
+    `<span class="bar">${bar}</span><ul>${rows}</ul>${warn}${via}${r.signs ? signsBlock(r.signs) : ''}${note || ''}</button>`;
 }
 
 function renderCards() {
@@ -455,7 +474,7 @@ getJSON('/api/summary')
     for (const r of document.querySelectorAll('input[name="travel"]')) {
       r.addEventListener('change', () => { setTravel(r.value); if (A && B) compute(); });
     }
-    $('at').addEventListener('change', () => { if (A && B && travel === 'transit') compute(); });
+    $('at').addEventListener('change', () => { if (A && B) compute(); });
     $('net').addEventListener('change', refresh);
     for (const r of document.querySelectorAll('input[name="mode"]')) {
       r.addEventListener('change', () => {
