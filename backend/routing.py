@@ -84,6 +84,48 @@ def bike_access(props):
     return "ride"
 
 
+def largest_scc(adj):
+    """Nodes of the largest strongly connected part of a directed graph, adj[u] = [(v, segment), ...].
+    Iterative Kosaraju, no dependencies (networkx is not installed on the server)."""
+    n = len(adj)
+    radj = [[] for _ in range(n)]
+    for u, nbrs in enumerate(adj):
+        for v, _ in nbrs:
+            radj[v].append(u)
+    order, seen = [], [False] * n
+    for start in range(n):
+        if seen[start] or not adj[start]:
+            continue
+        seen[start] = True
+        stack = [(start, iter(adj[start]))]
+        while stack:
+            u, it = stack[-1]
+            for v, _ in it:
+                if not seen[v]:
+                    seen[v] = True
+                    stack.append((v, iter(adj[v])))
+                    break
+            else:
+                stack.pop()
+                order.append(u)
+    comp, best = [-1] * n, set()
+    for start in reversed(order):
+        if comp[start] != -1:
+            continue
+        members, stack = [], [start]
+        comp[start] = start
+        while stack:
+            u = stack.pop()
+            members.append(u)
+            for v in radj[u]:
+                if comp[v] == -1:
+                    comp[v] = start
+                    stack.append(v)
+        if len(members) > len(best):
+            best = set(members)
+    return best if len(best) > 1 else set()
+
+
 def bike_both_ways(props):
     """A one-way segment (stored in its driving direction) is two-way for bikes only with a contraflow sign."""
     if _values(props, "oneway") != {"True"}:
@@ -168,6 +210,12 @@ class Network:
                 adj[self.a[i]].append((self.b[i], i))
                 if both[i]:
                     adj[self.b[i]].append((self.a[i], i))
+        if mode == "bike":
+            # one-way streets make the bike graph directed: keep only the part where every crossing can be
+            # reached from every other one, so a snapped point never sits in a one-way dead end or trap
+            main = largest_scc(adj)
+            routable = [ok and self.a[i] in main and self.b[i] in main for i, ok in enumerate(routable)]
+            adj = [[(v, s) for v, s in nbrs if routable[s]] for nbrs in adj]
         snap_idx = np.array([i for i, ok in enumerate(routable) if ok], dtype=int)
         return {"routable": routable, "adj": adj, "slow": slow, "both": both, "mps": SETTINGS[mode + "_mps"], "snap_idx": snap_idx,
                 "snap_tree": STRtree(self.lines[snap_idx]) if len(snap_idx) else None}

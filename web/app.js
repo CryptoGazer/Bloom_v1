@@ -276,13 +276,17 @@ function compute() {
       plan = null;
       routeLayer.clearLayers();
       $('cards').innerHTML = '';
+      // texts come from i18n.js by error code; the server's English message is only a fallback detail
       const d = err.detail || {};
+      let text;
       if (d.code === 'outside_coverage') {
         const near = d.nearest_m != null ? t('nearest', { d: fmtM(d.nearest_m) }) : '';
-        say(`<span class="error">${esc(t('outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near }))}</span>`);
+        text = t(travel === 'bike' ? 'outsideBike' : 'outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near });
       } else {
-        say(`<span class="error">${esc(t('routeFailed', { msg: err.message }))}</span>`);
+        const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (travel === 'bike' ? 'bike' : 'walk') : d.code);
+        text = d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       }
+      say(`<span class="error">${esc(text)}</span>`);
     });
 }
 

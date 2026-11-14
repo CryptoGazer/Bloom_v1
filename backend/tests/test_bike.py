@@ -1,7 +1,7 @@
 """Cycling routes on small hand-made networks. Run: .venv/bin/python -m pytest backend/tests -q"""
 import pytest
 
-from backend.routing import Network, bike_access, bike_both_ways
+from backend.routing import Network, bike_access, bike_both_ways, largest_scc
 from backend.tests.test_routing import ll, seg
 
 
@@ -69,6 +69,27 @@ def test_pushing_the_bike_counts_at_walking_speed():
     net = net_of(seg("push", 1, 2, [(0, 0), (100, 0)], "lit_confirmed", "Pasaj", hw="footway", bicycle="dismount"))
     route = net.plan(at(net, 0, 0), at(net, 100, 0), mode="bike")["routes"]["fastest"]
     assert route["minutes"] == pytest.approx(100 / 1.35 / 60, abs=0.1)
+
+
+def test_one_way_dead_ends_are_left_out_so_every_pair_has_a_route():
+    # a two-way triangle and a one-way spur 2 -> 4: you can ride into it but never out of it
+    net = net_of(seg("t12", 1, 2, [(0, 0), (200, 0)], "lit_confirmed", "Strada A"),
+                 seg("t23", 2, 3, [(200, 0), (100, 150)], "lit_confirmed", "Strada B"),
+                 seg("t31", 3, 1, [(100, 150), (0, 0)], "lit_confirmed", "Strada C"),
+                 seg("spur", 2, 4, [(200, 0), (400, 0)], "lit_confirmed", "Fundătura", oneway="True"))
+    assert net.graphs["bike"]["routable"][net.by_id["spur"]] is False
+    assert net.graphs["walk"]["routable"][net.by_id["spur"]] is True      # on foot the spur is fine
+    near_spur_end = at(net, 390, 5)
+    assert net.props[near_spur_end.seg]["id"] != "spur"
+    assert net.plan(near_spur_end, at(net, 100, 0), mode="bike") is not None
+    assert net.plan(at(net, 100, 0), near_spur_end, mode="bike") is not None
+
+
+def test_largest_strongly_connected_part():
+    # 0 <-> 1 <-> 2 is a cycle, 2 -> 3 only leaves it, 4 is on its own
+    adj = [[(1, 0)], [(0, 1), (2, 2)], [(1, 3), (3, 4)], [], []]
+    assert largest_scc(adj) == {0, 1, 2}
+    assert largest_scc([[] for _ in range(3)]) == set()
 
 
 def test_steps_are_not_for_bikes():
