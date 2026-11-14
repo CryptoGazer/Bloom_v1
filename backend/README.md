@@ -60,7 +60,7 @@ LIGHTMAP_SEGMENTS=data/out/city-full/segments.geojson.gz ./scripts/mac/lightmap.
 | `backend/geocode.py` | поиск по индексу: без диакритики, номер дома, ранжирование; без сети |
 | `backend/tests/test_geocode.py` | 15 тестов поиска на рукотворном списке |
 | `backend/transit.py`, `backend/build_transit.py` | пешком + транспорт: планировщик и расписание области из GTFS SMTT (`data/out/city/transit.json.gz`) |
-| `backend/tests/test_transit.py` | 6 тестов: выбор рейса, «уже уехал», рейсы после полуночи, нет остановки рядом, направление |
+| `backend/tests/test_transit.py` | 9 тестов: выбор рейса, «уже уехал», рейсы после полуночи, нет остановки рядом, направление, линия поездки по геометрии GTFS |
 | `backend/tests/test_bike.py` | 16 тестов велосипеда: доступ по тегам OSM, односторонние улицы, «dismount», ступеньки |
 | `backend/routing.py` | граф, привязка точки, маршруты, выборка по окну; без веб-кода |
 | `backend/app.py` | HTTP-обёртка на FastAPI |
