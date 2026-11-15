@@ -226,7 +226,7 @@ function fit(bounds, maxZoom = 17) {
 // ---------- the area and the faint lighting network ----------
 // The network of the whole area is loaded once (about 240 KB) and kept: moving the map asks the server nothing and
 // redraws nothing by hand. Only an area with more segments than one answer holds is loaded view by view, as before.
-const NET_MIN_ZOOM = 12, NET_VIEW_MIN_ZOOM = 13, NET_LIMIT = 8000;
+const NET_MIN_ZOOM = 12, NET_VIEW_MIN_ZOOM = 13, NET_LIMIT = 20000; // API maximum; northwest coverage has >8000 segments
 let netState = 'none';                        // none | loading | ready | views (too big for one answer)
 let netReq = 0, netDim = false;
 const netOpacity = k => ST[k].netOp * (netDim ? 0.6 : 1);

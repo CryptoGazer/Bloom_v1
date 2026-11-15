@@ -272,6 +272,7 @@ def audit(data):
 def verify(data):
     from fastapi.testclient import TestClient
     from backend.app import create_app
+    from backend.history import History
     result = read(QA / 'audit.json')
     assert result['quality_passes'] and result['routing_passes']
     assert result['existing_area_preserved'] and result['single_polygon'] and not result['holes']
@@ -281,11 +282,16 @@ def verify(data):
     tt = read(OUT / 'transit.json.gz')
     assert all(tt['days'].get(day) for day in ['2026-11-15', '2026-11-16', '2026-11-17'])
     checks = []
-    with TestClient(create_app(segments_path=OUT / 'segments.geojson.gz', live_fetch=lambda: {'vehicles': []})) as client:
+    with TestClient(create_app(segments_path=OUT / 'segments.geojson.gz', live_fetch=lambda: {'vehicles': []}, history=History(lambda *_: {}))) as client:
         for url in ['/api/health', '/api/summary', '/api/transit/live']:
             response = client.get(url)
             assert response.status_code == 200, (url, response.text)
             checks.append({'url': url, 'http': response.status_code})
+        summary = client.get('/api/summary').json()
+        response = client.get('/api/segments', params={'bbox': ','.join(str(v) for v in summary['bounds_wsen']), 'limit': 20000})
+        layer = response.json()
+        assert response.status_code == 200 and not layer['truncated'] and len(layer['features']) == layer['count'] > 0
+        checks.append({'url': '/api/segments', 'http': 200, 'count': layer['count'], 'limit': 20000, 'truncated': False})
         for query in ['Piata Traian', 'Badea Cartan', 'Telegrafului', 'Tipografilor', 'Matasarilor'] + EXTRA_QUERIES:
             response = client.get('/api/geocode', params={'q': query})
             found = response.json()['results']
