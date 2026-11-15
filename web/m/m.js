@@ -813,8 +813,7 @@ function renderHome() {
   const ta = $('ask-ta'), keep = ta && document.activeElement === ta ? [ta.selectionStart, ta.selectionEnd] : null;
   const asking = !loopMode && ask.on && ask.view === 'ask';
   $('screen').innerHTML = `
-  <div class="top" style="justify-content: space-between">
-    ${voiceBtn()}
+  <div class="top" style="justify-content: flex-end">
     <div style="display: flex; gap: 8px">
       <button type="button" class="round" data-act="loop" aria-pressed="${loopMode}" aria-label="${esc(t('m.loopBtn'))}">${I.loop()}</button>
       <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
@@ -1927,7 +1926,7 @@ window.bzCompass = deg => {
   nav.heading = deg;
   showMe(myPos.lat, myPos.lng, deg);
 };
-// Voice on / off, from home, the navigator or next to "start": every copy of the switch on the screen follows, the
+// Voice on / off, from the navigator or next to "start": every copy of the switch on the screen follows, the
 // choice is kept for the next time, and the change is both shown and, when switched on, said in the voice itself.
 ACT.voice = () => {
   voice.on = !voice.on;
@@ -2241,10 +2240,6 @@ if (typeof BzAsk !== 'undefined') {
 }
 history.replaceState({ screen: 'home' }, '');
 renderHome();
-// A browser without a system voice can still use ElevenLabs once health has loaded.
-voice.ready.then(() => {
-  if (screen === 'home' && canSpeak() && !$('screen').querySelector('[data-act="voice"]')) renderHome();
-});
 getJSON('/api/summary').then(s => {
   summary = s;
   if (s.area_geometry) L.geoJSON(s.area_geometry, { interactive: false, style: { color: '#6B6B6B', weight: 1, dashArray: '2 5', fill: false } }).addTo(areaLayer);
