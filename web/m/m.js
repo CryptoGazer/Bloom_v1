@@ -1378,7 +1378,11 @@ function onPos(pos) {
   nav.last = p;
   nav.acc = pos.coords.accuracy;
   const pr = project(nav.path, p);
-  nav.progress = Math.max(nav.progress, pr.d);
+  // a fix counts as on the route within 40 m, or within its own accuracy up to 80 m (a ±70 m Wi-Fi fix near
+  // the route is not "off the route"); only such a fix moves the walked part forward, so a stray fix 86 m
+  // away never paints streets you have not walked
+  nav.allow = Math.min(80, Math.max(40, pos.coords.accuracy || 0));
+  if (pr.off <= nav.allow) nav.progress = Math.max(nav.progress, pr.d);
   nav.off = pr.off;
   showMe(p.lat, p.lng, nav.heading);
   map.setView(p, Math.max(map.getZoom(), 17), { animate: true });
@@ -1440,7 +1444,7 @@ function updateNav() {
   // the next stretch reported as dark within 500 m: warn, offer the better-lit route if there is one
   const runs = runsOf(nav.r), dark = runs.find(x => x.status === 'dark_reported' && x.to > pr && x.from - pr < 500 && !nav.dismissed.has(Math.round(x.from)));
   const canDetour = !nav.toStop && nav.kind === 'fastest' && plan.verdict.kind !== 'same';
-  $('nav-warn').innerHTML = nav.off > 40
+  $('nav-warn').innerHTML = nav.off > (nav.allow || 40)
     ? `<section class="warnbox"><span style="font-size: 15px; font-weight: 600">${esc(t('m.offRoute', { m: Math.round(nav.off) }))}</span><button type="button" class="primary" data-act="recalcHere" style="height: 44px; font-size: 15px">${esc(t('m.recalcHere'))}</button></section>`
     : dark ? `<section class="warnbox dark" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
       `<div style="display: flex; gap: 8px">${canDetour ? `<button type="button" class="primary" data-act="detour" style="height: 44px; font-size: 15px">${esc(t('m.detour', { min: Math.max(1, extraMin()) }))}</button>` : ''}<button type="button" class="secondary sm" data-act="keep" data-d="${Math.round(dark.from)}">${esc(t('m.keepGoing'))}</button></div></section>`
@@ -1451,10 +1455,9 @@ function updateNav() {
   $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : labels.B, route: routeTitle(nav.kind).toLowerCase() });
   $('nav-bar').innerHTML = statusBar(nav.r, 8, 5, pr);
   $('nav-foot').innerHTML = `${esc(t('m.lightLeft'))} · <span class="mono" style="font-size: 11px">${nav.sim ? esc(t('m.simTag')) : 'GPS ±' + Math.round(nav.acc || 0) + ' m'}</span> · ${esc(t('m.locStays'))}`;
-  const P = path.P, done = [];
-  for (const q of P) { if (q.d > pr) break; done.push(q.p); }
-  if (myPos) done.push(myPos);
-  nav.done.setLatLngs(done);
+  // the walked part: along the route up to the progress point, never a straight line to where the phone is
+  if (!path.pp) { path.pp = path.P.map(q => q.p); path.pd = path.P.map(q => q.d); }
+  nav.done.setLatLngs(pr > 0 ? cutC(path.pp, path.pd, pr) : []);
   placeSide();
 }
 
