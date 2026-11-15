@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
+import android.util.Log;
 import android.view.WindowManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -36,6 +37,7 @@ import java.util.Map;
 public class MainActivity extends Activity implements SensorEventListener {
     private static final Uri BASE = Uri.parse(BuildConfig.BASE_URL);
     private static final int ASK_LOCATION = 1, ASK_MIC = 2;
+    private static final String TAG = "bezna";
     private static final Map<String, String> MIME = new HashMap<>();
     static {
         MIME.put("html", "text/html"); MIME.put("js", "text/javascript"); MIME.put("css", "text/css");
@@ -141,9 +143,10 @@ public class MainActivity extends Activity implements SensorEventListener {
         @JavascriptInterface
         public void speak(final String text, final String lang) {
             runOnUiThread(() -> {
-                if (!ttsReady) return;
-                tts.setLanguage(Locale.forLanguageTag(lang));
-                tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bezna");
+                if (!ttsReady) { Log.w(TAG, "speak: no speech engine"); return; }
+                int language = tts.setLanguage(Locale.forLanguageTag(lang));
+                int queued = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bezna");
+                Log.i(TAG, "speak " + lang + ": language " + language + ", queued " + queued + ", engine " + tts.getDefaultEngine());
             });
         }
 
