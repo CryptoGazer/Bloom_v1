@@ -24,7 +24,7 @@ python -m venv .venv
 .venv/bin/uvicorn backend.app:app --port 8001
 ```
 
-Open http://localhost:8001/m/ (phone layout, "bezna") or http://localhost:8001/ (the earlier desktop page). API docs: http://localhost:8001/docs. The active coverage is 7.73 km²: the university campus, centre and selected northeastern neighbourhoods. Built data is in `data/out/city-expanded/`; no download is needed to run it. `LIGHTMAP_SEGMENTS` can select another dataset. Optional: `GEMINI_API_KEY` in `.env` turns on the plain-words box (see `.env.example`).
+Open http://localhost:8001/m/ (phone layout, "bezna") or http://localhost:8001/ (the earlier desktop page). API docs: http://localhost:8001/docs. Active coverage is 9.61 km²: the university campus, centre, selected northeastern neighbourhoods, Circumvalațiunii–Dacia and Mircea cel Bătrân. Built data is in `data/out/city-northwest/`; no download is needed to run it. `LIGHTMAP_SEGMENTS` can select another dataset. Optional: `GEMINI_API_KEY` in `.env` turns on the plain-words box (see `.env.example`).
 
 Tests: `.venv/bin/python -m pytest backend/tests -q`.
 
@@ -35,8 +35,9 @@ Tests: `.venv/bin/python -m pytest backend/tests -q`.
 | `backend/` | lighting status of every street segment, routing, timetable, live vehicles, place search, Gemini form filling; see `backend/README.md` |
 | `web/m/` | the phone layout; `web/` the desktop page; see `web/README.md` |
 | `android/` | the Android app: the phone layout in a WebView with a native navigator bridge; see `android/README.md` |
-| `config/area-expanded.geojson` | active coverage boundary (7.73 km²) |
-| `data/out/city-expanded/` | active network, search index, summary and timetable |
+| `config/area-northwest.geojson` | active coverage boundary (9.61 km²) |
+| `data/out/city-northwest/` | active network, search index, summary and timetable |
+| `config/area-expanded.geojson`, `data/out/city-expanded/` | previous northeast extension (7.73 km²), kept for comparison |
 | `config/area.geojson`, `data/out/city/` | previous 4.71 km² area, kept for comparison |
 | `PLAN.md` | plan and status (in Russian) |
 | `docs/` | research notes, design brief, bug reports |

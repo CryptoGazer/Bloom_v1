@@ -37,7 +37,7 @@ import java.util.Map;
 public class MainActivity extends Activity implements SensorEventListener {
     private static final Uri BASE = Uri.parse(BuildConfig.BASE_URL);
     private static final int ASK_LOCATION = 1, ASK_MIC = 2;
-    private static final String TAG = "bezna";
+    private static final String TAG = "bezna", GOOGLE_TTS = "com.google.android.tts";
     private static final Map<String, String> MIME = new HashMap<>();
     static {
         MIME.put("html", "text/html"); MIME.put("js", "text/javascript"); MIME.put("css", "text/css");
@@ -68,7 +68,16 @@ public class MainActivity extends Activity implements SensorEventListener {
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setWebViewClient(new Client());
         web.setWebChromeClient(new Chrome());
-        tts = new TextToSpeech(this, status -> ttsReady = status == TextToSpeech.SUCCESS);
+        // Google's engine speaks Romanian and Russian; some phones' own engines list every language but speak only
+        // English (vivo's com.vivo.aiservice). Google's if it is installed, the phone's default otherwise.
+        final String engine = installed(GOOGLE_TTS) ? GOOGLE_TTS : null;
+        tts = new TextToSpeech(this, status -> {
+            ttsReady = status == TextToSpeech.SUCCESS;
+            if (!ttsReady) return;
+            StringBuilder voices = new StringBuilder();
+            try { for (android.speech.tts.Voice v : tts.getVoices()) voices.append(v.getLocale().toLanguageTag()).append(v.isNetworkConnectionRequired() ? "(net) " : " "); } catch (Exception e) { voices.append(e); }
+            Log.i(TAG, "speech engine " + engine + " (null: the default " + tts.getDefaultEngine() + "), voices: " + voices.length());
+        }, engine);
         sensors = (SensorManager) getSystemService(SENSOR_SERVICE);
         web.addJavascriptInterface(new Bridge(), "BeznaNative");
         if (state == null) web.loadUrl(BASE + "/m/"); else web.restoreState(state);
@@ -83,6 +92,10 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     public void onBackPressed() {
         if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+    }
+
+    private boolean installed(String app) {
+        try { getPackageManager().getPackageInfo(app, 0); return true; } catch (PackageManager.NameNotFoundException none) { return false; }
     }
 
     private boolean granted(String permission) {
@@ -146,7 +159,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 if (!ttsReady) { Log.w(TAG, "speak: no speech engine"); return; }
                 int language = tts.setLanguage(Locale.forLanguageTag(lang));
                 int queued = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bezna");
-                Log.i(TAG, "speak " + lang + ": language " + language + ", queued " + queued + ", engine " + tts.getDefaultEngine());
+                Log.i(TAG, "speak " + lang + ": language " + language + ", queued " + queued + ", voice " + tts.getVoice());
             });
         }
 

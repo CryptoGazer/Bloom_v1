@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bezna — titlu</title>
+<!-- Title slide of the pitch: our dark basemap of the centre of Timișoara; the streets that fall inside the letters
+     of BEZNA are lit white, so the name is written by the street network itself. Open full screen (F11), 16:9.
+     ?word=… writes another word. -->
+<link rel="stylesheet" href="../vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+html, body { height: 100%; margin: 0; background: #0B0B0B; overflow: hidden; }
+#map { position: absolute; inset: 0; background: #0B0B0B; }
+.leaflet-container { background: #0B0B0B; }
+.bz-tiles { filter: invert(1) grayscale(1) brightness(.5) contrast(1.25); }
+.leaflet-control-attribution { background: rgba(11,11,11,.6) !important; color: #6B6B6B; font: 10px Inter, sans-serif; }
+.leaflet-control-attribution a { color: #8A8A8A; }
+.glow { filter: url(#glow); }
+/* the corners darken: the word in the middle carries the slide */
+#vignette { position: absolute; inset: 0; pointer-events: none; z-index: 500;
+            background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(11,11,11,0) 55%, rgba(11,11,11,.85) 100%); }
+#caption { position: absolute; left: 4vw; bottom: 4.5vh; z-index: 600; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; }
+#caption b { display: block; font-size: 2.2vw; font-weight: 600; letter-spacing: -0.01em; }
+#caption span { display: block; margin-top: .6vh; font: 500 1vw "JetBrains Mono", monospace; letter-spacing: .12em; color: #8A8A8A; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true"><defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs></svg>
+<div id="map" role="img" aria-label="bezna"></div>
+<div id="vignette"></div>
+<div id="caption"><b>Prin beznă, spre casă.</b><span>Timișoara · UniHack 2026</span></div>
+<script src="../vendor/leaflet/leaflet.js"></script>
+<script>
+'use strict';
+const WORD = (new URLSearchParams(location.search).get('word') || 'BEZNA').toUpperCase();
+const NET = { lit_confirmed: ['#F2F2F2', 0.22, null], lit_likely: ['#FFC83D', 0.4, '8 5'], unknown: ['#8A8A8A', 0.45, '0.1 6'], dark_reported: ['#FF5A4F', 0.55, '7 5 0.1 5'] };
+
+const map = L.map('map', { zoomControl: false, attributionControl: true, zoomSnap: 0.05, dragging: false, scrollWheelZoom: false,
+  doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false, fadeAnimation: false });
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'bz-tiles',
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · bezna' }).addTo(map);
+map.setView([45.7555, 21.2380], 14);               // until the network arrives; then the view fits it
+const svg = L.svg({ padding: 0.2 });
+
+// The word sits where our streets are dense: across the middle 80% of the network, at its median height.
+// Returns the mask test and draws the letters themselves very faintly, so the word reads where streets are sparse.
+function letters(points) {
+  const w = map.getSize().x, h = map.getSize().y, c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const xs = points.map(p => p.x).sort((a, b) => a - b), ys = points.map(p => p.y).sort((a, b) => a - b);
+  const q = (arr, f) => arr[Math.floor(f * (arr.length - 1))];
+  const left = Math.max(w * 0.08, q(xs, 0.04)), right = Math.min(w * 0.92, q(xs, 0.96)), midY = q(ys, 0.5);
+  const g = c.getContext('2d');
+  const font = s => `900 ${s}px "Arial Black", "Segoe UI Black", Impact, sans-serif`;
+  let size = h * 0.5;
+  g.font = font(size);
+  size *= Math.min(1, (right - left) / g.measureText(WORD).width);
+  g.font = font(size);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#000';
+  g.fillText(WORD, (left + right) / 2, midY);
+  const a = g.getImageData(0, 0, w, h).data;
+  // the letters, faint: a pane under the streets
+  const shade = document.createElement('canvas');
+  shade.width = w; shade.height = h;
+  shade.style.cssText = 'position: absolute; left: 0; top: 0; pointer-events: none';
+  const s = shade.getContext('2d');
+  s.font = font(size); s.textAlign = 'center'; s.textBaseline = 'middle';
+  s.fillStyle = 'rgba(242,242,242,0.13)';
+  s.fillText(WORD, (left + right) / 2, midY);
+  s.lineWidth = 2; s.strokeStyle = 'rgba(242,242,242,0.55)';
+  s.strokeText(WORD, (left + right) / 2, midY);
+  // in a pane of its own, between the tiles and the streets
+  const pane = map.createPane('letters');
+  pane.style.zIndex = 350;
+  pane.appendChild(shade);
+  L.DomUtil.setPosition(shade, map.containerPointToLayerPoint([0, 0]));
+  return (x, y) => { x = Math.round(x); y = Math.round(y); return x >= 0 && y >= 0 && x < w && y < h && a[(y * w + x) * 4 + 3] > 128; };
+}
+
+// the parts of a line that lie inside the letters, as lists of LatLng, sampled every 3 px along it
+function insideRuns(latlngs, inside) {
+  const runs = [];
+  let run = null;
+  for (let i = 1; i < latlngs.length; i++) {
+    const a = map.latLngToContainerPoint(latlngs[i - 1]), b = map.latLngToContainerPoint(latlngs[i]);
+    const n = Math.max(1, Math.ceil(a.distanceTo(b) / 3));
+    for (let k = i === 1 ? 0 : 1; k <= n; k++) {
+      const t = k / n, p = L.point(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
+      if (inside(p.x, p.y)) { if (!run) runs.push(run = []); run.push(map.containerPointToLatLng(p)); }
+      else run = null;
+    }
+  }
+  return runs.filter(r => r.length > 1);
+}
+
+fetch('/api/summary').then(r => r.json()).then(sum => {
+  const [w, so, e, n] = sum.bounds_wsen;
+  return fetch(`/api/segments?bbox=${w},${so},${e},${n}&limit=8000`).then(r => r.json());
+}).then(d => {
+  const lines = d.features.map(f => ({ st: f.properties.status, ll: f.geometry.coordinates.map(c => L.latLng(c[1], c[0])) }));
+  // the view: the dense middle of the network (between its 12th and 88th percentiles) fills the slide
+  const all = lines.flatMap(x => x.ll), lats = all.map(p => p.lat).sort((a, b) => a - b), lngs = all.map(p => p.lng).sort((a, b) => a - b);
+  const pq = (arr, f) => arr[Math.floor(f * (arr.length - 1))];
+  map.fitBounds([[pq(lats, 0.12), pq(lngs, 0.12)], [pq(lats, 0.88), pq(lngs, 0.88)]], { padding: [0, 0], animate: false });
+  const inside = letters(lines.flatMap(x => x.ll.map(p => map.latLngToContainerPoint(p))));
+  const faint = {}, lit = [];
+  for (const x of lines) {
+    (faint[x.st] = faint[x.st] || []).push(x.ll);
+    lit.push(...insideRuns(x.ll, inside));
+  }
+  // the lighting network, faint, as on the start screen
+  for (const [k, [color, opacity, dash]] of Object.entries(NET)) {
+    if (faint[k]) L.polyline(faint[k], { renderer: svg, color, opacity, weight: k === 'lit_confirmed' ? 1.4 : 1.8, dashArray: dash, interactive: false }).addTo(map);
+  }
+  // the word: the streets inside the letters, lit white with a halo
+  L.polyline(lit, { renderer: svg, color: '#FFFFFF', opacity: 0.5, weight: 12, lineCap: 'round', lineJoin: 'round', className: 'glow', interactive: false }).addTo(map);
+  L.polyline(lit, { renderer: svg, color: '#F2F2F2', opacity: 1, weight: 3.5, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map);
+  document.body.dataset.ready = String(lit.length);
+});
+</script>
+</body>
+</html>

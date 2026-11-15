@@ -106,10 +106,36 @@ def refine(data):
     streets(data)
 
 
+def verify(data):
+    from fastapi.testclient import TestClient
+    from backend.app import create_app
+    from backend.history import History
+    prep.verify(data)
+    checks = []
+    with TestClient(create_app(segments_path=prep.OUT / 'segments.geojson.gz',
+                              live_fetch=lambda: {'vehicles': []}, history=History(lambda *_: {}))) as client:
+        points = []
+        for query in prep.EXTRA_QUERIES:
+            dest = client.get('/api/geocode', params={'q': query}).json()['results'][0]
+            point = str(dest['lat']) + ',' + str(dest['lon'])
+            points.append(point)
+            response = client.get('/api/loop', params={'center': point, 'radius_m': 300, 'mode': 'walk'})
+            result = response.json()
+            assert response.status_code == 200 and result['loop'] and result['generated'], (query, result)
+            checks.append({'url': '/api/loop', 'center_query': query, 'generated': True, 'http': 200})
+        response = client.get('/api/loop', params={'points': ';'.join(points), 'mode': 'walk'})
+        assert response.status_code == 200 and response.json()['loop']
+        checks.append({'url': '/api/loop', 'through': prep.EXTRA_QUERIES, 'http': 200})
+    manifest = prep.read(prep.OUT / 'preparation.json')
+    manifest['api_checks'].extend(checks)
+    prep.save(prep.OUT / 'preparation.json', manifest)
+    print('Northwest API checks total:', len(manifest['api_checks']), flush=True)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data', required=True, type=Path)
     parser.add_argument('phase', choices=['boundary', 'streets', 'places', 'audit', 'refine', 'verify'])
     args = parser.parse_args()
     {'boundary': boundary, 'streets': streets, 'places': prep.places,
-     'audit': prep.audit, 'refine': refine, 'verify': prep.verify}[args.phase](args.data)
+     'audit': prep.audit, 'refine': refine, 'verify': verify}[args.phase](args.data)

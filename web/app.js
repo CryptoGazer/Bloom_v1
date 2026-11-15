@@ -5,7 +5,7 @@
 
 const LAYERS_BASE = '/data/out/layers/';
 const SEG_MIN_ZOOM = 13;          // closer than this: street segments; farther: the outline of the area
-const SEG_LIMIT = 8000;
+const SEG_LIMIT = 20000;
 
 const ST = {
   lit_confirmed: { c: '#009E73', d: null, css: 'solid' },

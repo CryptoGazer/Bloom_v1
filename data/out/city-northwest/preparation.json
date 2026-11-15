@@ -1,0 +1,260 @@
+{
+ "as_of": "2026-11-15",
+ "area_km2": 9.613,
+ "area_sha256": "eccdab81a433f8db8bbaada19615b2f76d10fb04daad3bdd9bdcbaf10e61788f",
+ "quality_passes": true,
+ "routing_passes": true,
+ "api_checks": [
+  {
+   "url": "/api/health",
+   "http": 200
+  },
+  {
+   "url": "/api/summary",
+   "http": 200
+  },
+  {
+   "url": "/api/transit/live",
+   "http": 200
+  },
+  {
+   "url": "/api/segments",
+   "http": 200,
+   "count": 9133,
+   "limit": 20000,
+   "truncated": false
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_trip_soon"
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Piata Dacia",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Dacia",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Dacia",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "transit_reason": null
+  },
+  {
+   "destination": "Mircea cel Batran",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Mircea cel Batran",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Mircea cel Batran",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "transit_reason": null
+  },
+  {
+   "from": "45.7470,21.2395",
+   "to": "45.7548,21.2254",
+   "at": "2026-11-15T21:00",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "line": "16"
+  },
+  {
+   "from": "45.75937,21.22896",
+   "to": "45.76027,21.24061",
+   "at": "2026-11-15T12:03",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "line": "17"
+  },
+  {
+   "url": "/api/loop",
+   "center_query": "Piata Dacia",
+   "generated": true,
+   "http": 200
+  },
+  {
+   "url": "/api/loop",
+   "center_query": "Mircea cel Batran",
+   "generated": true,
+   "http": 200
+  },
+  {
+   "url": "/api/loop",
+   "through": [
+    "Piata Dacia",
+    "Mircea cel Batran"
+   ],
+   "http": 200
+  }
+ ],
+ "street_stats_clipped_to_polygon": {
+  "street_km": 199.705,
+  "lit_confirmed": 62.97,
+  "lit_likely": 21.58,
+  "dark_reported": 1.54,
+  "unknown": 13.91
+ },
+ "added_street_stats": {
+  "street_km": 34.904,
+  "lit_confirmed": 69.09,
+  "lit_likely": 19.57,
+  "dark_reported": 0.62,
+  "unknown": 10.72
+ },
+ "grid_600m_cells_checked": 10,
+ "max_grid_unknown_pct": 45.99,
+ "max_grid_walking_unknown_pct": 44.93,
+ "red_comparison": {
+  "current": {
+   "all_dark_m": 7501,
+   "core_dark_m": 2867,
+   "direct_complaint_dark_m": 1853
+  },
+  "expanded": {
+   "all_dark_m": 7733,
+   "core_dark_m": 3083,
+   "direct_complaint_dark_m": 1961
+  }
+ },
+ "files": {
+  "segments.geojson.gz": {
+   "bytes": 458049,
+   "sha256": "38e60a89cc8ddc015a390b8891ef61c528091ea1861309aa9121037cfc9d5306"
+  },
+  "summary.json": {
+   "bytes": 15238,
+   "sha256": "bc0b5f3c59ab6b2678354471c00607d101da0bdc726dd6bf3c27a1c9aef55cdc"
+  },
+  "places.json.gz": {
+   "bytes": 87065,
+   "sha256": "49909fd651ab5dd43f17c47b556fadc39486a39759ee52c8f6363ef5b03f4ae1"
+  },
+  "transit.json.gz": {
+   "bytes": 272283,
+   "sha256": "b55009b520e10309cc10dee60ad01c5701c9c061f86c8432bd9219b982bc6987"
+  }
+ }
+}
