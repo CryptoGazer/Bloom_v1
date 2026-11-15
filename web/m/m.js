@@ -48,6 +48,8 @@ const I = {
   recalc: () => SV('<path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/>', 18),
   legend: () => SV('<path d="M4 7h16"/><path d="M4 12h3M10 12h3M16 12h4"/><path d="M4 17h.01M8 17h.01M12 17h.01M16 17h.01M20 17h.01" stroke-width="2.4"/>', 18, 1.6),
   close: () => SV('<path d="M6 6l12 12M18 6 6 18"/>', 14, 2.2),
+  loop: () => SV('<path d="M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7z"/><circle cx="12" cy="17" r="2.2" fill="currentColor" stroke="none"/>', 20),
+  undo: () => SV('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 18),
   walk: (s = 18) => SV('<circle cx="13" cy="4" r="1.6"/><path d="M9 21l2-6 3 2v4M10 9l3-1 3 3 3 1M10 9l-2 5"/>', s),
   bike: (s = 18) => SV('<circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17 9 9h6l3.5 8M9 9 8 6H6M12 17l3-8"/>', s),
   bus: (s = 18) => SV('<rect x="5" y="4" width="14" height="13" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', s),
@@ -132,6 +134,9 @@ let mode = 'walk', at = '', plan = null, sel = 'better_lit', screen = 'home', su
 let routeReq = 0, legendOpen = false, langOpen = false, timeOpen = false, pickMode = null, searchFor = 'B', part = null;
 let live = null, liveAt = 0, liveOff = 0, liveTimer = null, liveReq = 0;
 let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back from a language switch, no replay
+let loopMode = false;                         // the start screen collects the points of a loop walk
+const loopPts = [];                           // L.LatLng in visiting order; the loop comes back to the first
+const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the server
 const seen = new Set();
 // the lighting network: on by default on the start screen, off under a route unless asked for in the legend
 const prefs = { net: true, netRoute: false, livenet: false };
@@ -161,6 +166,10 @@ const divIcon = (html, w, h, cls = '') => L.divIcon({ className: 'bz-mk ' + cls,
 const MK = {
   A: () => divIcon('<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="3"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#0B0B0B">A</text></svg>', 28, 28),
   B: () => divIcon('<svg width="28" height="28" viewBox="-14 -14 28 28"><rect x="-11" y="-11" width="22" height="22" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#F2F2F2">B</text></svg>', 28, 28),
+  // a point of a loop walk: the first is filled like A, the others outlined
+  loop: n => divIcon(n === 1
+    ? '<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="3"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#0B0B0B">1</text></svg>'
+    : `<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="${n > 9 ? 11 : 12.5}" fill="#F2F2F2">${n}</text></svg>`, 28, 28),
   me: heading => divIcon(`<svg width="64" height="64" viewBox="-32 -32 64 64">${heading != null ? `<path d="M0 4 L-12 -24 A 26 26 0 0 1 12 -24 Z" fill="url(#bzcone)" transform="rotate(${heading})"/>` : ''}<circle r="30" fill="url(#bzhalo)"/><circle r="10" fill="none" stroke="#F2F2F2" stroke-opacity="0.35"/><circle r="7" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="2.5"/></svg>`, 64, 64),
   // the fade-in runs on an inner element: Leaflet positions the icon itself with a transform
   place: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><circle r="8.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.place(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
@@ -219,8 +228,21 @@ function setPoint(which, latlng, label) {
 }
 function drawAB() {
   abLayer.clearLayers();
+  if (loopMode) { drawLoop(); return; }
   if (A && !(screen === 'nav')) L.marker(A, { icon: MK.A(), keyboard: false, interactive: false }).addTo(abLayer);
   if (B) L.marker(B, { icon: MK.B(), keyboard: false, interactive: false }).addTo(abLayer);
+}
+// the points of a loop: numbered, draggable while they are being set; a thin dashed line joins them and closes the loop
+function drawLoop() {
+  if (screen === 'details') return;   // the details number the places along the way: loop numbers would read as that list
+  const editing = screen === 'home';
+  if (editing && loopPts.length > 1) {
+    L.polyline(loopPts.concat([loopPts[0]]), { renderer: svgR, color: '#8A8A8A', weight: 2, dashArray: '2 6', lineCap: 'round', interactive: false }).addTo(abLayer);
+  }
+  loopPts.forEach((p, i) => {
+    const m = L.marker(p, { icon: MK.loop(i + 1), draggable: editing, interactive: editing, keyboard: false, zIndexOffset: 500 }).addTo(abLayer);
+    if (editing) m.on('dragend', () => { loopPts[i] = m.getLatLng(); saveHash(); drawAB(); });
+  });
 }
 function setTravel(m) { mode = m; if (screen === 'home') renderHome(); }
 function setDeparture(v) { at = v || ''; if (screen === 'home') renderHome(); }
@@ -251,9 +273,10 @@ function saveHash() {
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, h = new URLSearchParams();
   if (A) { h.set('a', f(A)); h.set('an', labels.A); }
   if (B) { h.set('b', f(B)); h.set('bn', labels.B); }
+  if (loopMode) h.set('loop', loopPts.map(f).join(';'));
   h.set('m', mode);
   if (at) h.set('at', at);
-  history.replaceState(history.state, '', location.pathname + location.search + '#' + h.toString().replace(/%2C/g, ',').replace(/%3A/g, ':'));
+  history.replaceState(history.state, '', location.pathname + location.search + '#' + h.toString().replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%3B/g, ';'));
 }
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
@@ -263,6 +286,15 @@ function readHash() {
   const a = point(h.get('a')), b = point(h.get('b'));
   if (a) setPoint('A', a, h.get('an'));
   if (b) setPoint('B', b, h.get('bn'));
+  if (h.has('loop')) {
+    loopMode = true;
+    if (mode === 'transit') mode = 'walk';
+    loopPts.length = 0;
+    for (const v of h.get('loop').split(';').slice(0, LOOP_MAX)) { const p = point(v); if (p) loopPts.push(L.latLng(p)); }
+    renderHome();
+    drawAB();
+    return loopPts.length > 1;
+  }
   return !!(a && b);
 }
 
@@ -330,12 +362,44 @@ ACT.swap = () => {
 };
 ACT.mode = el => {
   mode = el.dataset.mode;
-  if (screen === 'home') renderHome(); else if (A && B) compute();
+  if (screen === 'home') renderHome(); else if (loopMode || (A && B)) compute();
 };
 ACT.time = () => openTimePicker();
 ACT.tpNow = () => { at = ''; closeTimePicker(true); };
 ACT.tpDone = () => { const v = tpValue(); at = `${pad2(v.h)}:${pad2(v.m)}`; closeTimePicker(true); };
 ACT.tpCancel = () => closeTimePicker(false);
+
+// ---------- loop walk: points tapped on the map, in that order and back to the first ----------
+function setLoop(on) {
+  loopMode = on;
+  loopPts.length = 0;
+  pickMode = null;
+  if (on && mode === 'transit') mode = 'walk';
+  plan = null; part = null;
+  stopAnim(); stopLive(); hideToast();
+  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers(); vehLayer.clearLayers();
+  saveHash();
+  renderHome();
+  drawAB();
+}
+ACT.loop = () => setLoop(!loopMode);
+ACT.loopExit = () => setLoop(false);
+ACT.loopUndo = () => { loopPts.pop(); saveHash(); renderHome(); drawAB(); };
+ACT.loopGo = () => compute();
+const loopTitle = n => t(n === 1 ? 'm.loopTitle1' : n < 5 ? 'm.loopTitle2' : 'm.loopTitle', { n });
+function loopSheet() {
+  const n = loopPts.length;
+  return `<section class="sheet" aria-labelledby="h-home">
+    <div class="handle"></div>
+    <div class="row"><h1 id="h-home" class="h-title">${esc(n ? loopTitle(n) : t('m.loopTap'))}</h1>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="round" data-act="loopUndo" aria-label="${esc(t('m.loopUndo'))}"${n ? '' : ' disabled'}>${I.undo()}</button>
+        <button type="button" class="round" data-act="loopExit" aria-label="${esc(t('m.loopExit'))}">${I.close()}</button>
+      </div></div>
+    ${modeSeg('', ['walk', 'bike'])}
+    <div class="actions"><button type="button" class="primary" data-act="loopGo"${n < 2 ? ' disabled' : ''}>${esc(t('m.loopCalc'))}</button></div>
+  </section>`;
+}
 
 // ---------- start screen ----------
 SCREENS.home = renderHome;
@@ -347,11 +411,12 @@ function renderHome() {
   <div class="top" style="justify-content: space-between">
     <div class="cov-chip"><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true" style="flex-shrink: 0"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg><span>${esc(t('m.coverage'))}</span></div>
     <div style="display: flex; gap: 8px">
+      <button type="button" class="round" data-act="loop" aria-pressed="${loopMode}" aria-label="${esc(t('m.loopBtn'))}">${I.loop()}</button>
       <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
       <button type="button" class="round" data-act="legend" aria-expanded="${legendOpen}" aria-label="${esc(t('m.legendLayers'))}">${I.legend()}</button>
     </div>
   </div>
-  <section class="sheet" aria-labelledby="h-home">
+  ${loopMode ? loopSheet() : `<section class="sheet" aria-labelledby="h-home">
     <div class="handle"></div>
     <div style="display: flex; flex-direction: column; gap: 4px"><h1 id="h-home" class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>
     <div class="fields">
@@ -370,12 +435,14 @@ function renderHome() {
       <button type="button" class="link-btn" data-act="about">${esc(t('m.aboutData'))}</button>
     </div>
     <p class="small" style="margin-top: auto">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
-  </section>`;
+  </section>`}`;
 }
 
-function modeSeg(cls) {
-  const b = (m, icon, key) => `<button type="button" data-act="mode" data-mode="${m}" aria-pressed="${mode === m}">${icon}${esc(t(key))}</button>`;
-  return `<div class="seg ${cls}" role="group" aria-label="${esc(t('travelLabel'))}">${b('walk', I.walk(cls ? 16 : 18), 'm.walk')}${b('bike', I.bike(cls ? 16 : 18), 'm.bike')}${b('transit', I.bus(cls ? 16 : 18), 'm.transit')}</div>`;
+function modeSeg(cls, modes = ['walk', 'bike', 'transit']) {
+  const icon = { walk: I.walk, bike: I.bike, transit: I.bus };
+  const b = m => `<button type="button" data-act="mode" data-mode="${m}" aria-pressed="${mode === m}">${icon[m](cls ? 16 : 18)}${esc(t('m.' + m))}</button>`;
+  const cols = modes.length === 3 ? '' : ` style="grid-template-columns: repeat(${modes.length}, minmax(0, 1fr))"`;
+  return `<div class="seg ${cls}" role="group" aria-label="${esc(t('travelLabel'))}"${cols}>${modes.map(b).join('')}</div>`;
 }
 
 // ---------- search (built once: ../ask.js binds to its Gemini form) ----------
@@ -495,6 +562,7 @@ function sPick(r) {
 
 // ---------- computing a route ----------
 function compute() {
+  if (loopMode) { computeLoop(); return; }
   if (!B) { openSearch('B'); return; }
   if (!A) { locate(true); return; }
   if (meters(A, B) < 20) { go('home'); toast(t('m.alreadyThere'), 5000); return; }
@@ -511,12 +579,7 @@ function compute() {
       plan = d; live = null;
       if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', false); }
       else { if (screen !== 'results') go('results', false); reveal(false); }
-      const rt = restoreTo;
-      restoreTo = null;
-      if (rt && ['details', 'stop'].includes(rt.screen)) {
-        if (rt.sel && plan.routes[rt.sel]) sel = rt.sel;
-        if (rt.screen === 'details' || ride()) go(rt.screen);
-      } else if (rt && rt.screen === 'results' && rt.sel && plan.routes[rt.sel] && rt.sel !== sel) pick(rt.sel);
+      restoreScreen();
     })
     .catch(err => {
       if (req !== routeReq) return;
@@ -532,6 +595,43 @@ function compute() {
       go('home');
       toast(text);
     });
+}
+function computeLoop() {
+  if (loopPts.length < 2) { go('home'); return; }
+  const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
+  if (mode === 'transit') mode = 'walk';
+  saveHash();
+  stopAnim(); stopLive();
+  plan = null; part = null;
+  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
+  go('results');
+  fit(L.latLngBounds(loopPts).pad(0.2));
+  getJSON(`/api/loop?points=${encodeURIComponent(loopPts.map(f).join(';'))}&mode=${mode}${at ? '&at=' + encodeURIComponent(at) : ''}`)
+    .then(d => {
+      if (req !== routeReq) return;
+      plan = d; live = null;
+      if (screen !== 'results') go('results', false);
+      reveal(false);
+      restoreScreen();
+    })
+    .catch(err => {
+      if (req !== routeReq) return;
+      const d = err.detail || {};
+      const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
+      const text = d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
+        : d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
+      go('home');
+      toast(text);
+    });
+}
+// back from a language switch: the same screen and the same route as before
+function restoreScreen() {
+  const rt = restoreTo;
+  restoreTo = null;
+  if (rt && ['details', 'stop'].includes(rt.screen)) {
+    if (rt.sel && plan.routes[rt.sel]) sel = rt.sel;
+    if (rt.screen === 'details' || ride()) go(rt.screen);
+  } else if (rt && rt.screen === 'results' && rt.sel && plan.routes[rt.sel] && rt.sel !== sel) pick(rt.sel);
 }
 const leaveHM = () => (plan ? plan.at.slice(11, 16) : '');
 // "+N min" between the two cards: the difference of the minutes the cards show, so 19 and 21 never read "+1"
@@ -639,7 +739,8 @@ function branches(fast, lit) {
   const s = Math.max(0, i - 1);
   return { head: fast.slice(0, i), tail: fast.slice(fast.length - j), fb: fast.slice(s, fast.length - j + (j ? 1 : 0)), lb: lit.slice(s, lit.length - j + (j ? 1 : 0)) };
 }
-const calcKey = () => [plan.from.lat, plan.from.lon, plan.to.lat, plan.to.lon, plan.mode, plan.at, plan.routes.fastest.length_m, plan.routes.better_lit.length_m].join('|');
+const calcKey = () => [plan.from.lat, plan.from.lon, plan.to.lat, plan.to.lon, plan.mode, plan.at, plan.routes.fastest.length_m, plan.routes.better_lit.length_m,
+  (plan.points || []).map(p => p.lat + ',' + p.lon).join(';')].join('|');
 
 // cumulative distance along a point list, so a frame cuts the line with a binary search instead of re-measuring it
 function cumOf(ps) { const c = [0]; for (let i = 1; i < ps.length; i++) c.push(c[i - 1] + meters(ps[i - 1], ps[i])); return c; }
@@ -796,7 +897,7 @@ function pick(kind) {
 SCREENS.results = renderResults;
 ACT.pickFast = () => pick('fastest');
 ACT.pickLit = () => pick('better_lit');
-ACT.recalc = () => { if (plan && screen === 'results') reveal(true); else if (A && B) compute(); };
+ACT.recalc = () => { if (plan && screen === 'results') reveal(true); else if (loopMode || (A && B)) compute(); };
 ACT.details = () => go('details');
 ACT.start = () => startNav();
 ACT.backResults = () => go(sel === 'transit' ? 'transit' : 'results');
@@ -806,13 +907,15 @@ function resultsTop() {
     `<button type="button" class="round" data-act="recalc" aria-label="${esc(t('m.recalc'))}">${I.recalc()}</button>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
 }
+const isLoop = () => (plan ? !!plan.loop : loopMode);
+const tripTitle = () => (isLoop() ? loopTitle(plan ? plan.points.length : loopPts.length) : `${labels.A} → ${labels.B}`);
 function routeSub() {
   const when = plan ? (at ? t('m.leaveAt', { time: leaveHM() }) : t('m.leaveNow', { time: leaveHM() })) : '';
   return `${t('m.mode.' + mode)}${when ? ' · ' + when : ''}`;
 }
 function renderResults() {
   if (screen !== 'results') return;
-  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}`;
+  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(tripTitle())}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact', isLoop() ? ['walk', 'bike'] : undefined)}`;
   if (!plan) {
     $('screen').innerHTML = resultsTop() + `<section class="sheet" aria-busy="true">${head}<p class="loading">${esc(t('computing'))}</p></section>`;
     return;
@@ -1435,7 +1538,7 @@ function updateNav() {
   const remain = path.total - pr, speed = mode === 'bike' && !nav.toStop ? 4.2 : 1.35, minLeft = remain / speed / 60;
   const now = new Date(), arr = fmtHM(now.getHours() * 60 + now.getMinutes() + minLeft);
   $('nav-eta').textContent = `${minN(minLeft)} min · ${arr}`;
-  $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : labels.B, route: routeTitle(nav.kind).toLowerCase() });
+  $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : plan.loop ? t('m.loopStart') : labels.B, route: routeTitle(nav.kind).toLowerCase() });
   $('nav-bar').innerHTML = statusBar(nav.r, 8, 5, pr);
   $('nav-foot').innerHTML = `${esc(t('m.lightLeft'))} · <span class="mono" style="font-size: 11px">${nav.sim ? esc(t('m.simTag')) : 'GPS ±' + Math.round(nav.acc || 0) + ' m'}</span> · ${esc(t('m.locStays'))}`;
   // the walked part: along the route up to the progress point, never a straight line to where the phone is
@@ -1576,6 +1679,11 @@ map.on('click', e => {
     if (A && B) compute(); else if (which === 'B') locate(true); else openSearch('B');
     return;
   }
+  if (loopMode && screen === 'home') {
+    if (tip || legendOpen || aboutOpen) { closeOverlays(); return; }
+    if (loopPts.length < LOOP_MAX) { loopPts.push(e.latlng); saveHash(); renderHome(); drawAB(); }
+    return;
+  }
   if (tip || legendOpen || aboutOpen) closeOverlays();
 });
 map.on('moveend', () => { clearTimeout(map._netT); map._netT = setTimeout(refreshNet, 200); });
@@ -1600,9 +1708,9 @@ getJSON('/api/summary').then(s => {
 let back = null;
 try { back = JSON.parse(sessionStorage.getItem('bz.back') || 'null'); sessionStorage.removeItem('bz.back'); } catch (e) { back = null; }
 if (readHash()) {
-  if (back && back.screen === 'home') { fit(L.latLngBounds([A, B]).pad(0.3)); }
+  if (back && back.screen === 'home') { fit(L.latLngBounds(loopMode ? loopPts : [A, B]).pad(0.3)); }
   else {
     if (back) { quietReveal = true; restoreTo = back; }
     compute();
   }
-}
+} else if (loopMode && loopPts.length) fit(L.latLngBounds(loopPts).pad(0.3), 16);

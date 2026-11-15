@@ -133,6 +133,8 @@ h1, h2, p { margin: 0; }
 .primary { flex: 1; height: 52px; border-radius: var(--bz-r-card); border: 0; background: var(--bz-ink); color: var(--bz-on-light); text-decoration: none;
            font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .primary:hover { color: var(--bz-on-light); background: #FFFFFF; }
+.primary:disabled, .round:disabled { opacity: .4; cursor: default; }
+.primary:disabled:hover { background: var(--bz-ink); }
 .secondary { height: 52px; padding: 0 18px; border-radius: var(--bz-r-card); border: 1px solid var(--bz-edge); background: var(--bz-raised); text-decoration: none;
              font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .secondary.sm { height: 44px; font-size: 15px; }

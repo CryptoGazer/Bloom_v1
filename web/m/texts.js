@@ -2,6 +2,8 @@
 /* Texts of the phone layout (m.js), on top of ../i18n.js: I18N.<lang>.m. Romanian first; the word "safe" is never used.
    Romanian wording follows the design canvas; it still needs a native speaker's check. */
 Object.assign(I18N.ro, { m: {
+  loopBtn: 'Plimbare în buclă', loopTap: 'Atingeți harta', loopTitle1: 'Buclă · 1 punct', loopTitle2: 'Buclă · {n} puncte', loopTitle: 'Buclă · {n} puncte',
+  loopUndo: 'Anulați ultimul punct', loopExit: 'Ieșiți din buclă', loopCalc: 'Calculează', loopOutside: 'Punctul {n} este în afara zonei acoperite.', loopStart: 'punctul 1',
   alreadyThere: 'Sunteți deja la destinație.', gpsWait: 'Așteptăm semnalul GPS…', gpsDenied: 'Locația este blocată în browser.',
   turnBare: { right: 'La dreapta', left: 'La stânga', straight: 'Înainte', arrive: 'Destinația' },
   nowBtn: 'Acum',
@@ -89,6 +91,8 @@ Object.assign(I18N.ro, { m: {
 } });
 
 Object.assign(I18N.en, { m: {
+  loopBtn: 'Loop walk', loopTap: 'Tap the map', loopTitle1: 'Loop · 1 point', loopTitle2: 'Loop · {n} points', loopTitle: 'Loop · {n} points',
+  loopUndo: 'Undo the last point', loopExit: 'Leave the loop', loopCalc: 'Calculate', loopOutside: 'Point {n} is outside the covered area.', loopStart: 'point 1',
   alreadyThere: 'You are already at the destination.', gpsWait: 'Waiting for the GPS signal…', gpsDenied: 'Location is blocked in the browser.',
   turnBare: { right: 'Turn right', left: 'Turn left', straight: 'Straight on', arrive: 'Destination' },
   nowBtn: 'Now',
@@ -176,6 +180,8 @@ Object.assign(I18N.en, { m: {
 } });
 
 Object.assign(I18N.ru, { m: {
+  loopBtn: 'Круговая прогулка', loopTap: 'Нажмите на карту', loopTitle1: 'Круг · 1 точка', loopTitle2: 'Круг · {n} точки', loopTitle: 'Круг · {n} точек',
+  loopUndo: 'Убрать последнюю точку', loopExit: 'Выйти из круга', loopCalc: 'Рассчитать', loopOutside: 'Точка {n} вне покрытой зоны.', loopStart: 'точки 1',
   alreadyThere: 'Вы уже на месте.', gpsWait: 'Ждём сигнал GPS…', gpsDenied: 'Местоположение запрещено в браузере.',
   turnBare: { right: 'Направо', left: 'Налево', straight: 'Прямо', arrive: 'Пункт назначения' },
   nowBtn: 'Сейчас',

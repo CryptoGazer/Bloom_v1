@@ -40,6 +40,7 @@ INDEX_HTML = """<!doctype html><html lang="ru"><meta charset="utf-8"><title>Nigh
 <li><a href="/docs">/docs</a> — попробовать запросы в браузере</li>
 <li><a href="/api/summary">/api/summary</a> — сводка по городу</li>
 <li><a href="/api/route?from=45.7470,21.2395&to=45.7415,21.2200">/api/route</a> — пример маршрута</li>
+<li><a href="/api/loop?points=45.7538,21.2259;45.7580,21.2290;45.7575,21.2335">/api/loop</a> — пример круговой прогулки</li>
 <li><a href="/api/segments?bbox=21.225,45.745,21.235,45.750">/api/segments</a> — отрезки в окне карты</li>
 <li><a href="/api/geocode?q=camin%20c12">/api/geocode</a> — поиск адреса, места или остановки</li>
 <li><a href="/demo/route/">/demo/route/</a> — демо маршрута в браузере</li>
