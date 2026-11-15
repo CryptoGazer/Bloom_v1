@@ -27,6 +27,21 @@ const I18N = {
     lastWas: 'Ultima: linia {line} din {stop} la {time}.', lastMissed: 'Ultima, linia {line} din {stop} la {time}, pleacă înainte să ajungeți în stație.', nextIs: 'Următoarea: linia {line} din {stop} la {time}.',
     walkInstead: 'Mai jos: traseele pe jos.',
     transitSource: 'Orar: GTFS SMTT, versiunea {feed}.',
+    // how the line ran on a recent day (backend/history.py); the advice is only "come earlier" or "it may be late"
+    hist: {
+      today: 'Azi', yesterday: 'Ieri', onDate: 'Pe {date}',
+      line: '{when}, la această oră, {line} a circulat {how}.',
+      how: {
+        on_time: 'conform orarului (±1 min)', early: 'cu ~{n} min mai devreme decât orarul', late: 'cu ~{n} min întârziere',
+        uneven: 'neregulat: de la {a} min mai devreme până la {b} min întârziere',
+        on_time_but_early: 'de obicei conform orarului, dar uneori cu {a} min mai devreme',
+        on_time_but_late: 'de obicei conform orarului, dar uneori cu {b} min întârziere',
+      },
+      beEarly: 'Fiți în stație cu {n} min înainte.', mayWait: 'Poate întârzia până la {n} min.',
+      more: 'de unde știm?',
+      source: '{trips} curse între {from} și {to}, {date}. Întârzierile le raportează primăria; noi le păstrăm în Tiger Data. Este o observație, nu o promisiune.',
+      lastSeen: 'În acea zi linia a fost văzută ultima dată la {time}.',
+    },
     live: {
       show: 'Transport în timp real pe hartă', on: 'În timp real', off: 'După orar',
       loading: 'Căutăm mașina acestei curse…',
@@ -152,6 +167,20 @@ const I18N = {
     lastWas: 'The last one: {line} from {stop} at {time}.', lastMissed: 'The last one, {line} from {stop} at {time}, leaves before you can reach the stop.', nextIs: 'The next one: {line} from {stop} at {time}.',
     walkInstead: 'Walking routes below.',
     transitSource: 'Timetable: SMTT GTFS, version {feed}.',
+    hist: {
+      today: 'Today', yesterday: 'Yesterday', onDate: 'On {date}',
+      line: '{when} around this time {line} ran {how}.',
+      how: {
+        on_time: 'on time (±1 min)', early: '~{n} min ahead of the timetable', late: '~{n} min late',
+        uneven: 'unevenly: from {a} min early to {b} min late',
+        on_time_but_early: 'mostly on time, but sometimes {a} min early',
+        on_time_but_late: 'mostly on time, but sometimes {b} min late',
+      },
+      beEarly: 'Be at the stop {n} min early.', mayWait: 'It may be up to {n} min late.',
+      more: 'how do we know?',
+      source: '{trips} trips between {from} and {to}, {date}. The delays are reported by the city; we keep them in Tiger Data. An observation, not a promise.',
+      lastSeen: 'That day the line was last seen at {time}.',
+    },
     live: {
       show: 'Live public transport on the map', on: 'Live', off: 'Timetable',
       loading: 'Looking for the vehicle of this trip…',
@@ -277,6 +306,20 @@ const I18N = {
     lastWas: 'Последний: {line} от остановки {stop} в {time}.', lastMissed: 'Последний, {line} от остановки {stop} в {time}, уйдёт раньше, чем вы дойдёте до остановки.', nextIs: 'Следующий: {line} от остановки {stop} в {time}.',
     walkInstead: 'Ниже — пешие маршруты.',
     transitSource: 'Расписание: GTFS SMTT, версия {feed}.',
+    hist: {
+      today: 'Сегодня', yesterday: 'Вчера', onDate: '{date}',
+      line: '{when} в это время {line} шёл {how}.',
+      how: {
+        on_time: 'по расписанию (±1 мин)', early: 'на ~{n} мин раньше расписания', late: 'на ~{n} мин позже расписания',
+        uneven: 'неровно: от {a} мин раньше до {b} мин позже расписания',
+        on_time_but_early: 'обычно по расписанию, но бывало и на {a} мин раньше',
+        on_time_but_late: 'обычно по расписанию, но бывало и на {b} мин позже',
+      },
+      beEarly: 'Будьте на остановке за {n} мин.', mayWait: 'Может опоздать до {n} мин.',
+      more: 'откуда это?',
+      source: 'Рейсов: {trips}, с {from} до {to}, {date}. Задержки сообщает город, мы храним их в Tiger Data. Это наблюдение, а не обещание.',
+      lastSeen: 'В тот день линию последний раз видели в {time}.',
+    },
     live: {
       show: 'Транспорт в реальном времени на карте', on: 'В реальном времени', off: 'По расписанию',
       loading: 'Ищем машину этого рейса…',

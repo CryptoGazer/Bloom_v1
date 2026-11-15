@@ -3,7 +3,7 @@
    One Leaflet map under bottom sheets; screens: home, search, results, details, transit, stop (live arrival), nav.
    Data: the same backend as the desktop page: /api/route, /api/geocode, /api/segments/{id}, /api/summary, /api/transit/live.
    Texts: ../i18n.js (t, LANG, I18N) and texts.js (I18N.*.m). The Gemini box is ../ask.js, unchanged: it needs the
-   globals A, labels, setPoint, setTravel, setDeparture, pointsChanged, locate and $ that are defined here. */
+   globals A, labels, setPoint, clearPoint, clearAskRoute, setTravel, setDeparture, pointsChanged, locate and $ defined here. */
 
 // ---------- helpers ----------
 const $ = id => document.getElementById(id);
@@ -210,6 +210,19 @@ function setPoint(which, latlng, label) {
   if (screen === 'home') renderHome();
   syncSearchFields();
 }
+function clearPoint(which) {
+  if (which === 'A') A = null; else B = null;
+  labels[which] = '';
+  drawAB();
+  syncSearchFields();
+}
+function clearAskRoute() {
+  ++routeReq;
+  stopAnim(); stopLive();
+  plan = null; part = null;
+  for (const layer of [routeLayer, markLayer, lifeLayer, vehLayer, fadeLayer]) layer.clearLayers();
+  history.replaceState(history.state, '', location.pathname + location.search);
+}
 function drawAB() {
   abLayer.clearLayers();
   if (A && !(screen === 'nav')) L.marker(A, { icon: MK.A(), keyboard: false, interactive: false }).addTo(abLayer);
@@ -383,6 +396,7 @@ function buildSearch() {
     <form class="ask" id="ask" hidden>
       <div class="ask-row"><input id="ask-text" type="text" maxlength="300" autocomplete="off" enterkeyhint="go"><button type="button" id="ask-mic" aria-pressed="false"></button><button type="submit" id="ask-go"></button></div>
       <p id="ask-note" aria-live="polite" hidden></p>
+      <div id="ask-choices" class="ask-choices" hidden></div>
       <p class="small" id="ask-privacy"></p>
     </form>
   </div>
@@ -1010,6 +1024,14 @@ function legBar(w, width = 120) {
   const shares = ORDER.filter(k => w.by_status_m[k] > 0).map(k => t('m.legShare.' + k, { p: pct(w.by_status_m[k] / L0) })).join(' · ');
   return `<span style="display: flex; align-items: center; gap: 8px"><svg width="${width}" height="6" aria-hidden="true" style="flex: none">${out}</svg><span class="small" style="color: var(--bz-ink-2)">${esc(shares)}</span></span>`;
 }
+// How this line ran around this hour on a recent day (../hist.js, from Tiger Data): one sentence with the advice
+// under the live card, the day and source behind a tap. Nothing without data.
+function historyBox(rd) {
+  const h = historyParts(rd);
+  if (!h) return '';
+  return `<details class="hist"><summary>${I.chev(12, 'chev')}<span>${esc(h.sentence)}${h.advice ? ` <strong>${esc(h.advice)}</strong>` : ''}</span></summary>` +
+    `<p class="small">${esc(h.source)}</p></details>`;
+}
 function renderTransit() {
   const top = `<div class="top"><button type="button" class="round" data-act="home" aria-label="${esc(t('m.back'))}">${I.back()}</button><span class="grow"></span>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
@@ -1039,7 +1061,7 @@ function renderTransit() {
     ${modeSeg('compact')}
     ${tl}
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
-    ${steps}${last}
+    ${historyBox(rd)}${steps}${last}
     <p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p>
     <div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button></div>
   </section>`;

@@ -87,7 +87,7 @@ const liveLayer = L.layerGroup().addTo(map);   // live vehicles: markers (DOM), 
 map.on('overlayadd', () => routeLayer.bringToFront());
 let live = null, liveTimer = null, liveReq = 0;   // the last /api/transit/live answer, the next poll, the request in flight
 
-let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
+let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0, routeReq = 0;
 let travel = 'walk';  // 'walk' | 'bike' | 'transit': how the person goes; "mode" above is what a map click does
 const markers = { A: null, B: null };
 const labels = { A: '', B: '' };
@@ -202,6 +202,16 @@ function clearPoint(which) {
   box[which].clear();
 }
 
+// Shared with the mobile Gemini controller: discard stale results without resetting known points.
+function clearAskRoute() {
+  ++routeReq;
+  plan = null;
+  liveTick();
+  routeLayer.clearLayers();
+  $('cards').replaceChildren();
+  history.replaceState(null, '', location.pathname + location.search);
+}
+
 // both points known: show them and compute; one point: show it and ask for the other
 function pointsChanged() {
   if (A && B) {
@@ -278,6 +288,7 @@ function reset() {
 }
 
 function compute() {
+  const req = ++routeReq;
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
   const at = departure();
   const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
@@ -286,6 +297,7 @@ function compute() {
   say(esc(t('computing')));
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
+      if (req !== routeReq) return;
       plan = d;
       selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? (d.verdict.pick || 'fastest') : 'better_lit';
       say(esc(t('afterRoute')));
@@ -295,6 +307,7 @@ function compute() {
       liveTick();
     })
     .catch(err => {
+      if (req !== routeReq) return;
       plan = null;
       liveTick();
       routeLayer.clearLayers();
@@ -372,6 +385,15 @@ function signsBlock(sg) {
     `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul><p class="small">${esc(t('signsNote'))}</p></div>`;
 }
 
+// How this line ran around this hour on a recent day (hist.js): one sentence with the advice, where it comes from
+// behind a tap. A block of its own under the live box: the trip card is a button and cannot hold a disclosure.
+function historyBox() {
+  const h = historyParts(ride());
+  if (!h) return '';
+  return `<details class="hist"><summary>${esc(h.sentence)}${h.advice ? ` <b>${esc(h.advice)}</b>` : ''}` +
+    ` <span class="hist-more">${esc(t('hist.more'))}</span></summary><p>${esc(h.source)}</p></details>`;
+}
+
 // the "on foot + public transport" card: the trip, or why there is none (the walking cards follow)
 function transitCard() {
   const tr = plan.transit, s = plan.settings.transit;
@@ -444,7 +466,7 @@ function renderCards() {
       : `<p class="verdict ok">${esc(t('extraOk', { extra, lit: pct(litShare(lit)), fast: pct(litShare(fastest)) }))}</p>`;
     html = card('better_lit', lit, t('litTitle'), note) + card('fastest', fastest, t('fastTitle'));
   }
-  html = transitCard() + liveBox() + html;
+  html = transitCard() + liveBox() + historyBox() + html;
   const off = [['A', plan.from], ['B', plan.to]].filter(([, p]) => p.snap_m > 20).map(([n, p]) => `${LETTER[n]}: ${Math.round(p.snap_m)} ${t('m')}`);
   if (off.length) html += `<p class="small">${esc(t('snapNote', { list: off.join(', ') }))}</p>`;
   $('cards').innerHTML = html;

@@ -3,7 +3,8 @@
    The request goes to our own /api/ask. There Gemini only fills in a form (from, to, mode, time) and the places
    are found in our own index; anything that is not a route request gets a short refusal (backend/ask.py).
    This file records the voice, sends the request and applies the answer to the page.
-   Needs i18n.js (I18N, t, LANG) and app.js (A, labels, setPoint, setTravel, pointsChanged, locate, $).
+   Needs i18n.js and the desktop/mobile adapters: A, labels, setPoint, clearPoint, clearAskRoute,
+   setTravel, setDeparture, pointsChanged, locate and $.
    The texts of this feature are here, not in i18n.js, so that removing the feature means removing this file
    and the <form id="ask"> block in index.html. */
 
@@ -14,6 +15,9 @@ Object.assign(I18N.ro, { ask: {
   understood: 'Am înțeles: {from} → {to}{extra}.', heard: 'Am auzit: „{text}”.',
   offTopic: 'Planific doar trasee în Timișoara. Scrieți sau spuneți de unde plecați și unde vreți să ajungeți.',
   unclear: 'Nu am înțeles unde vreți să ajungeți. De exemplu: „de la Căminul C12 la Piața Victoriei”.',
+  choose: 'Confirmați punctul „{box}”: alegeți locul potrivit.',
+  missing: 'Precizați punctul „{box}” în câmpul de mai jos sau reformulați cererea.',
+  choices: 'Locuri posibile',
   notFound: 'Nu am găsit „{name}” în zona hărții. Alegeți locul în câmpul „{box}”.',
   tooMany: 'Prea multe cereri. Încercați peste un minut sau folosiți câmpurile de mai jos.',
   down: 'Asistentul nu este disponibil acum. Câmpurile „De unde” și „Unde” de mai jos funcționează fără el.',
@@ -27,6 +31,9 @@ Object.assign(I18N.en, { ask: {
   understood: 'Understood: {from} → {to}{extra}.', heard: 'Heard: “{text}”.',
   offTopic: 'I only plan routes in Timișoara. Type or say where you start and where you want to go.',
   unclear: 'I did not catch where you want to go. For example: “from Căminul C12 to Piața Victoriei”.',
+  choose: 'Confirm the “{box}” point: choose the intended place.',
+  missing: 'Specify the “{box}” point in the box below or rephrase your request.',
+  choices: 'Possible places',
   notFound: 'I could not find “{name}” inside the map area. Pick the place in the “{box}” box.',
   tooMany: 'Too many requests. Try again in a minute or use the boxes below.',
   down: 'The assistant is not available right now. The From and To boxes below work without it.',
@@ -40,6 +47,9 @@ Object.assign(I18N.ru, { ask: {
   understood: 'Понял: {from} → {to}{extra}.', heard: 'Услышал: «{text}».',
   offTopic: 'Я строю только маршруты по Тимишоаре. Напишите или скажите, откуда и куда вам нужно.',
   unclear: 'Не понял, куда вам нужно. Например: «от Căminul C12 до Piața Victoriei».',
+  choose: 'Уточните точку «{box}»: выберите подходящее место.',
+  missing: 'Уточните точку «{box}» в поле ниже или переформулируйте запрос.',
+  choices: 'Возможные места',
   notFound: 'Не нашёл «{name}» в области карты. Выберите место в поле «{box}».',
   tooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля ниже.',
   down: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» ниже работают без него.',
@@ -51,6 +61,12 @@ Object.assign(I18N.ru, { ask: {
   const form = $('ask');
   if (!form) return;
   const input = $('ask-text'), mic = $('ask-mic'), go = $('ask-go'), note = $('ask-note');
+  const choices = $('ask-choices') || document.createElement('div');
+  if (!choices.id) { choices.id = 'ask-choices'; note.after(choices); }
+  choices.className = 'ask-choices';
+  choices.hidden = true;
+  choices.setAttribute('role', 'group');
+  choices.setAttribute('aria-label', t('ask.choices'));
   const MAX_MS = 10000, RATE = 16000, SILENCE_PEAK = 0.02;
   let busy = false, rec = null;
 
@@ -80,6 +96,8 @@ Object.assign(I18N.ru, { ask: {
   function send(payload) {
     if (busy) return;
     busy = true;
+    choices.replaceChildren();
+    choices.hidden = true;
     go.disabled = mic.disabled = true;
     show(t('ask.thinking'));
     // the current start point stays on our server ("the nearest pharmacy"); it is not sent to Gemini
@@ -96,20 +114,61 @@ Object.assign(I18N.ru, { ask: {
   }
 
   function apply(r) {
+    choices.replaceChildren();
+    choices.hidden = true;
     const heard = r.heard ? t('ask.heard', { text: r.heard }) + ' ' : '';
     if (r.kind === 'off_topic') { show(heard + t('ask.offTopic'), 'warn'); return; }
-    if (r.kind === 'not_found') {
+    clearAskRoute(); // an incomplete new request must not keep displaying the previous route
+    if (r.kind !== 'route') {
+      for (const side of ['from', 'to']) {
+        if ((r.missing || []).includes(side) || (r.ambiguity || []).includes(side)) clearPoint(side === 'from' ? 'A' : 'B');
+      }
+      if (r.from_here && !r.from) clearPoint('A');
       if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
-      const which = r.which === 'from' ? 'from' : 'to';
-      show(heard + t('ask.notFound', { name: r.name, box: t(which + 'Label') }), 'warn');
-      $(which).value = r.name;
-      $(which).focus(); // opens the suggestions for what was understood
+      if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+      if (r.mode) setTravel(r.mode);
+      if (r.at) setDeparture(r.at);
+      const ambiguity = r.ambiguity || [], missing = r.missing || [];
+      const which = r.which === 'from' ? 'from' : 'to', box = t(which + 'Label');
+      const message = ambiguity.includes(which) ? t('ask.choose', { box })
+        : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
+          : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
+      show(heard + message, 'warn');
+      for (const side of ['from', 'to']) {
+        const candidates = (r.candidates && r.candidates[side]) || [];
+        if (!candidates.length) continue;
+        const label = document.createElement('p');
+        label.textContent = t(side + 'Label');
+        choices.append(label);
+        for (const place of candidates) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = place.name;
+          button.addEventListener('click', () => {
+            const next = { ...r, [side]: place,
+              missing: missing.filter(s => s !== side), ambiguity: ambiguity.filter(s => s !== side),
+              candidates: { ...r.candidates, [side]: [] } };
+            const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
+            next.kind = remaining.length ? 'clarify' : next.to ? 'route' : 'unclear';
+            next.which = remaining[0] || 'to';
+            next.name = null;
+            apply(next); // a verified candidate is applied locally; no extra Gemini request
+          });
+          choices.append(button);
+        }
+      }
+      choices.hidden = !choices.childElementCount;
+      if (!choices.hidden) choices.querySelector('button').focus();
+      else {
+        $(which).value = (r.queries && r.queries[which]) || r.name || '';
+        $(which).focus(); // opens manual suggestions on desktop and mobile
+      }
       return;
     }
-    if (r.kind !== 'route') { show(heard + t('ask.unclear'), 'warn'); return; }
 
     if (r.mode) setTravel(r.mode);
     if (r.at) setDeparture(r.at);
+    if (r.from_here && !r.from) clearPoint('A');
     setPoint('B', [r.to.lat, r.to.lon], r.to.name);
     const keepStart = !r.from && A && !r.from_here;
     if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);

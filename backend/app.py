@@ -18,8 +18,9 @@ from pydantic import BaseModel, Field
 import datetime as dt
 from zoneinfo import ZoneInfo
 
-from backend.ask import LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
+from backend.ask import ASK_VERSION, LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
 from backend.geocode import Places
+from backend.history import HISTORY, History
 from backend.live import LIVE, Live, Vehicles, epoch, fetch_city
 from backend.liveliness import LIVELY, Signs
 from backend.routing import MODES, SETTINGS, Network
@@ -84,15 +85,17 @@ class AskIn(BaseModel):
                                                       "picked next to it. Stays on this server, never goes to Gemini")
 
 
-def create_app(segments_path=None, gemini=None, live_fetch=None):
+def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
     """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment.
-    live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city."""
+    live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city.
+    history: a backend.history.History (tests pass one with a fake loader); by default read from Tiger Data in the
+    background if TIGER_READ_URL or TIGER_DATABASE_URL is set."""
     load_env(ROOT / ".env")
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
 
-    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None}
+    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None, "history": history}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -109,6 +112,10 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
         if state["net"] is not None and state["places"] is not None:
             state["signs"] = Signs(state["net"], [item["e"] for item in state["places"].items],
                                    state["transit"].tt if state["transit"] else None)
+        if state["history"] is None and state["transit"] is not None:
+            state["history"] = History.from_env()
+            if state["history"] is not None:
+                state["history"].start()  # reads Tiger Data in the background; the server does not wait for it
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
@@ -127,13 +134,15 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
     def health():
         net = state["net"]
         return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None,
-                "ask": state["asker"] is not None}
+                "ask": state["asker"] is not None, "ask_version": ASK_VERSION,
+                "history": state["history"] is not None and state["history"].ready}
 
     @app.post("/api/ask")
     def ask(body: AskIn, request: Request):
         """A route asked in plain words, typed or spoken (Romanian, English, Russian). Gemini only fills in a form
         (from, to, mode, time); the places are then found in our own index. Answers:
         kind "route" (points to route between), "not_found" (a place is not in the map area), "unclear",
+        "clarify" (ambiguous places, with missing/ambiguity and verified candidates),
         or "off_topic" for anything that is not a route request: the assistant does not answer other questions.
         The text or recording is sent to Google and is not stored here; no coordinates are sent."""
         if state["asker"] is None:
@@ -229,8 +238,11 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
             for leg in extra["transit"].get("legs", []):
                 if leg["type"] == "ride":  # the scheduled departure as unix time: what /api/transit/live compares with
                     leg["dep_ts"] = round(epoch(leg["day"], leg["dep_s"], LOCAL_TZ))
+                    # how this line ran around this hour on a recent day (backend/history.py); null without data
+                    leg["history"] = state["history"].ride(leg) if state["history"] is not None else None
         return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
-                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE}, "data_as_of": net.meta.get("as_of")}
+                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE, "history": HISTORY},
+                "data_as_of": net.meta.get("as_of")}
 
     @app.get("/api/transit/live")
     def transit_live(route: str = Query("", max_length=40, description="only this line, GTFS route_id such as R_AB_16; empty = every line in the area"),
