@@ -133,7 +133,9 @@ let routeReq = 0, legendOpen = false, langOpen = false, timeOpen = false, pickMo
 let live = null, liveAt = 0, liveOff = 0, liveTimer = null, liveReq = 0;
 let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back from a language switch, no replay
 const seen = new Set();
-const prefs = { net: true, livenet: false };
+// the lighting network: on by default on the start screen, off under a route unless asked for in the legend
+const prefs = { net: true, netRoute: false, livenet: false };
+const netOn = () => (screen === 'home' ? prefs.net : prefs.netRoute);
 
 // ---------- map ----------
 const map = L.map('map', { zoomControl: false, attributionControl: true, zoomSnap: 0.25 }).setView([45.7500, 21.2270], 14);
@@ -142,7 +144,9 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, cla
   attribution: '&copy; OpenStreetMap · Mapillary · Primăria Timișoara · ' +
     '<a href="https://www.flaticon.com/free-icons/street-light" title="street light icons" target="_blank" rel="noopener">Icon: Magnific – Flaticon</a>' }).addTo(map);
 const svgR = L.svg({ padding: 0.5 });
-const netR = L.canvas({ padding: 0.3, tolerance: 6 });
+map.createPane('bzNet');
+map.getPane('bzNet').style.zIndex = 350;   // under the routes (overlay pane, 400), whichever is drawn first
+const netR = L.canvas({ padding: 0.3, tolerance: 6, pane: 'bzNet' });
 const areaLayer = L.layerGroup().addTo(map);
 const netLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
@@ -161,7 +165,7 @@ const MK = {
   // the fade-in runs on an inner element: Leaflet positions the icon itself with a transform
   place: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><circle r="8.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.place(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
   stop: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.stopMk(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
-  warn: () => divIcon('<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
+  warn: pop => divIcon(pop ? '<span class="mk-in"><svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg></span>' : '<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
   ring: () => divIcon('<svg width="36" height="36" viewBox="-18 -18 36 36"><circle r="16" fill="none" stroke="#F2F2F2" stroke-width="1.5" stroke-dasharray="3 3"/></svg>', 36, 36),
   head: () => divIcon('<svg width="42" height="42" viewBox="-21 -21 42 42"><circle r="20" fill="url(#bzhead)"/><circle r="6.5" fill="#FFFFFF" stroke="#0B0B0B" stroke-width="2"/></svg>', 42, 42),
   station: () => divIcon('<svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="7.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/></svg>', 20, 20),
@@ -189,7 +193,7 @@ function fit(bounds, maxZoom = 17) {
 // ---------- the area and the faint lighting network (start screen) ----------
 let netReq = 0;
 function refreshNet() {
-  if (!summary || !prefs.net || screen !== 'home' || map.getZoom() < 13) { netReq++; netLayer.clearLayers(); return; }
+  if (!summary || !netOn() || screen === 'search' || map.getZoom() < 13) { netReq++; netLayer.clearLayers(); return; }
   const b = map.getBounds().pad(0.15), req = ++netReq;
   getJSON(`/api/segments?bbox=${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}&limit=8000`)
     .then(d => {
@@ -198,7 +202,7 @@ function refreshNet() {
       if (d.truncated) return;
       for (const k of ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported']) {
         const s = ST[k], lines = d.features.filter(f => f.properties.status === k).map(f => ll(f.geometry.coordinates));
-        if (lines.length) L.polyline(lines, { renderer: netR, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: s.netOp, dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
+        if (lines.length) L.polyline(lines, { renderer: netR, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: s.netOp * (screen === 'home' ? 1 : 0.6), dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
       }
     })
     .catch(() => {});
@@ -330,8 +334,6 @@ ACT.time = () => openTimePicker();
 ACT.tpNow = () => { at = ''; closeTimePicker(true); };
 ACT.tpDone = () => { const v = tpValue(); at = `${pad2(v.h)}:${pad2(v.m)}`; closeTimePicker(true); };
 ACT.tpCancel = () => closeTimePicker(false);
-ACT.net = el => { prefs.net = el.checked; refreshNet(); };
-ACT.livenet = el => { prefs.livenet = el.checked; liveTick(); };
 
 // ---------- start screen ----------
 SCREENS.home = renderHome;
@@ -585,8 +587,9 @@ function drawLife(sg, numbered) {
   for (const s of sg.stops) if (s.lat != null) L.marker([s.lat, s.lon], { icon: MK.stop(numbered ? ++n : 0), keyboard: false, title: s.name }).addTo(lifeLayer);
 }
 
-// ---------- the reveal: fastest draws itself, then bends into the better-lit route (once per new calculation) ----------
-const MOTION = { draw: 900, pause: 250, morph: 800, spread: 80 };
+// ---------- the reveal: the route draws itself in its final look, then the fastest bends into the better-lit one ----------
+// (once per new calculation). Slower than the design's 900/250/800 ms: a longer look at the fastest before it bends.
+const MOTION = { draw: 1100, pause: 500, morph: 1000, spread: 160 };
 const pts = r => {
   const out = [];
   for (const f of r.geometry.features) for (const c of f.geometry.coordinates) {
@@ -633,13 +636,48 @@ function cutC(ps, cum, len) {
   const k = (len - cum[lo]) / ((cum[hi] - cum[lo]) || 1), a = ps[lo], b = ps[hi];
   return ps.slice(0, lo + 1).concat([L.latLng(a.lat + (b.lat - a.lat) * k, a.lng + (b.lng - a.lng) * k)]);
 }
-// a light trail while it moves: a wide translucent stroke instead of the blur filter, which is too slow to redraw every frame
-const trail = () => ({
-  glow: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 20, opacity: 0.12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  cas: L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 15, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  line: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 10, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-});
-const setTrail = (g, ll) => { g.glow.setLatLngs(ll); g.cas.setLatLngs(ll); g.line.setLatLngs(ll); };
+// The route in its final look while its end moves: casing, white wrap and, where the street is not confirmed lit,
+// the dark channel with the coloured core, all cut at the same distance; the ◇! mark appears when the end passes it.
+// While it moves, the glow is a wide translucent stroke (the blur filter is too slow to redraw every frame), and
+// the lines are not simplified (smoothFactor 0), so the moving end does not jitter.
+const animLine = o => L.polyline([], { renderer: svgR, interactive: false, lineJoin: 'round', lineCap: 'round', smoothFactor: 0, ...o }).addTo(routeLayer);
+function growing(r) {
+  const P = pts(r), C = cumOf(P), g = { P, C, L: C[C.length - 1], cores: [], warns: [] };
+  g.glow = animLine({ color: '#F2F2F2', weight: 20, opacity: 0.12 });
+  g.cas = animLine({ color: '#0B0B0B', weight: 15 });
+  g.wrap = animLine({ color: '#F2F2F2', weight: 10 });
+  let from = 0;
+  for (const f of r.geometry.features) {
+    const fp = f.geometry.coordinates.map(c => L.latLng(c[1], c[0])), fc = cumOf(fp), len = fc[fc.length - 1], st = f.properties.status;
+    if (st !== 'lit_confirmed') {
+      const sty = ST[st] || ST.unknown;
+      g.cores.push({ from, to: from + len, P: fp, C: fc, shown: -1,
+        chan: animLine({ color: '#0B0B0B', weight: 6.4, lineCap: 'butt' }),
+        core: animLine({ color: sty.c, weight: 4, dashArray: sty.d, lineCap: sty.cap }) });
+      if (st === 'dark_reported') g.warns.push({ at: from + len / 2, latlng: midOf(f), marker: null });
+    }
+    from += len;
+  }
+  return g;
+}
+function grow(g, len) {
+  const vis = cutC(g.P, g.C, len);
+  g.glow.setLatLngs(vis); g.cas.setLatLngs(vis); g.wrap.setLatLngs(vis);
+  for (const c of g.cores) {
+    const state = len <= c.from ? 0 : len >= c.to ? 2 : 1;
+    if (state === c.shown && state !== 1) continue;
+    const part = state === 0 ? [] : state === 2 ? c.P : cutC(c.P, c.C, len - c.from);
+    c.chan.setLatLngs(part); c.core.setLatLngs(part); c.shown = state;
+  }
+  for (const w of g.warns) if (!w.marker && len >= w.at) w.marker = L.marker(w.latlng, { icon: MK.warn(true), interactive: false, keyboard: false }).addTo(markLayer);
+  return vis[vis.length - 1];
+}
+const growLayers = g => [g.glow, g.cas, g.wrap].concat(...g.cores.map(c => [c.chan, c.core]));
+function fadeMarker(m, ms = 300) {
+  const el = m.getElement && m.getElement();
+  if (el) { el.style.transition = `opacity ${ms}ms cubic-bezier(.33,1,.68,1)`; el.style.opacity = '0'; }
+  setTimeout(() => m.remove(), ms + 40);
+}
 // the old drawing fades away on top of the new one, so a stage change never flashes
 function fadeOut(layers, ms = 300) {
   for (const l of layers) { routeLayer.removeLayer(l); l.addTo(fadeLayer); }
@@ -656,14 +694,16 @@ function reveal(force) {
   seen.add(key);
   // with a morph the fastest route draws itself and then bends; without one the route that stays on screen draws itself,
   // so nothing seen during the drawing (a stretch reported as unlit) disappears when it ends
-  const morph = v.kind === 'show', first = morph ? 'fastest' : final, fast = plan.routes[first], fastPts = pts(fast), cum = cumOf(fastPts);
+  const morph = v.kind === 'show', first = morph ? 'fastest' : final;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers();
-  const g = trail();
-  const head = L.marker(fastPts[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
-  anim = { t0: performance.now(), raf: 0, final, first, morph, fastPts, cum, L: cum[cum.length - 1], g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
+  const g = growing(plan.routes[first]);
+  const head = L.marker(g.P[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
+  anim = { t0: performance.now(), raf: 0, final, first, morph, g, head, stage: 0,
+    end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 350 };
   if (morph) {
-    const br = branches(fastPts, pts(plan.routes.better_lit)), N = 64;
-    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1) });
+    const br = branches(g.P, pts(plan.routes.better_lit)), N = 64;
+    const headLen = br.head.length ? g.C[br.head.length - 1] : 0, tailLen = br.tail.length ? g.L - g.C[g.P.length - br.tail.length] : 0;
+    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1), headLen, tailLen });
   }
   sel = null;
   renderResults();
@@ -680,39 +720,34 @@ function reveal(force) {
 function frame(t) {
   const a = anim, fast = plan.routes.fastest, lit = plan.routes.better_lit;
   if (t < MOTION.draw) {
-    const vis = cutC(a.fastPts, a.cum, easeDraw(clamp(t / MOTION.draw)) * a.L);
-    setTrail(a.g, vis);
-    a.head.setLatLng(vis[vis.length - 1]);
+    a.head.setLatLng(grow(a.g, easeDraw(clamp(t / MOTION.draw)) * a.g.L));
   } else if (a.stage === 0) {
     a.stage = 1;
-    setTrail(a.g, a.fastPts);
-    a.head.remove();
-    const old = [a.g.glow, a.g.cas, a.g.line];
-    drawMain(plan.routes[a.first], a.first, routeLayer, false);
-    drawWarnings([plan.routes[a.first]]);
-    fadeOut(old, MOTION.pause);
+    grow(a.g, a.g.L);
+    fadeMarker(a.head);
   }
   if (a.morph && t >= MOTION.draw + MOTION.pause) {
     const tm = t - MOTION.draw - MOTION.pause, u = clamp(tm / MOTION.morph);
     if (a.stage === 1) {
       a.stage = 2;
-      const old = [];
-      routeLayer.eachLayer(l => old.push(l));
       a.alt = drawAlt(fast, 'fastest', routeLayer, 0);
-      a.m = trail();
-      setTrail(a.m, a.fastPts);
-      fadeOut(old, 200);
+      growLayers(a.g).forEach(l => l.bringToFront());          // the alternative goes under the moving route
+      // the pattern of the bending part fades away; the shared trunk keeps it (same streets, same status)
+      const lo = a.headLen + 0.5, hi = a.g.L - a.tailLen - 0.5, gone = [];
+      a.g.cores = a.g.cores.filter(c => { if (c.to > lo && c.from < hi) { gone.push(c.chan, c.core); return false; } return true; });
+      fadeOut(gone, 280);
     }
     const mid = a.rf.map((p, i) => {
       const k = easeMorph(clamp((tm - MOTION.spread * i / (a.N - 1)) / MOTION.morph)), q = a.rl[i];
       return L.latLng(p.lat + (q.lat - p.lat) * k, p.lng + (q.lng - p.lng) * k);
     });
-    setTrail(a.m, a.headPts.concat(mid, a.tailPts));
+    const line = a.headPts.concat(mid, a.tailPts);
+    a.g.glow.setLatLngs(line); a.g.cas.setLatLngs(line); a.g.wrap.setLatLngs(line);
     const altOp = easeOut(u);
     a.alt.forEach(p => p.setStyle({ opacity: altOp }));
     // the cards follow the line
     const q = easeMorph(clamp((u - 0.25) / 0.55));
-    setOp('card-better_lit', easeOut(clamp(tm / 220)));
+    setOp('card-better_lit', easeOut(clamp(tm / 300)));
     const n = $('n-better_lit'); if (n) n.textContent = Math.round(fast.minutes + (lit.minutes - fast.minutes) * q);
     const d = $('d-better_lit'); if (d) d.textContent = `${km(fast.length_m + (lit.length_m - fast.length_m) * q)} · ${arriveHM(q < 0.5 ? fast : lit)}`;
     setOp('plus-better_lit', clamp((u - 0.7) / 0.25));
@@ -720,10 +755,10 @@ function frame(t) {
     setOp('lifelink', clamp((u - 0.6) / 0.3));
     setOp('plus-chip', clamp((u - 0.55) / 0.3));
   } else if (!a.morph && t >= MOTION.draw) {
-    setOp('lifelink', clamp((t - MOTION.draw) / 300));
-    setOp('card-better_lit', clamp((t - MOTION.draw) / 300));
+    setOp('lifelink', clamp((t - MOTION.draw) / 350));
+    setOp('card-better_lit', clamp((t - MOTION.draw) / 350));
   }
-  const fq = easeOut(clamp((t - 500) / 400)), fc = $('card-fastest');
+  const fq = easeOut(clamp((t - MOTION.draw * 0.55) / (MOTION.draw * 0.45))), fc = $('card-fastest');
   if (fc) { fc.style.opacity = fq.toFixed(3); fc.style.transform = `translateY(${(8 * (1 - fq)).toFixed(1)}px)`; }
 }
 function setOp(id, x) { const el = $(id); if (el) { el.style.opacity = x.toFixed(3); el.style.visibility = x > 0 ? 'visible' : 'hidden'; } }
@@ -900,10 +935,13 @@ function renderOverlay() {
       </div>
       <span class="small">${esc(t('m.tapPart'))}</span>
       <div class="divider"></div>
-      <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-act="net" ${prefs.net ? 'checked' : ''}></label>
-      <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-act="livenet" ${prefs.livenet ? 'checked' : ''}></label>
+      <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-pref="net" ${netOn() ? 'checked' : ''}></label>
+      <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-pref="livenet" ${prefs.livenet ? 'checked' : ''}></label>
     </section>`;
-    for (const c of $('overlay').querySelectorAll('input[type="checkbox"]')) c.addEventListener('change', () => ACT[c.dataset.act](c));
+    for (const c of $('overlay').querySelectorAll('input[data-pref]')) c.addEventListener('change', () => {
+      if (c.dataset.pref === 'net') { if (screen === 'home') prefs.net = c.checked; else prefs.netRoute = c.checked; refreshNet(); }
+      else { prefs.livenet = c.checked; liveTick(); }
+    });
     return;
   }
   if (tip) {
