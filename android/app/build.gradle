@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'xyz.bezna.app'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'xyz.bezna.app'
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        // the server the page and the API belong to; the page itself comes from the APK
+        buildConfigField 'String', 'BASE_URL', "\"${project.findProperty('baseUrl') ?: 'https://bezna.xyz'}\""
+    }
+    buildFeatures { buildConfig true }
+    // the interface has one source: the repository's web/ folder, as it is
+    sourceSets { main { assets.srcDirs = ['../../web'] } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint { abortOnError false }
+}

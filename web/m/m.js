@@ -149,6 +149,18 @@ const loopPts = [];                           // L.LatLng in visiting order; the
 let loopRequest = null;                       // an automatic circuit around a Gemini-resolved centre
 const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the server
 let calcReq = -1;                             // routeReq of the route being calculated; another value: none
+// the Android app (android/) puts BeznaNative into the page: voice, a screen that stays on, a compass
+const native = () => window.BeznaNative || null;
+const canSpeak = () => !!(native() || window.speechSynthesis);
+function speak(text) {
+  const lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
+  if (native()) { native().speak(text, lang); return; }
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang;
+  speechSynthesis.speak(u);
+}
+function hush() { if (native()) native().stopSpeaking(); else if (window.speechSynthesis) speechSynthesis.cancel(); }
 const seen = new Set();
 // the lighting network: on by default on the start screen, off under a route unless asked for in the legend
 const prefs = { net: true, netRoute: false, livenet: false };
@@ -1815,6 +1827,7 @@ function startNav() {
   const sim = /[?&]sim=1/.test(location.search);
   nav = { r, kind, toStop, path, progress: 0, off: 0, onRoute: true, watch: null, sim, simT: null, gps: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
   go('nav');
+  if (native()) native().nav(true);
   if (sim) startSim();
   else if (!navigator.geolocation) { nav.gps = 2; updateNav(); }
   else nav.watch = navigator.geolocation.watchPosition(onPos, onGpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
@@ -1841,7 +1854,8 @@ function stopNav() {
   if (!nav) return;
   if (nav.watch != null) navigator.geolocation.clearWatch(nav.watch);
   clearInterval(nav.simT);
-  if (window.speechSynthesis) speechSynthesis.cancel();
+  hush();
+  if (native()) native().nav(false);
   nav = null;
   meLayer.clearLayers();
 }
@@ -1853,7 +1867,7 @@ function onPos(pos) {
   if ((heading == null || isNaN(heading)) && nav.last && meters(nav.last, p) > 3) {
     heading = (Math.atan2((p.lng - nav.last.lng) * Math.cos(p.lat * Math.PI / 180), p.lat - nav.last.lat) * 180 / Math.PI + 360) % 360;
   }
-  if (heading != null && !isNaN(heading)) nav.heading = heading;
+  if (heading != null && !isNaN(heading)) { nav.heading = heading; nav.headingAt = Date.now(); }
   nav.last = p;
   nav.acc = pos.coords.accuracy;
   // progress only from a fix on the route, looked for around the current progress (a loop's start is not its
@@ -1874,6 +1888,12 @@ function onPos(pos) {
   }
   updateNav();
 }
+// the phone's compass (from the app): the direction while standing, when the GPS has none
+window.bzCompass = deg => {
+  if (!nav || nav.sim || !myPos || Date.now() - (nav.headingAt || 0) < 3000) return;
+  nav.heading = deg;
+  showMe(myPos.lat, myPos.lng, deg);
+};
 ACT.navVoice = el => { if (!nav) return; nav.voice = !nav.voice; el.setAttribute('aria-pressed', String(nav.voice)); el.setAttribute('aria-label', t(nav.voice ? 'm.voiceOn' : 'm.voiceOff')); };
 ACT.navCenter = () => { if (myPos) map.setView(myPos, 17); };
 ACT.navStop = () => { const back = nav && nav.toStop ? 'transit' : 'results'; stopNav(); go(back); };
@@ -1915,11 +1935,9 @@ function updateNav() {
   const say = x => t((x.street ? 'm.turn.' : 'm.turnBare.') + x.type, { street: x.street });
   $('nav-text').textContent = say(man);
   $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: say(after) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
-  if (nav.voice && window.speechSynthesis && left < 60 && nav.spoken !== nextI) {
+  if (nav.voice && canSpeak() && left < 60 && nav.spoken !== nextI) {
     nav.spoken = nextI;
-    const u = new SpeechSynthesisUtterance(`${round(left)}. ${say(man)}`);
-    u.lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
-    speechSynthesis.speak(u);
+    speak(`${round(left)}. ${say(man)}`);
   }
   // the next stretch reported as dark within 500 m: warn, offer the better-lit route if there is one
   const runs = runsOf(nav.r), dark = runs.find(x => x.status === 'dark_reported' && x.to > pr && x.from - pr < 500 && !nav.dismissed.has(Math.round(x.from)));
