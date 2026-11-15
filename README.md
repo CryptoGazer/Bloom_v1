@@ -34,6 +34,7 @@ Tests: `.venv/bin/python -m pytest backend/tests -q`.
 |---|---|
 | `backend/` | lighting status of every street segment, routing, timetable, live vehicles, place search, Gemini form filling; see `backend/README.md` |
 | `web/m/` | the phone layout; `web/` the desktop page; see `web/README.md` |
+| `android/` | the Android app: the phone layout in a WebView with a native navigator bridge; see `android/README.md` |
 | `config/area-expanded.geojson` | active coverage boundary (7.73 km²) |
 | `data/out/city-expanded/` | active network, search index, summary and timetable |
 | `config/area.geojson`, `data/out/city/` | previous 4.71 km² area, kept for comparison |
