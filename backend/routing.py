@@ -28,9 +28,6 @@ SETTINGS = {
     # ~15 km/h in town; pushing the bike ("dismount") counts at walking speed
     "bike_mps": 4.2,
     "factor_better_lit": {"lit_confirmed": 1.0, "lit_likely": 1.2, "unknown": 1.6, "dark_reported": 3.0},
-    # the lit route is not worth showing if it is longer by more than this
-    "hide_if_extra_min": 5.0,
-    "hide_if_extra_share": 0.30,            # ...or by more than this share
     # a better-lit route at most this much longer replaces the fastest one
     "lit_free_extra_min": 0.5,
     # the lit route counts as "the same" if it adds less than this share of
@@ -496,8 +493,8 @@ class Network:
         if extra_min <= SETTINGS["lit_free_extra_min"]:
             # better lit and practically as fast: the fastest route has nothing to offer
             return {"kind": "same", "near": True, "pick": "better_lit", "lit_gain": round(gain, 3), "extra_min": round(extra_min, 1)}
-        too_long = extra_min > SETTINGS["hide_if_extra_min"] or extra_share > SETTINGS["hide_if_extra_share"]
-        return {"kind": "too_long" if too_long else "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
+        # better lit and longer: offered and chosen however much longer it is; light and comfort come first
+        return {"kind": "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
 
     @classmethod
     def _answer(cls, fastest, lit):

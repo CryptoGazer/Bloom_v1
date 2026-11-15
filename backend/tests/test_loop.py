@@ -46,7 +46,7 @@ def test_the_same_point_twice_in_a_row_adds_nothing(net):
 def test_a_loop_has_two_variants_and_a_verdict_like_a_route(net):
     plan = net.loop([at(net, 110, 0), at(net, 110, 60)])
     assert set(plan["routes"]) == {"fastest", "better_lit"}
-    assert plan["verdict"]["kind"] in ("same", "show", "too_long")
+    assert plan["verdict"]["kind"] in ("same", "show")
     for r in plan["routes"].values():
         assert "_key" not in r and "_sec" not in r
 
