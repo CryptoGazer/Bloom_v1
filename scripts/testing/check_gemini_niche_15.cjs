@@ -8,6 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { chromium } = require('playwright');
+const ui = require('./gemini_ui_driver.cjs');
 const cases = require('./gemini_niche_15.json');
 const base = process.env.GEMINI_TEST_URL || 'http://127.0.0.1:8019';
 const origin = new URL(base).origin;
@@ -50,10 +51,9 @@ async function runView(browser, c, replay, audio) {
   });
   try {
     await page.goto(base+(mobile?'/m/':'/')+'?lang='+c.lang);
-    if(mobile)await page.evaluate(()=>openSearch('B'));
-    await page.locator('#ask-text').waitFor({state:'visible'});
+    await ui.open(page,mobile);
     if(c.initial_from){const p=byName(c.initial_from);await page.evaluate(p=>setPoint('A',[p.lat,p.lon],p.n),p);}
-    await page.locator('#ask-text').fill(c.text);
+    await page.locator(ui.input(mobile)).fill(c.text);
     if(!mobile)await rateWindow();
     const expectedDay=tomorrow();
     const answerPromise=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/ask',{timeout:120000});
@@ -62,8 +62,8 @@ async function runView(browser, c, replay, audio) {
     const answer=await answerPromise,body=await answer.json();
     result.elapsed_s=+( (Date.now()-started)/1000).toFixed(2);
     result.response={status:answer.status(),body};
-    await page.waitForFunction(()=>!document.getElementById('ask-go').disabled);
-    result.note=await page.locator('#ask-note').innerText();
+    await ui.settled(page,mobile);
+    result.note=await ui.note(page,mobile);
     if(answer.status()!==200){issues.push('HTTP '+answer.status());return result;}
     if(c.expect==='off_topic'){
       if(body.kind!=='off_topic')issues.push('Expected off_topic, got '+body.kind);

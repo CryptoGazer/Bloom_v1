@@ -19,6 +19,7 @@ TRANSIT = {
     "max_wait_s": 45 * 60,       # a longer wait is not offered: "no trip soon", with the next departure
     "stop_snap_m": 150,          # a stop farther than this from a walkable path is not used
     "night_ends_h": 4,           # before 04:00, "tonight" is the previous day's service
+    "too_close_m": 100,          # start and destination closer than this (straight line): no ride is offered
 }
 ROUTE_TYPES = {0: "tram", 3: "bus", 11: "trolleybus"}
 
@@ -147,6 +148,8 @@ class Transit:
         origin, dest = self._near(A), self._near(B)
         if not origin or not dest:
             return {"kind": "none", "reason": "no_stop_near", "last": None, "next": None}
+        if math.hypot((A.lon - B.lon) * KX, (A.lat - B.lat) * KY) < TRANSIT["too_close_m"]:
+            return {"kind": "none", "reason": "too_close", "last": None, "next": None}
         pairs = {}
         for p, pattern in enumerate(self.tt.patterns):
             stops = pattern[2]
@@ -175,6 +178,9 @@ class Transit:
                 key = (times[j] + dest[d][1] / walk, origin[o][0] + dest[d][0])  # arrival at B, then less unlit walking
                 if best is None or key < best[0]:
                     best = (key, p, i, j, times, ref)
+        if best is None and day.isoformat() not in self.tt.days:
+            # the timetable is built for a few days ahead (backend/build_transit.py): this date is simply not loaded
+            return {"kind": "none", "reason": "no_timetable", "last": None, "next": None}
         if best is None:
             return {"kind": "none", "reason": "no_trip_soon", "last": self._last(pairs, day, when, ready=ready_at),
                     "next": self._departure(nxt[1], nxt[2], nxt[0]) if nxt else None}

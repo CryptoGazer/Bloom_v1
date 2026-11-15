@@ -2,6 +2,18 @@
 /* Texts of the phone layout (m.js), on top of ../i18n.js: I18N.<lang>.m. Romanian first; the word "safe" is never used.
    Romanian wording follows the design canvas; it still needs a native speaker's check. */
 Object.assign(I18N.ro, { m: {
+  askOr: 'sau pe câmpuri', askBack: 'Înapoi la câmpuri', askExamples: 'Exemple',
+  askEx: ['de la Piața Victoriei la căminul C12 UVT, pe jos', 'de aici până la căminul C12 UVT'],
+  askListenTag: 'Ascult', askVoice: 'Înregistrare vocală · {s} s', askWaitLong: 'Citesc cererea… Durează mai mult decât de obicei; cel mult 20 s.', askWaitS: '{s} s · max 20 s',
+  askGot: 'Am înțeles', askEdit: 'Modifică cererea', askHere: 'Plecare: locația dvs. Browserul poate cere permisiunea.', askCalc: 'Calculez traseul…',
+  askPickHere: 'Alegeți locul aici', askFromReq: 'din cerere', askFields: 'Folosiți câmpurile', askMissTitle: 'Loc negăsit',
+  askTooMany: 'Prea multe cereri. Încercați peste un minut sau folosiți câmpurile „De unde” și „Unde”.',
+  askDown: 'Asistentul nu este disponibil acum. Câmpurile „De unde” și „Unde” funcționează fără el.',
+  askMicOff: 'Microfonul nu este disponibil. Scrieți cererea.', askMicNa: 'Microfonul nu este disponibil',
+  loopBtn: 'Plimbare în buclă', loopTap: 'Atingeți harta', loopTitle1: 'Buclă · 1 punct', loopTitle2: 'Buclă · {n} puncte', loopTitle: 'Buclă · {n} puncte',
+  loopUndo: 'Anulați ultimul punct', loopExit: 'Ieșiți din buclă', loopCalc: 'Calculează', loopOutside: 'Punctul {n} este în afara zonei acoperite.', loopStart: 'punctul 1',
+  alreadyThere: 'Sunteți deja la destinație.', gpsWait: 'Așteptăm semnalul GPS…', gpsDenied: 'Locația este blocată în browser.',
+  turnBare: { right: 'La dreapta', left: 'La stânga', straight: 'Înainte', arrive: 'Destinația' },
   nowBtn: 'Acum',
   leaveTime: 'Ora plecării', hours: 'Ora', minutes: 'Minute', done: 'Gata', today: 'AZI', tomorrow: 'MÂINE',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'acum', close: 'Închide', back: 'Înapoi',
@@ -36,7 +48,7 @@ Object.assign(I18N.ro, { m: {
   share: { lit_confirmed: '{p} iluminat confirmat', lit_likely: '{p} probabil', unknown: '{p} fără date', dark_reported: '{p} semnalat ca neiluminat' },
   legShare: { lit_confirmed: '{p} confirmat', lit_likely: '{p} probabil', unknown: '{p} fără date', dark_reported: '{p} semnalat' },
   st: { lit_confirmed: 'Iluminat confirmat', lit_likely: 'Probabil iluminat', unknown: 'Fără date', dark_reported: 'Semnalat ca neiluminat' },
-  lightOnPart: 'Lumină pe porțiune', mkStart: 'plecare', mkDest: 'destinație', mkOpen: 'loc deschis', mkStop: 'stație cu curse',
+  lightOnPart: 'Lumină pe porțiune · culoarea din interior', mkStart: 'plecare', mkDest: 'destinație', mkOpen: 'loc deschis', mkStop: 'stație cu curse',
   mkChosen: 'traseul ales', mkAlt: 'alternativa', mkVehicle: 'vehicul în timp real', tapPart: 'Atingeți o porțiune pentru surse și date.',
   partDetails: 'Detalii porțiune', loadingSrc: 'Încărcăm sursele…', onFastest: 'pe traseul cel mai rapid', onLitter: 'pe traseul mai luminat', onThis: 'pe acest traseu',
   note: {
@@ -87,6 +99,18 @@ Object.assign(I18N.ro, { m: {
 } });
 
 Object.assign(I18N.en, { m: {
+  askOr: 'or use the boxes', askBack: 'Back to the boxes', askExamples: 'Examples',
+  askEx: ['from Piața Victoriei to Căminul C12 UVT, on foot', 'from here to Căminul C12 UVT'],
+  askListenTag: 'Listening', askVoice: 'Voice recording · {s} s', askWaitLong: 'Reading your request… This is taking longer than usual; 20 s at most.', askWaitS: '{s} s · 20 s max',
+  askGot: 'Understood', askEdit: 'Change the request', askHere: 'Start: your location. The browser may ask for permission.', askCalc: 'Calculating the route…',
+  askPickHere: 'Pick the place here', askFromReq: 'from request', askFields: 'Use the boxes', askMissTitle: 'Place not found',
+  askTooMany: 'Too many requests. Try again in a minute or use the From and To boxes.',
+  askDown: 'The assistant is not available right now. The From and To boxes work without it.',
+  askMicOff: 'The microphone is not available. Type your request.', askMicNa: 'The microphone is not available',
+  loopBtn: 'Loop walk', loopTap: 'Tap the map', loopTitle1: 'Loop · 1 point', loopTitle2: 'Loop · {n} points', loopTitle: 'Loop · {n} points',
+  loopUndo: 'Undo the last point', loopExit: 'Leave the loop', loopCalc: 'Calculate', loopOutside: 'Point {n} is outside the covered area.', loopStart: 'point 1',
+  alreadyThere: 'You are already at the destination.', gpsWait: 'Waiting for the GPS signal…', gpsDenied: 'Location is blocked in the browser.',
+  turnBare: { right: 'Turn right', left: 'Turn left', straight: 'Straight on', arrive: 'Destination' },
   nowBtn: 'Now',
   leaveTime: 'Leaving time', hours: 'Hours', minutes: 'Minutes', done: 'Done', today: 'TODAY', tomorrow: 'TOMORROW',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'now', close: 'Close', back: 'Back',
@@ -121,7 +145,7 @@ Object.assign(I18N.en, { m: {
   share: { lit_confirmed: '{p} confirmed lit', lit_likely: '{p} likely', unknown: '{p} no data', dark_reported: '{p} reported unlit' },
   legShare: { lit_confirmed: '{p} confirmed', lit_likely: '{p} likely', unknown: '{p} no data', dark_reported: '{p} reported' },
   st: { lit_confirmed: 'Confirmed lit', lit_likely: 'Likely lit', unknown: 'No data', dark_reported: 'Reported as unlit' },
-  lightOnPart: 'Light on the stretch', mkStart: 'start', mkDest: 'destination', mkOpen: 'open place', mkStop: 'stop with departures',
+  lightOnPart: 'Light on the stretch · the colour inside', mkStart: 'start', mkDest: 'destination', mkOpen: 'open place', mkStop: 'stop with departures',
   mkChosen: 'chosen route', mkAlt: 'alternative', mkVehicle: 'live vehicle', tapPart: 'Tap a stretch for sources and dates.',
   partDetails: 'Stretch details', loadingSrc: 'Loading the sources…', onFastest: 'on the fastest route', onLitter: 'on the better-lit route', onThis: 'on this route',
   note: {
@@ -172,6 +196,18 @@ Object.assign(I18N.en, { m: {
 } });
 
 Object.assign(I18N.ru, { m: {
+  askOr: 'или через поля', askBack: 'Назад к полям', askExamples: 'Примеры',
+  askEx: ['от Piața Victoriei до Căminul C12 UVT пешком', 'отсюда до Căminul C12 UVT'],
+  askListenTag: 'Слушаю', askVoice: 'Запись голоса · {s} с', askWaitLong: 'Разбираю запрос… Это дольше обычного; не больше 20 с.', askWaitS: '{s} с · макс. 20 с',
+  askGot: 'Понял', askEdit: 'Изменить запрос', askHere: 'Старт: ваше местоположение. Браузер может спросить разрешение.', askCalc: 'Считаю маршрут…',
+  askPickHere: 'Выберите место здесь', askFromReq: 'из запроса', askFields: 'Использовать поля', askMissTitle: 'Место не найдено',
+  askTooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля «Откуда» и «Куда».',
+  askDown: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» работают без него.',
+  askMicOff: 'Микрофон недоступен. Напишите запрос.', askMicNa: 'Микрофон недоступен',
+  loopBtn: 'Круговая прогулка', loopTap: 'Нажмите на карту', loopTitle1: 'Круг · 1 точка', loopTitle2: 'Круг · {n} точки', loopTitle: 'Круг · {n} точек',
+  loopUndo: 'Убрать последнюю точку', loopExit: 'Выйти из круга', loopCalc: 'Рассчитать', loopOutside: 'Точка {n} вне покрытой зоны.', loopStart: 'точки 1',
+  alreadyThere: 'Вы уже на месте.', gpsWait: 'Ждём сигнал GPS…', gpsDenied: 'Местоположение запрещено в браузере.',
+  turnBare: { right: 'Направо', left: 'Налево', straight: 'Прямо', arrive: 'Пункт назначения' },
   nowBtn: 'Сейчас',
   leaveTime: 'Время выхода', hours: 'Часы', minutes: 'Минуты', done: 'Готово', today: 'СЕГОДНЯ', tomorrow: 'ЗАВТРА',
   agoS: '{s} с', agoMS: '{m} мин {s} с', now: 'сейчас', close: 'Закрыть', back: 'Назад',
@@ -206,7 +242,7 @@ Object.assign(I18N.ru, { m: {
   share: { lit_confirmed: 'освещено {p}', lit_likely: 'вероятно {p}', unknown: 'нет данных {p}', dark_reported: 'сообщали о темноте {p}' },
   legShare: { lit_confirmed: 'подтверждено {p}', lit_likely: 'вероятно {p}', unknown: 'нет данных {p}', dark_reported: 'темно {p}' },
   st: { lit_confirmed: 'Освещено, подтверждено', lit_likely: 'Вероятно освещено', unknown: 'Нет данных', dark_reported: 'Сообщали, что темно' },
-  lightOnPart: 'Свет на участке', mkStart: 'старт', mkDest: 'куда', mkOpen: 'открытое место', mkStop: 'остановка с рейсами',
+  lightOnPart: 'Свет на участке · цвет внутри линии', mkStart: 'старт', mkDest: 'куда', mkOpen: 'открытое место', mkStop: 'остановка с рейсами',
   mkChosen: 'выбранный маршрут', mkAlt: 'альтернатива', mkVehicle: 'машина в реальном времени', tapPart: 'Нажмите на участок, чтобы увидеть источники и даты.',
   partDetails: 'Об участке', loadingSrc: 'Загружаем источники…', onFastest: 'на самом быстром маршруте', onLitter: 'на более освещённом маршруте', onThis: 'на этом маршруте',
   note: {

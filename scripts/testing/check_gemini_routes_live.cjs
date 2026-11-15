@@ -4,6 +4,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
+const ui = require('./gemini_ui_driver.cjs');
 const base = process.env.GEMINI_TEST_URL || 'http://127.0.0.1:8019';
 const origin = new URL(base).origin;
 const cases = [
@@ -29,8 +30,8 @@ const point = p => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
       await page.route('**/*', intercepted => new URL(intercepted.request().url()).origin === origin ? intercepted.continue() : intercepted.abort());
       await page.goto(base + (mobile ? '/m/' : '/') + '?lang=ru');
       for (const c of cases) {
-        if (mobile) await page.evaluate(() => openSearch('B'));
-        await page.locator('#ask-text').fill(c.text);
+        await ui.open(page, mobile);
+        await page.locator(ui.input(mobile)).fill(c.text);
         const ask = page.waitForResponse(r => new URL(r.url()).pathname === '/api/ask', { timeout: 120000 });
         const routed = page.waitForResponse(r => {
           const url = new URL(r.url());
@@ -41,7 +42,7 @@ const point = p => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
         const answer = await ask;
         assert.equal(answer.status(), 200);
         const body = await answer.json();
-        await page.waitForFunction(() => !document.getElementById('ask-go').disabled);
+        await ui.settled(page, mobile);
         assert.ok(['route', 'clarify'].includes(body.kind), JSON.stringify(body));
         console.log(JSON.stringify({ stage: 'Gemini', view: mobile ? 'mobile' : 'desktop', case: c.name, kind: body.kind }));
         if (body.kind === 'clarify') {

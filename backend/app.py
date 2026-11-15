@@ -5,8 +5,10 @@ docs: http://localhost:8001/docs
 Data: data/out/city/segments.geojson.gz from backend/build_city.py; override with LIGHTMAP_SEGMENTS=<path>.
 """
 import json
+import math
 import os
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -23,6 +25,7 @@ from backend.geocode import Places
 from backend.history import HISTORY, History
 from backend.live import LIVE, Live, Vehicles, epoch, fetch_city
 from backend.liveliness import LIVELY, Signs
+from backend.loops import DEFAULT_RADIUS_M, MAX_RADIUS_M, MIN_RADIUS_M, around
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
 
@@ -40,6 +43,7 @@ INDEX_HTML = """<!doctype html><html lang="ru"><meta charset="utf-8"><title>Nigh
 <li><a href="/docs">/docs</a> — попробовать запросы в браузере</li>
 <li><a href="/api/summary">/api/summary</a> — сводка по городу</li>
 <li><a href="/api/route?from=45.7470,21.2395&to=45.7415,21.2200">/api/route</a> — пример маршрута</li>
+<li><a href="/api/loop?points=45.7538,21.2259;45.7580,21.2290;45.7575,21.2335">/api/loop</a> — пример круговой прогулки</li>
 <li><a href="/api/segments?bbox=21.225,45.745,21.235,45.750">/api/segments</a> — отрезки в окне карты</li>
 <li><a href="/api/geocode?q=camin%20c12">/api/geocode</a> — поиск адреса, места или остановки</li>
 <li><a href="/demo/route/">/demo/route/</a> — демо маршрута в браузере</li>
@@ -57,6 +61,15 @@ def parse_point(value, name):
     return lat, lon
 
 
+def point_json(lat, lon, snap):
+    """A requested point and where it lies on the network."""
+    return {"lat": lat, "lon": lon, "snapped": [snap.lat, snap.lon], "snap_m": round(snap.d, 1)}
+
+
+def settings_json():
+    return {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE, "history": HISTORY}
+
+
 LATE_GRACE = dt.timedelta(hours=1)   # 'HH:MM' more than this before now means the next day: at 23:59, "00:05" is tonight
 
 
@@ -67,7 +80,9 @@ def leaving_time(at, now=None):
         return now
     try:
         if "T" in at:
-            return dt.datetime.fromisoformat(at)
+            when = dt.datetime.fromisoformat(at)
+            # a time with a zone ("…+02:00", "…Z") is read as Timișoara wall-clock time, like every other time here
+            return when.astimezone(LOCAL_TZ).replace(tzinfo=None) if when.tzinfo else when
         hour, minute = (int(x) for x in at.split(":"))
         when = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         return when + dt.timedelta(days=1) if when < now - LATE_GRACE else when
@@ -141,7 +156,8 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
     def ask(body: AskIn, request: Request):
         """A route asked in plain words, typed or spoken (Romanian, English, Russian). Gemini only fills in a form
         (from, to, mode, time); the places are then found in our own index. Answers:
-        kind "route" (points to route between), "not_found" (a place is not in the map area), "unclear",
+        kind "route" (points to route between), "loop" (centre and target radius for /api/loop),
+        "unsupported" (a transit loop), "not_found" (a place is not in the map area), "unclear",
         "clarify" (ambiguous places, with missing/ambiguity and verified candidates),
         or "off_topic" for anything that is not a route request: the assistant does not answer other questions.
         The text or recording is sent to Google and is not stored here; no coordinates are sent."""
@@ -183,7 +199,7 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
             west, south, east, north = (float(x) for x in bbox.split(","))
         except ValueError:
             raise HTTPException(422, detail={"code": "bad_bbox", "message": "bbox must be west,south,east,north"})
-        if west >= east or south >= north:
+        if not all(math.isfinite(x) for x in (west, south, east, north)) or west >= east or south >= north:
             raise HTTPException(422, detail={"code": "bad_bbox", "message": "bbox must be west,south,east,north with west < east and south < north"})
         net = network()
         idx = net.segments_in_bbox(west, south, east, north)
@@ -225,7 +241,6 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
         plan = net.plan(snapped["from"][2], snapped["to"][2], mode=net_mode)
         if plan is None:
             raise HTTPException(404, detail={"code": "no_route", "message": f"no {net_mode} route between these points"})
-        point = lambda lat, lon, s: {"lat": lat, "lon": lon, "snapped": [s.lat, s.lon], "snap_m": round(s.d, 1)}
         when = leaving_time(at)
         extra = {"at": when.strftime("%Y-%m-%d %H:%M")}
         if state["signs"] is not None:  # signs of life along each route at the leaving time (evidence, not a score)
@@ -238,11 +253,66 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
             for leg in extra["transit"].get("legs", []):
                 if leg["type"] == "ride":  # the scheduled departure as unix time: what /api/transit/live compares with
                     leg["dep_ts"] = round(epoch(leg["day"], leg["dep_s"], LOCAL_TZ))
-                    # how this line ran around this hour on a recent day (backend/history.py); null without data
+                    # Historical observations remain optional when Tiger Data is not configured.
                     leg["history"] = state["history"].ride(leg) if state["history"] is not None else None
-        return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
-                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE, "history": HISTORY},
-                "data_as_of": net.meta.get("as_of")}
+        return {"mode": mode, "from": point_json(*snapped["from"]), "to": point_json(*snapped["to"]), **plan, **extra,
+                "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
+
+    @app.get("/api/loop")
+    def loop(points: str = Query("", max_length=600, description="lat,lon;lat,lon;... in visiting order, 2 to 10 points; or use center"),
+             mode: str = Query("walk", description="'walk' or 'bike'"),
+             at: str = Query("", description="leaving time, as for /api/route"),
+             center: str = Query("", max_length=80, description="lat,lon: automatically choose a circuit around this centre instead of supplying points"),
+             radius_m: float = Query(DEFAULT_RADIUS_M, ge=MIN_RADIUS_M, le=MAX_RADIUS_M, description="approximate circuit radius, may shrink near the edge of coverage"),
+             start: str = Query("", max_length=80, description="optional lat,lon start and finish for an automatic circuit")):
+        """A closed walk or ride through the points in their order and back to the first: the fastest and the
+        better-lit loop, judged like /api/route. Later legs avoid the streets the loop has already used."""
+        if mode not in MODES:
+            raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES)}"})
+        if bool(points) == bool(center) or (start and not center):
+            raise HTTPException(422, detail={"code": "bad_points", "message": "supply either points or center (with optional start)"})
+        when = leaving_time(at)
+        net = network()
+        generated = {}
+        if center:
+            coords = parse_point(center, "center")
+            start_coords = parse_point(start, "start") if start else None
+            for name, p in (("center", coords), ("start", start_coords)):
+                if p is not None and net.snap(*p, mode=mode) is None:
+                    raise HTTPException(422, detail={"code": "outside_coverage", "point": name,
+                                                     "message": f"{name} is outside the mapped {mode} network"})
+            selection = around(net, coords, radius_m, mode, net.snap(*start_coords, mode=mode) if start_coords else None)
+            if selection is None:
+                raise HTTPException(422, detail={"code": "no_loop_area", "message": "no reasonable circuit around this centre fits the mapped network"})
+            snaps, plan, actual_radius = selection
+            snapped = [(p.lat, p.lon, replace(p, d=0)) for p in snaps]
+            if start_coords:
+                snapped[0] = (*start_coords, snaps[0])
+            generated = {"generated": True, "center": {"lat": coords[0], "lon": coords[1]},
+                         "radius_m": actual_radius, "requested_radius_m": radius_m}
+        else:
+            raw = [p for p in points.split(";") if p.strip()]
+            if not 2 <= len(raw) <= SETTINGS["loop_max_points"]:
+                raise HTTPException(422, detail={"code": "bad_points", "message": f"2 to {SETTINGS['loop_max_points']} points as lat,lon;lat,lon"})
+            snapped = []
+            for i, value in enumerate(raw, 1):
+                lat, lon = parse_point(value, f"point {i}")
+                snap = net.snap(lat, lon, mode=mode)
+                if snap is None:
+                    nearest = net.nearest_m(lat, lon, mode=mode)
+                    raise HTTPException(422, detail={"code": "outside_coverage", "point": i,
+                                                     "nearest_m": None if nearest is None else round(nearest),
+                                                     "message": f"point {i} is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
+                snapped.append((lat, lon, snap))
+            plan = net.loop([snap for _, _, snap in snapped], mode=mode)
+        if plan is None:
+            raise HTTPException(404, detail={"code": "no_route", "message": f"no {mode} loop through these points"})
+        if state["signs"] is not None:
+            for r in plan["routes"].values():
+                r["signs"] = state["signs"].along(r, when)
+        pts = [point_json(*p) for p in snapped]
+        return {"mode": mode, "loop": True, "points": pts, "from": pts[0], "to": pts[0], **plan, **generated, "at": when.strftime("%Y-%m-%d %H:%M"),
+                "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
 
     @app.get("/api/transit/live")
     def transit_live(route: str = Query("", max_length=40, description="only this line, GTFS route_id such as R_AB_16; empty = every line in the area"),

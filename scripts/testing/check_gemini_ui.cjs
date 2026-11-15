@@ -4,6 +4,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
+const ui = require('./gemini_ui_driver.cjs');
 const base = process.env.GEMINI_TEST_URL || 'http://127.0.0.1:8019';
 const origin = new URL(base).origin;
 const c12 = { id: 'c12', kind: 'place', name: 'Căminul C12 UVT', lat: 45.749852, lon: 21.240281 };
@@ -22,6 +23,7 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
       const page = await context.newPage();
       const errors = [], requests = [], routeResponses = [];
       let response = route, askCalls = 0, audioCalls = 0, renderedRoutes = 0;
+      let holdAsk = false, releaseAsk;
       page.on('pageerror', e => errors.push(e.message));
       page.on('response', r => {
         if (new URL(r.url()).pathname === '/api/route') routeResponses.push({ url: r.url(), status: r.status() });
@@ -29,9 +31,10 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
       await page.route('**/*', async intercepted => {
         const request = intercepted.request(), url = new URL(request.url());
         if (url.origin !== origin) return intercepted.abort();
-        if (url.pathname === '/api/health') return intercepted.fulfill({ json: { ok: true, ask: true, ask_version: 2 } });
+        if (url.pathname === '/api/health') return intercepted.fulfill({ json: { ok: true, ask: true, ask_version: 3 } });
         if (url.pathname === '/api/ask') {
           askCalls++;
+          if (holdAsk) await new Promise(resolve => { releaseAsk = resolve; });
           const body = request.postDataJSON();
           if (body.audio) {
             const wav = Buffer.from(body.audio, 'base64');
@@ -47,18 +50,15 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
         return intercepted.continue();
       });
       await page.goto(base + (mobile ? '/m/' : '/') + '?lang=ru');
-      const open = async () => {
-        if (mobile) await page.evaluate(() => openSearch('B'));
-        await page.locator('#ask-text').waitFor({ state: 'visible' });
-      };
+      const open = () => ui.open(page, mobile);
       const submit = async value => {
         await open();
         response = value;
-        await page.locator('#ask-text').fill('Тестовый маршрут');
+        await page.locator(ui.input(mobile)).fill('Тестовый маршрут');
         const done = page.waitForResponse(r => new URL(r.url()).pathname === '/api/ask');
         await page.locator('#ask-go').click();
         await done;
-        await page.waitForFunction(() => !document.getElementById('ask-go').disabled);
+        await ui.settled(page, mobile);
       };
       const state = () => page.evaluate(() => ({ a: A && [A.lat, A.lng], b: B && [B.lat, B.lng], labels, planned: !!plan }));
       const planned = async () => {
@@ -97,6 +97,7 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
       assert.equal((await state()).a, null);
       assert.equal((await state()).planned, false);
       assert.equal((await state()).labels.B, square.name);
+      if (mobile) await page.locator('[data-act="askFind"][data-which="A"]').click();
       assert.equal(await page.locator('#from').inputValue(), 'исходное название клиники');
 
       // Both ambiguous points can be selected consecutively with no further Gemini calls.
@@ -122,17 +123,66 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
 
       // Exercise actual getUserMedia -> MediaRecorder -> 16 kHz WAV, with synthetic Chrome audio.
       await open(); response = { ...route, heard: 'от C12 до Ботанического парка' };
-      await page.locator('#ask-mic').click();
-      await page.waitForFunction(() => document.getElementById('ask-mic').getAttribute('aria-pressed') === 'true');
+      await page.locator(ui.mic(mobile)).click();
+      await page.locator(ui.mic(mobile) + '[aria-pressed="true"]').waitFor();
       await page.waitForTimeout(1200);
       const recorded = page.waitForResponse(r => new URL(r.url()).pathname === '/api/ask');
-      await page.locator('#ask-mic').click();
+      await page.locator(ui.mic(mobile)).click();
       await recorded;
-      await page.waitForFunction(() => !document.getElementById('ask-go').disabled && document.getElementById('ask-note').textContent.includes('Услышал:'));
+      await ui.settled(page, mobile);
       await planned();
+      if (mobile) await page.evaluate(() => go('home', false));
+      assert.ok((await ui.note(page, mobile)).includes('Услышал:'));
       assert.equal(audioCalls, 1);
+
+      // A slow, successful backend retry must survive the former mobile 25-second deadline.
+      await open();
+      await page.clock.install();
+      response = route; holdAsk = true;
+      await page.locator(ui.input(mobile)).fill('Медленный ответ с повторной попыткой');
+      const slowAnswer = page.waitForResponse(r => new URL(r.url()).pathname === '/api/ask');
+      const sent = page.waitForRequest(r => new URL(r.url()).pathname === '/api/ask');
+      await page.locator('#ask-go').click();
+      await sent;
+      await page.clock.fastForward(26000);
+      assert.equal(await page.evaluate(isMobile => isMobile ? ask.phase : document.getElementById('ask-go').disabled, mobile), mobile ? 'wait' : true);
+      holdAsk = false; releaseAsk();
+      await slowAnswer;
+      await ui.settled(page, mobile);
+      await page.clock.resume();
+      await planned();
+
+      if (mobile) {
+        // Back cancels applying the late Gemini answer; it must not overwrite the current points.
+        await open(); holdAsk = true;
+        response = { ...route, to: square };
+        await page.locator('#ask-ta').fill('Запрос, который пользователь отменил');
+        const lateAnswer = page.waitForResponse(r => new URL(r.url()).pathname === '/api/ask');
+        const lateSent = page.waitForRequest(r => new URL(r.url()).pathname === '/api/ask');
+        await page.locator('#ask-go').click();
+        await lateSent;
+        await page.locator('[data-act="askBack"]').click();
+        const beforeCancel = await state();
+        holdAsk = false; releaseAsk();
+        await lateAnswer;
+        await page.waitForTimeout(50);
+        assert.deepEqual(await state(), beforeCancel);
+
+        // Timur's loop UI still calls the actual loop API and draws both route choices.
+        await page.locator('[data-act="loop"]').click();
+        await page.evaluate(() => {
+          for (const p of [[45.7538, 21.2259], [45.7580, 21.2290], [45.7575, 21.2335]]) {
+            map.fire('click', { latlng: L.latLng(p) });
+          }
+        });
+        const loopAnswer = page.waitForResponse(r => new URL(r.url()).pathname === '/api/loop');
+        await page.locator('[data-act="loopGo"]').click();
+        assert.equal((await loopAnswer).status(), 200);
+        await page.waitForFunction(() => plan && plan.loop && document.querySelectorAll('#screen .rcard').length === 2 &&
+          routeLayer.getLayers().some(l => l.getLatLngs && l.getLatLngs().length >= 2));
+      }
       assert.equal(errors.length, 0, errors.join('\n'));
-      console.log(JSON.stringify({ view: mobile ? 'mobile' : 'desktop', status: 'PASS', scenarios: 6, audioCalls, renderedRoutes, checked: 'A/B → HTTP 200 + geometry → visible route and cards' }));
+      console.log(JSON.stringify({ view: mobile ? 'mobile' : 'desktop', status: 'PASS', scenarios: mobile ? 9 : 7, audioCalls, renderedRoutes, checked: 'A/B → HTTP 200 + geometry → visible route and cards; slow retry; mobile cancellation and loop' }));
       await context.close();
     }
   } finally { await browser.close(); }

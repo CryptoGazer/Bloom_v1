@@ -2,11 +2,11 @@
 /* "Ask in plain words": a text box and a microphone above the address boxes.
    The request goes to our own /api/ask. There Gemini only fills in a form (from, to, mode, time) and the places
    are found in our own index; anything that is not a route request gets a short refusal (backend/ask.py).
-   This file records the voice, sends the request and applies the answer to the page.
-   Needs i18n.js and the desktop/mobile adapters: A, labels, setPoint, clearPoint, clearAskRoute,
-   setTravel, setDeparture, pointsChanged, locate and $.
-   The texts of this feature are here, not in i18n.js, so that removing the feature means removing this file
-   and the <form id="ask"> block in index.html. */
+   BzAsk below records the voice, converts it and sends the request, without touching any page: the phone page
+   (web/m/m.js) draws its own block with it. The rest of this file is the block of the desktop page: it needs
+   i18n.js (I18N, t, LANG) and app.js (A, labels, setPoint, clearPoint, clearAskRoute, setTravel, setDeparture, pointsChanged, locate, $) and runs only
+   where a <form id="ask"> exists. The texts of this feature are here, not in i18n.js, so that removing the
+   feature means removing this file and the <form id="ask"> block in index.html. */
 
 Object.assign(I18N.ro, { ask: {
   label: 'Întrebați cu propriile cuvinte', placeholder: 'De ex.: de la Căminul C12 la Piața Victoriei cu bicicleta',
@@ -18,6 +18,10 @@ Object.assign(I18N.ro, { ask: {
   choose: 'Confirmați punctul „{box}”: alegeți locul potrivit.',
   missing: 'Precizați punctul „{box}” în câmpul de mai jos sau reformulați cererea.',
   choices: 'Locuri posibile',
+  loopCenter: 'Centrul plimbării', loopStart: 'Începutul și sfârșitul plimbării', loopPoint: 'Punctul {n} al plimbării',
+  loopUnderstood: 'Circuit în jurul „{center}”', loopApprox: 'Dimensiunea este aproximativă; traseul urmează străzile accesibile.',
+  loopTransit: 'Circuitele sunt disponibile pe jos sau cu bicicleta. Alegeți unul dintre aceste moduri.',
+  loopUnavailable: 'Nu am putut găsi un circuit rezonabil în jurul acestui loc în zona hărții. Alegeți alt loc sau un circuit mai mic.',
   notFound: 'Nu am găsit „{name}” în zona hărții. Alegeți locul în câmpul „{box}”.',
   tooMany: 'Prea multe cereri. Încercați peste un minut sau folosiți câmpurile de mai jos.',
   down: 'Asistentul nu este disponibil acum. Câmpurile „De unde” și „Unde” de mai jos funcționează fără el.',
@@ -34,6 +38,10 @@ Object.assign(I18N.en, { ask: {
   choose: 'Confirm the “{box}” point: choose the intended place.',
   missing: 'Specify the “{box}” point in the box below or rephrase your request.',
   choices: 'Possible places',
+  loopCenter: 'Walk centre', loopStart: 'Walk start and finish', loopPoint: 'Walk point {n}',
+  loopUnderstood: 'Circuit around “{center}”', loopApprox: 'The size is approximate; the route follows accessible streets.',
+  loopTransit: 'Circuits support walking and cycling. Choose one of these modes.',
+  loopUnavailable: 'No reasonable circuit around this place fits the mapped area. Choose another place or a smaller circuit.',
   notFound: 'I could not find “{name}” inside the map area. Pick the place in the “{box}” box.',
   tooMany: 'Too many requests. Try again in a minute or use the boxes below.',
   down: 'The assistant is not available right now. The From and To boxes below work without it.',
@@ -50,6 +58,10 @@ Object.assign(I18N.ru, { ask: {
   choose: 'Уточните точку «{box}»: выберите подходящее место.',
   missing: 'Уточните точку «{box}» в поле ниже или переформулируйте запрос.',
   choices: 'Возможные места',
+  loopCenter: 'Центр прогулки', loopStart: 'Начало и конец прогулки', loopPoint: 'Точка прогулки {n}',
+  loopUnderstood: 'Круговая прогулка вокруг «{center}»', loopApprox: 'Размер приблизительный; путь проходит по доступным улицам.',
+  loopTransit: 'Круговые прогулки доступны пешком и на велосипеде. Выберите один из этих способов.',
+  loopUnavailable: 'Вокруг этого места не удалось подобрать разумный круг в области карты. Выберите другое место или меньший размер прогулки.',
   notFound: 'Не нашёл «{name}» в области карты. Выберите место в поле «{box}».',
   tooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля ниже.',
   down: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» ниже работают без него.',
@@ -57,158 +69,55 @@ Object.assign(I18N.ru, { ask: {
   privacy: 'Текст или запись голоса отправляется в Google Gemini, чтобы понять запрос; мы её не храним.',
 } });
 
-(function () {
-  const form = $('ask');
-  if (!form) return;
-  const input = $('ask-text'), mic = $('ask-mic'), go = $('ask-go'), note = $('ask-note');
-  const choices = $('ask-choices') || document.createElement('div');
-  if (!choices.id) { choices.id = 'ask-choices'; note.after(choices); }
-  choices.className = 'ask-choices';
-  choices.hidden = true;
-  choices.setAttribute('role', 'group');
-  choices.setAttribute('aria-label', t('ask.choices'));
+const BzAsk = (() => {
   const MAX_MS = 10000, RATE = 16000, SILENCE_PEAK = 0.02;
-  let busy = false, rec = null;
+  // recording needs a secure page (https or localhost) and MediaRecorder
+  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && window.isSecureContext);
+  // the block appears only if the server has a Gemini key
+  const enabled = () => fetch('/api/health').then(r => r.json()).then(d => !!d.ask).catch(() => false);
 
-  input.placeholder = t('ask.placeholder');
-  input.setAttribute('aria-label', t('ask.label'));
-  go.textContent = t('ask.go');
-  $('ask-privacy').textContent = t('ask.privacy');
-  setMic(false);
-
-  // the box appears only if the server has a Gemini key; the microphone only where the browser allows recording
-  fetch('/api/health').then(r => r.json()).then(d => { form.hidden = !d.ask; }).catch(() => {});
-  mic.hidden = !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && window.isSecureContext);
-
-  function show(text, cls) {
-    note.className = cls || 'small';
-    note.textContent = text;
-    note.hidden = !text;
+  // -> {ok: true, body: the answer} or {ok: false, code: 'too_many' | 'ai_busy' | ... | ''}
+  // near: the current start point; it stays on our server ("the nearest pharmacy") and is not sent to Gemini
+  async function send(payload, near) {
+    // A request may include two extraction attempts and three place-search rounds (20 s each).
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 110000);
+    try {
+      const response = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, lang: LANG, near: near || '' }), signal: controller.signal });
+      const body = await response.json().catch(() => ({}));
+      return response.ok ? { ok: true, body } : { ok: false, code: (body.detail && body.detail.code) || '' };
+    } catch (err) {
+      return { ok: false, code: err.name === 'AbortError' ? 'timeout' : '' };
+    } finally { clearTimeout(timer); }
   }
 
-  function setMic(on) {
-    mic.setAttribute('aria-pressed', String(on));
-    mic.textContent = on ? '⏹' : '🎤';
-    mic.title = t(on ? 'ask.stop' : 'ask.mic');
-    mic.setAttribute('aria-label', mic.title);
-  }
-
-  function send(payload) {
-    if (busy) return;
-    busy = true;
-    choices.replaceChildren();
-    choices.hidden = true;
-    go.disabled = mic.disabled = true;
-    show(t('ask.thinking'));
-    // the current start point stays on our server ("the nearest pharmacy"); it is not sent to Gemini
-    const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
-    fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, lang: LANG, near }) })
-      .then(async r => ({ ok: r.ok, body: await r.json().catch(() => ({})) }))
-      .then(({ ok, body }) => (ok ? apply(body) : fail(body.detail || {})))
-      .catch(() => fail({}))
-      .finally(() => { busy = false; go.disabled = mic.disabled = false; });
-  }
-
-  function fail(detail) {
-    show(t(detail.code === 'too_many' ? 'ask.tooMany' : 'ask.down'), 'warn');
-  }
-
-  function apply(r) {
-    choices.replaceChildren();
-    choices.hidden = true;
-    const heard = r.heard ? t('ask.heard', { text: r.heard }) + ' ' : '';
-    if (r.kind === 'off_topic') { show(heard + t('ask.offTopic'), 'warn'); return; }
-    clearAskRoute(); // an incomplete new request must not keep displaying the previous route
-    if (r.kind !== 'route') {
-      for (const side of ['from', 'to']) {
-        if ((r.missing || []).includes(side) || (r.ambiguity || []).includes(side)) clearPoint(side === 'from' ? 'A' : 'B');
-      }
-      if (r.from_here && !r.from) clearPoint('A');
-      if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
-      if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
-      if (r.mode) setTravel(r.mode);
-      if (r.at) setDeparture(r.at);
-      const ambiguity = r.ambiguity || [], missing = r.missing || [];
-      const which = r.which === 'from' ? 'from' : 'to', box = t(which + 'Label');
-      const message = ambiguity.includes(which) ? t('ask.choose', { box })
-        : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
-          : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
-      show(heard + message, 'warn');
-      for (const side of ['from', 'to']) {
-        const candidates = (r.candidates && r.candidates[side]) || [];
-        if (!candidates.length) continue;
-        const label = document.createElement('p');
-        label.textContent = t(side + 'Label');
-        choices.append(label);
-        for (const place of candidates) {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = place.name;
-          button.addEventListener('click', () => {
-            const next = { ...r, [side]: place,
-              missing: missing.filter(s => s !== side), ambiguity: ambiguity.filter(s => s !== side),
-              candidates: { ...r.candidates, [side]: [] } };
-            const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
-            next.kind = remaining.length ? 'clarify' : next.to ? 'route' : 'unclear';
-            next.which = remaining[0] || 'to';
-            next.name = null;
-            apply(next); // a verified candidate is applied locally; no extra Gemini request
-          });
-          choices.append(button);
-        }
-      }
-      choices.hidden = !choices.childElementCount;
-      if (!choices.hidden) choices.querySelector('button').focus();
-      else {
-        $(which).value = (r.queries && r.queries[which]) || r.name || '';
-        $(which).focus(); // opens manual suggestions on desktop and mobile
-      }
-      return;
-    }
-
-    if (r.mode) setTravel(r.mode);
-    if (r.at) setDeparture(r.at);
-    if (r.from_here && !r.from) clearPoint('A');
-    setPoint('B', [r.to.lat, r.to.lon], r.to.name);
-    const keepStart = !r.from && A && !r.from_here;
-    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
-    const extra = [r.mode ? t({ walk: 'travelWalk', bike: 'travelBike', transit: 'travelTransit' }[r.mode]).toLowerCase() : '',
-      r.at ? `${t('atLabel').toLowerCase()} ${r.at.includes('T') ? r.at.slice(11) : r.at}` : ''].filter(Boolean).map(x => ' · ' + x).join('');
-    show(heard + t('ask.understood', { from: r.from ? r.from.name : keepStart ? labels.A : t('myLocation'), to: r.to.name, extra }));
-    if (r.from || keepStart) pointsChanged(); else locate(); // no start named: where the person is now
-  }
-
-  // ---------- voice: record, convert to 16 kHz mono WAV in the browser, send ----------
-  async function start() {
+  // Starts recording for at most MAX_MS. Resolves to {stop()} once recording runs, or null if the microphone is refused.
+  // done() is called once: {wav: base64} | {silent: true} | {error: text, denied: true if the microphone was refused}
+  async function record(done) {
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } });
     } catch (err) {
-      show(t('ask.micDenied', { msg: err.message || err.name }), 'warn');
-      return;
+      done({ error: err.message || err.name, denied: true });
+      return null;
     }
     const chunks = [], recorder = new MediaRecorder(stream);
+    let timer = null;
     recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
     recorder.onstop = async () => {
       stream.getTracks().forEach(track => track.stop());
-      clearTimeout(rec.timer);
-      rec = null;
-      setMic(false);
+      clearTimeout(timer);
       try {
         const wav = await toWav(new Blob(chunks, { type: recorder.mimeType }));
-        if (wav) send({ audio: wav, mime: 'audio/wav' }); else show(t('ask.silent'), 'warn');
+        done(wav ? { wav } : { silent: true });
       } catch (err) {
-        show(t('ask.micDenied', { msg: err.message || err.name }), 'warn');
+        done({ error: err.message || err.name });
       }
     };
-    rec = { recorder, timer: setTimeout(stop, MAX_MS) };
+    const stop = () => { if (recorder.state !== 'inactive') recorder.stop(); };
+    timer = setTimeout(stop, MAX_MS);
     recorder.start();
-    setMic(true);
-    show(t('ask.listening'));
-  }
-
-  function stop() {
-    if (rec && rec.recorder.state !== 'inactive') rec.recorder.stop();
+    return { stop };
   }
 
   // Any format the browser records (webm/opus, mp4/aac) -> base64 WAV, PCM 16 bit, 16 kHz, mono; null if silent.
@@ -243,10 +152,170 @@ Object.assign(I18N.ru, { ask: {
     return btoa(binary);
   }
 
+  // Visitor coordinates are used only by our loop endpoint, never sent to Gemini.
+  async function loopParams(r) {
+    let start = r.from;
+    if (r.from_here && !start) {
+      const pos = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error(t('geoError', { msg: 'navigator.geolocation' }))); return; }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      });
+      start = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    }
+    const center = r.to || start;
+    if (!center) throw new Error(t('ask.unclear'));
+    const point = p => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+    const params = new URLSearchParams({ center: point(center), radius_m: r.radius_m || 400 });
+    if (start) params.set('start', point(start));
+    return params;
+  }
+
+  return { MAX_MS, canRecord, enabled, send, record, loopParams };
+})();
+
+// ---------- the block of the desktop page ----------
+(function () {
+  const form = document.getElementById('ask');
+  if (!form) return;
+  const input = $('ask-text'), mic = $('ask-mic'), go = $('ask-go'), note = $('ask-note');
+  const choices = $('ask-choices') || document.createElement('div');
+  if (!choices.id) { choices.id = 'ask-choices'; note.after(choices); }
+  choices.className = 'ask-choices';
+  choices.hidden = true;
+  choices.setAttribute('role', 'group');
+  choices.setAttribute('aria-label', t('ask.choices'));
+  let busy = false, rec = null, starting = false;
+
+  input.placeholder = t('ask.placeholder');
+  input.setAttribute('aria-label', t('ask.label'));
+  go.textContent = t('ask.go');
+  $('ask-privacy').textContent = t('ask.privacy');
+  setMic(false);
+
+  BzAsk.enabled().then(on => { form.hidden = !on; });
+  mic.hidden = !BzAsk.canRecord();
+
+  function show(text, cls) {
+    note.className = cls || 'small';
+    note.textContent = text;
+    note.hidden = !text;
+  }
+
+  function setMic(on) {
+    mic.setAttribute('aria-pressed', String(on));
+    mic.textContent = on ? '⏹' : '🎤';
+    mic.title = t(on ? 'ask.stop' : 'ask.mic');
+    mic.setAttribute('aria-label', mic.title);
+  }
+
+  function send(payload) {
+    if (busy) return;
+    busy = true;
+    choices.replaceChildren();
+    choices.hidden = true;
+    go.disabled = mic.disabled = true;
+    show(t('ask.thinking'));
+    const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
+    BzAsk.send(payload, near)
+      .then(res => (res.ok ? apply(res.body) : show(t(res.code === 'too_many' ? 'ask.tooMany' : 'ask.down'), 'warn')))
+      .finally(() => { busy = false; go.disabled = mic.disabled = false; });
+  }
+
+  function apply(r) {
+    askPointChoice = null;
+    choices.replaceChildren();
+    choices.hidden = true;
+    const heard = r.heard ? t('ask.heard', { text: r.heard }) + ' ' : '';
+    if (r.kind === 'off_topic') { show(heard + t('ask.offTopic'), 'warn'); return; }
+    if (r.kind === 'unsupported') { show(heard + t('ask.loopTransit'), 'warn'); return; }
+    clearAskRoute(); // an incomplete new request must not keep displaying the previous route
+    if (r.kind === 'loop') {
+      setTravel(r.mode || 'walk');
+      if (r.at) setDeparture(r.at);
+      show(heard + t('ask.loopUnderstood', { center: r.to ? r.to.name : t('myLocation') }) + '. ' + t('ask.loopApprox'));
+      startAskLoop(r);
+      return;
+    }
+    if (r.kind !== 'route') {
+      for (const side of ['from', 'to']) {
+        if ((r.missing || []).includes(side) || (r.ambiguity || []).includes(side)) clearPoint(side === 'from' ? 'A' : 'B');
+      }
+      if (r.from_here && !r.from) clearPoint('A');
+      if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+      if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+      if (r.mode) setTravel(r.mode);
+      if (r.at) setDeparture(r.at);
+      const ambiguity = r.ambiguity || [], missing = r.missing || [];
+      const which = r.which === 'from' ? 'from' : 'to', box = t(r.loop && which === 'to' ? 'ask.loopCenter' : which + 'Label');
+      const message = ambiguity.includes(which) ? t('ask.choose', { box })
+        : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
+          : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
+      show(heard + message, 'warn');
+      const pick = (side, place) => {
+        const next = { ...r, [side]: place,
+          missing: missing.filter(s => s !== side), ambiguity: ambiguity.filter(s => s !== side),
+          candidates: { ...r.candidates, [side]: [] } };
+        const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
+        next.kind = remaining.length ? 'clarify' : next.to ? (next.loop ? 'loop' : 'route') : 'unclear';
+        next.which = remaining[0] || 'to';
+        next.name = null;
+        apply(next);
+      };
+      if (r.loop) askPointChoice = (which, place) => { pick(which === 'A' ? 'from' : 'to', place); return true; };
+      for (const side of ['from', 'to']) {
+        const candidates = (r.candidates && r.candidates[side]) || [];
+        if (!candidates.length) continue;
+        const label = document.createElement('p');
+        label.textContent = t(r.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label');
+        choices.append(label);
+        for (const place of candidates) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = place.name;
+          button.addEventListener('click', () => {
+            pick(side, place); // a verified candidate is applied locally; no extra Gemini request
+          });
+          choices.append(button);
+        }
+      }
+      choices.hidden = !choices.childElementCount;
+      if (!choices.hidden) choices.querySelector('button').focus();
+      else {
+        $(which).value = (r.queries && r.queries[which]) || r.name || '';
+        $(which).focus(); // opens manual suggestions on desktop and mobile
+      }
+      return;
+    }
+
+    if (r.mode) setTravel(r.mode);
+    if (r.at) setDeparture(r.at);
+    if (r.from_here && !r.from) clearPoint('A');
+    setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+    const keepStart = !r.from && A && !r.from_here;
+    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+    const extra = [r.mode ? t({ walk: 'travelWalk', bike: 'travelBike', transit: 'travelTransit' }[r.mode]).toLowerCase() : '',
+      r.at ? `${t('atLabel').toLowerCase()} ${r.at.includes('T') ? r.at.slice(11) : r.at}` : ''].filter(Boolean).map(x => ' · ' + x).join('');
+    show(heard + t('ask.understood', { from: r.from ? r.from.name : keepStart ? labels.A : t('myLocation'), to: r.to.name, extra }));
+    if (r.from || keepStart) pointsChanged(); else locate(); // no start named: where the person is now
+  }
+
+  async function start() {
+    starting = true;
+    rec = await BzAsk.record(res => {
+      rec = null;
+      setMic(false);
+      if (res.wav) send({ audio: res.wav, mime: 'audio/wav' });
+      else if (res.silent) show(t('ask.silent'), 'warn');
+      else show(t('ask.micDenied', { msg: res.error }), 'warn');
+    });
+    starting = false;
+    if (rec) { setMic(true); show(t('ask.listening')); }
+  }
+
   form.addEventListener('submit', e => {
     e.preventDefault();
     const text = input.value.trim();
     if (text) send({ text });
   });
-  mic.addEventListener('click', () => { if (rec) stop(); else if (!busy) start(); });
+  mic.addEventListener('click', () => { if (rec) rec.stop(); else if (!busy && !starting) start(); });
 })();

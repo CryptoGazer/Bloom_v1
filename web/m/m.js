@@ -1,9 +1,9 @@
 'use strict';
 /* bezna, phone layout of the design "Tihij svet" (claude.ai design canvas "Traseu de noapte — redesign").
    One Leaflet map under bottom sheets; screens: home, search, results, details, transit, stop (live arrival), nav.
-   Data: the same backend as the desktop page: /api/route, /api/geocode, /api/segments/{id}, /api/summary, /api/transit/live.
-   Texts: ../i18n.js (t, LANG, I18N) and texts.js (I18N.*.m). The Gemini box is ../ask.js, unchanged: it needs the
-   globals A, labels, setPoint, clearPoint, clearAskRoute, setTravel, setDeparture, pointsChanged, locate and $ defined here. */
+   Data: the same backend as the desktop page: /api/route, /api/loop, /api/geocode, /api/segments/{id}, /api/summary,
+   /api/transit/live, /api/ask (through BzAsk in ../ask.js; the block on the start sheet is drawn here).
+   Texts: ../i18n.js (t, LANG, I18N), ../ask.js (I18N.*.ask) and texts.js (I18N.*.m). */
 
 // ---------- helpers ----------
 const $ = id => document.getElementById(id);
@@ -48,6 +48,16 @@ const I = {
   recalc: () => SV('<path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/>', 18),
   legend: () => SV('<path d="M4 7h16"/><path d="M4 12h3M10 12h3M16 12h4"/><path d="M4 17h.01M8 17h.01M12 17h.01M16 17h.01M20 17h.01" stroke-width="2.4"/>', 18, 1.6),
   close: () => SV('<path d="M6 6l12 12M18 6 6 18"/>', 14, 2.2),
+  loop: () => SV('<path d="M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7z"/><circle cx="12" cy="17" r="2.2" fill="currentColor" stroke="none"/>', 20),
+  undo: () => SV('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 18),
+  chat: () => SV('<path d="M4 5h16v11H10l-6 4z"/><path d="M8 9h8M8 12h5"/>', 18),
+  mic: (s = 20) => SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', s),
+  micOff: (s = 22) => SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/>', s),
+  arrowR: () => SV('<path d="M5 12h13M13 6l6 6-6 6"/>', 16, 2.2),
+  searchX: () => SV('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.7 8.7l4.6 4.6M13.3 8.7l-4.6 4.6"/>', 18),
+  question: () => SV('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/>', 18),
+  cloudOff: () => SV('<path d="M8 18H7a4 4 0 0 1-.8-7.9A6 6 0 0 1 17.4 9"/><path d="M19.2 11.6A3.5 3.5 0 0 1 17 18h-3"/><path d="M3 3l18 18"/>', 18),
+  wave: () => SV('<path d="M3 12h18"/><path d="M7 10v4M12 11v2M17 10v4"/>', 18),
   walk: (s = 18) => SV('<circle cx="13" cy="4" r="1.6"/><path d="M9 21l2-6 3 2v4M10 9l3-1 3 3 3 1M10 9l-2 5"/>', s),
   bike: (s = 18) => SV('<circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17 9 9h6l3.5 8M9 9 8 6H6M12 17l3-8"/>', s),
   bus: (s = 18) => SV('<rect x="5" y="4" width="14" height="13" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', s),
@@ -70,27 +80,30 @@ const I = {
   left: s => SV('<path d="M17 21V11a4 4 0 0 0-4-4H4"/><path d="m8 3-4 4 4 4"/>', s, 2),
   straight: s => SV('<path d="M12 21V4"/><path d="m6 9 6-6 6 6"/>', s, 2),
   arrive: s => SV('<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><rect x="9.5" y="7.5" width="5" height="5" rx="1"/>', s, 2),
-  diamond: (s = 14) => `<svg width="${s}" height="${s}" viewBox="-7 -7 14 14" aria-hidden="true"><rect x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.2"/><path d="M0 -2.4V.6M0 2.3v.1" stroke="#F2F2F2" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  diamond: (s = 14) => `<svg width="${s}" height="${s}" viewBox="-7 -7 14 14" aria-hidden="true"><rect x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.2"/><path d="M0 -2.4V.6M0 2.3v.1" stroke="#0B0B0B" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   place: (s = 12) => `<svg width="${s}" height="${s}" viewBox="-6 -6 12 12" aria-hidden="true"><circle r="4.8" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.3"/><circle r="1.6" fill="#F2F2F2"/></svg>`,
   stopMk: (s = 12) => `<svg width="${s}" height="${s}" viewBox="-6 -6 12 12" aria-hidden="true"><rect x="-4.8" y="-4.8" width="9.6" height="9.6" rx="1.8" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.3"/><rect x="-1.8" y="-1.8" width="3.6" height="3.6" fill="#F2F2F2"/></svg>`,
 };
 const WORDMARK = `<svg width="88" height="25" viewBox="0 -1 92 26" role="img" aria-label="bezna"><defs><filter id="zglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.3"/></filter></defs><g fill="none" stroke="#F2F2F2" stroke-width="3.2"><path d="M1.6 0V24"/><circle cx="8" cy="16" r="6.4"/><path d="M21.1 16H33.9"/><path d="M33.9 16A6.4 6.4 0 1 0 32.03 20.53"/><path d="M39 9.6H51.8"/><path d="M39 22.4H51.8"/><path d="M56.9 24V8"/><path d="M56.9 16A6.4 6.4 0 0 1 69.7 16V24"/><circle cx="82.8" cy="16" r="6.4"/><path d="M89.2 8V24"/></g><path d="M50.6 11.4L40.2 20.6" stroke="#FFFFFF" stroke-width="3.2" filter="url(#zglow)" opacity="0.75"/><path d="M50.6 11.4L40.2 20.6" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 
-// ---------- lighting status: tone + line pattern (colour is never the only cue) ----------
+// ---------- lighting status (design "Tihij svet", rev. 15.11): a white wrap, and where the street is not
+// confirmed lit, a dark channel with a coloured core and its own pattern (colour is never the only cue) ----------
 const ST = {
-  lit_confirmed: { c: '#F2F2F2', d: null, cap: 'round', alt: null, net: null, bar: null, sample: null },
-  lit_likely: { c: '#D4D4D4', d: '12 6', cap: 'butt', alt: '8 5', net: '8 5', bar: '7 3', sample: '12 6' },
-  unknown: { c: '#8A8A8A', d: '0.1 11', cap: 'round', alt: '0.1 7', net: '0.1 6', bar: '0.1 7', sample: '0.1 9' },
-  dark_reported: { c: '#A3A3A3', d: '9 10 0.1 10', cap: 'round', alt: '6 7 0.1 7', net: '7 5 0.1 5', bar: '4 8 0.1 8', sample: '8 8 0.1 8' },
+  lit_confirmed: { c: '#F2F2F2', d: null, cap: 'round', alt: null, net: null, netOp: 0.4, bar: null, sample: null },
+  lit_likely: { c: '#FFC83D', d: '10 5', cap: 'butt', alt: '6 4', net: '8 5', netOp: 0.6, bar: '7 3', sample: '8 4' },
+  unknown: { c: '#A3A3A3', d: '0.1 8', cap: 'round', alt: '0.1 5', net: '0.1 6', netOp: 0.75, netC: '#8A8A8A', bar: '0.1 7', sample: '0.1 7' },
+  dark_reported: { c: '#FF5A4F', d: '7 8 0.1 8', cap: 'round', alt: '4 5 0.1 5', net: '7 5 0.1 5', netOp: 0.75, bar: '4 8 0.1 8', sample: '5 6 0.1 6' },
 };
 const ORDER = ['lit_confirmed', 'lit_likely', 'unknown', 'dark_reported'];
 const LIVE_S = 60;   // an observed position younger than this is "LIVE" (design: one of five bars fades every 12 s)
+const DIAMOND = '<rect x="-5" y="-5" width="10" height="10" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.2"/><path d="M0 -2.6V.6M0 2.4v.1" stroke="#0B0B0B" stroke-width="1.5" stroke-linecap="round"/>';
 
-function sample(status, w = 48, sw = 5) {
-  const s = ST[status] || ST.unknown;
-  const line = `<path d="M3 5h${w - (status === 'dark_reported' ? 18 : 6)}" stroke="${s.c}" stroke-width="${sw}"${s.sample ? ` stroke-dasharray="${s.sample}"` : ''} stroke-linecap="${s.cap}"/>`;
-  const warn = status === 'dark_reported' ? `<g transform="translate(${w - 7} 7)"><rect x="-5" y="-5" width="10" height="10" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.2"/><path d="M0 -2.6V.6M0 2.4v.1" stroke="#F2F2F2" stroke-width="1.4" stroke-linecap="round"/></g>` : '';
-  return `<svg width="${w}" height="14" viewBox="0 -2 ${w} 14" aria-hidden="true">${line}${warn}</svg>`;
+function sample(status, w = 48) {
+  const s = ST[status] || ST.unknown, end = w - (status === 'dark_reported' ? 17 : 5);
+  let line = `<path d="M5 6H${end}" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/>`;
+  if (status !== 'lit_confirmed') line += `<path d="M5 6H${end}" stroke="#0B0B0B" stroke-width="5.8"/><path d="M5 6H${end}" stroke="${s.c}" stroke-width="3.6" stroke-dasharray="${s.sample}" stroke-linecap="${s.cap}"/>`;
+  const warn = status === 'dark_reported' ? `<g transform="translate(${w - 7} 6)">${DIAMOND}</g>` : '';
+  return `<svg width="${w}" height="12" viewBox="0 0 ${w} 12" aria-hidden="true">${line}${warn}</svg>`;
 }
 
 // consecutive features with the same status, with their distance along the route
@@ -129,8 +142,15 @@ let mode = 'walk', at = '', plan = null, sel = 'better_lit', screen = 'home', su
 let routeReq = 0, legendOpen = false, langOpen = false, timeOpen = false, pickMode = null, searchFor = 'B', part = null;
 let live = null, liveAt = 0, liveOff = 0, liveTimer = null, liveReq = 0;
 let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back from a language switch, no replay
+let loopMode = false;                         // the start screen collects the points of a loop walk
+const loopPts = [];                           // L.LatLng in visiting order; the loop comes back to the first
+let loopRequest = null;                       // an automatic circuit around a Gemini-resolved centre
+const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the server
+let calcReq = -1;                             // routeReq of the route being calculated; another value: none
 const seen = new Set();
-const prefs = { net: true, livenet: false };
+// the lighting network: on by default on the start screen, off under a route unless asked for in the legend
+const prefs = { net: true, netRoute: false, livenet: false };
+const netOn = () => (screen === 'home' ? prefs.net : prefs.netRoute);
 
 // ---------- map ----------
 const map = L.map('map', { zoomControl: false, attributionControl: true, zoomSnap: 0.25 }).setView([45.7500, 21.2270], 14);
@@ -139,7 +159,9 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, cla
   attribution: '&copy; OpenStreetMap · Mapillary · Primăria Timișoara · ' +
     '<a href="https://www.flaticon.com/free-icons/street-light" title="street light icons" target="_blank" rel="noopener">Icon: Magnific – Flaticon</a>' }).addTo(map);
 const svgR = L.svg({ padding: 0.5 });
-const netR = L.canvas({ padding: 0.3, tolerance: 6 });
+map.createPane('bzNet');
+map.getPane('bzNet').style.zIndex = 350;   // under the routes (overlay pane, 400), whichever is drawn first
+const netR = L.canvas({ padding: 0.3, tolerance: 6, pane: 'bzNet' });
 const areaLayer = L.layerGroup().addTo(map);
 const netLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
@@ -154,13 +176,17 @@ const divIcon = (html, w, h, cls = '') => L.divIcon({ className: 'bz-mk ' + cls,
 const MK = {
   A: () => divIcon('<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="3"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#0B0B0B">A</text></svg>', 28, 28),
   B: () => divIcon('<svg width="28" height="28" viewBox="-14 -14 28 28"><rect x="-11" y="-11" width="22" height="22" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#F2F2F2">B</text></svg>', 28, 28),
+  // a point of a loop walk: the first is filled like A, the others outlined
+  loop: n => divIcon(n === 1
+    ? '<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="3"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#0B0B0B">1</text></svg>'
+    : `<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="${n > 9 ? 11 : 12.5}" fill="#F2F2F2">${n}</text></svg>`, 28, 28),
   me: heading => divIcon(`<svg width="64" height="64" viewBox="-32 -32 64 64">${heading != null ? `<path d="M0 4 L-12 -24 A 26 26 0 0 1 12 -24 Z" fill="url(#bzcone)" transform="rotate(${heading})"/>` : ''}<circle r="30" fill="url(#bzhalo)"/><circle r="10" fill="none" stroke="#F2F2F2" stroke-opacity="0.35"/><circle r="7" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="2.5"/></svg>`, 64, 64),
   // the fade-in runs on an inner element: Leaflet positions the icon itself with a transform
   place: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><circle r="8.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.place(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
   stop: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.stopMk(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
-  warn: () => divIcon('<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#F2F2F2" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
+  warn: pop => divIcon(pop ? '<span class="mk-in"><svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg></span>' : '<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
   ring: () => divIcon('<svg width="36" height="36" viewBox="-18 -18 36 36"><circle r="16" fill="none" stroke="#F2F2F2" stroke-width="1.5" stroke-dasharray="3 3"/></svg>', 36, 36),
-  head: () => divIcon('<svg width="34" height="34" viewBox="-17 -17 34 34"><circle r="16" fill="url(#bzhead)"/><circle r="4" fill="#FFFFFF"/></svg>', 34, 34),
+  head: () => divIcon('<svg width="42" height="42" viewBox="-21 -21 42 42"><circle r="20" fill="url(#bzhead)"/><circle r="6.5" fill="#FFFFFF" stroke="#0B0B0B" stroke-width="2"/></svg>', 42, 42),
   station: () => divIcon('<svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="7.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/></svg>', 20, 20),
   vehicle: (v, mine, old) => {
     const w = Math.max(34, 12 + 9 * String(v.line).length), arrow = typeof v.bearing === 'number' && !old;
@@ -186,7 +212,7 @@ function fit(bounds, maxZoom = 17) {
 // ---------- the area and the faint lighting network (start screen) ----------
 let netReq = 0;
 function refreshNet() {
-  if (!summary || !prefs.net || screen !== 'home' || map.getZoom() < 13) { netReq++; netLayer.clearLayers(); return; }
+  if (!summary || !netOn() || screen === 'search' || map.getZoom() < 13) { netReq++; netLayer.clearLayers(); return; }
   const b = map.getBounds().pad(0.15), req = ++netReq;
   getJSON(`/api/segments?bbox=${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}&limit=8000`)
     .then(d => {
@@ -195,7 +221,7 @@ function refreshNet() {
       if (d.truncated) return;
       for (const k of ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported']) {
         const s = ST[k], lines = d.features.filter(f => f.properties.status === k).map(f => ll(f.geometry.coordinates));
-        if (lines.length) L.polyline(lines, { renderer: netR, color: s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: 0.42, dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
+        if (lines.length) L.polyline(lines, { renderer: netR, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: s.netOp * (screen === 'home' ? 1 : 0.6), dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
       }
     })
     .catch(() => {});
@@ -218,6 +244,7 @@ function clearPoint(which) {
 }
 function clearAskRoute() {
   ++routeReq;
+  calcReq = -1;
   stopAnim(); stopLive();
   plan = null; part = null;
   for (const layer of [routeLayer, markLayer, lifeLayer, vehLayer, fadeLayer]) layer.clearLayers();
@@ -225,8 +252,21 @@ function clearAskRoute() {
 }
 function drawAB() {
   abLayer.clearLayers();
+  if (loopMode) { drawLoop(); return; }
   if (A && !(screen === 'nav')) L.marker(A, { icon: MK.A(), keyboard: false, interactive: false }).addTo(abLayer);
   if (B) L.marker(B, { icon: MK.B(), keyboard: false, interactive: false }).addTo(abLayer);
+}
+// the points of a loop: numbered, draggable while they are being set; a thin dashed line joins them and closes the loop
+function drawLoop() {
+  if (screen === 'details') return;   // the details number the places along the way: loop numbers would read as that list
+  const editing = screen === 'home';
+  if (editing && loopPts.length > 1) {
+    L.polyline(loopPts.concat([loopPts[0]]), { renderer: svgR, color: '#8A8A8A', weight: 2, dashArray: '2 6', lineCap: 'round', interactive: false }).addTo(abLayer);
+  }
+  loopPts.forEach((p, i) => {
+    const m = L.marker(p, { icon: MK.loop(i + 1), draggable: editing, interactive: editing, keyboard: false, zIndexOffset: 500 }).addTo(abLayer);
+    if (editing) m.on('dragend', () => { askManual(); loopPts[i] = m.getLatLng(); saveHash(); renderHome(); drawAB(); });
+  });
 }
 function setTravel(m) { mode = m; if (screen === 'home') renderHome(); }
 function setDeparture(v) { at = v || ''; if (screen === 'home') renderHome(); }
@@ -238,14 +278,22 @@ function showMe(lat, lon, heading) {
   meLayer.clearLayers();
   L.marker(myPos, { icon: MK.me(heading), keyboard: false, interactive: false }).addTo(meLayer);
 }
-function locate(thenCompute = true) {
+function locate(thenCompute = true, stay = false) {
+  const pendingLoop = ask.res && ask.res.kind === 'clarify' && ask.res.response.loop;
+  const req = routeReq;
   if (!navigator.geolocation) { toast(t('m.noGeo')); openSearch('A'); return; }
   toast(t('locating'), 4000);
   navigator.geolocation.getCurrentPosition(pos => {
+    if (pendingLoop && req !== routeReq) return;
     hideToast();
     showMe(pos.coords.latitude, pos.coords.longitude);
+    if (pendingLoop) {
+      if (screen !== 'home') go('home', false);
+      askSelect('from', { lat: pos.coords.latitude, lon: pos.coords.longitude, name: t('myLocation') });
+      return;
+    }
     setPoint('A', [pos.coords.latitude, pos.coords.longitude], t('myLocation'));
-    if (thenCompute && B) compute(); else if (screen === 'home') map.setView(A, Math.max(map.getZoom(), 16));
+    if (thenCompute && B) compute(stay); else if (screen === 'home') map.setView(A, Math.max(map.getZoom(), 16));
   }, err => {
     toast(t('geoError', { msg: err.message }));
     openSearch('A');
@@ -257,9 +305,10 @@ function saveHash() {
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, h = new URLSearchParams();
   if (A) { h.set('a', f(A)); h.set('an', labels.A); }
   if (B) { h.set('b', f(B)); h.set('bn', labels.B); }
+  if (loopMode) h.set('loop', loopPts.map(f).join(';'));
   h.set('m', mode);
   if (at) h.set('at', at);
-  history.replaceState(history.state, '', location.pathname + location.search + '#' + h.toString().replace(/%2C/g, ',').replace(/%3A/g, ':'));
+  history.replaceState(history.state, '', location.pathname + location.search + '#' + h.toString().replace(/%2C/g, ',').replace(/%3A/g, ':').replace(/%3B/g, ';'));
 }
 function readHash() {
   const h = new URLSearchParams(location.hash.slice(1));
@@ -269,6 +318,15 @@ function readHash() {
   const a = point(h.get('a')), b = point(h.get('b'));
   if (a) setPoint('A', a, h.get('an'));
   if (b) setPoint('B', b, h.get('bn'));
+  if (h.has('loop')) {
+    loopMode = true;
+    if (mode === 'transit') mode = 'walk';
+    loopPts.length = 0;
+    for (const v of h.get('loop').split(';').slice(0, LOOP_MAX)) { const p = point(v); if (p) loopPts.push(L.latLng(p)); }
+    renderHome();
+    drawAB();
+    return loopPts.length > 1;
+  }
   return !!(a && b);
 }
 
@@ -276,6 +334,7 @@ function readHash() {
 const SCREENS = {};
 function go(name, push = true) {
   closeOverlays();
+  if (name === 'home' || name === 'search') routeReq++;   // back from a route: a late answer must not bring it back
   if (screen === 'nav' && name !== 'nav') stopNav();
   if (name !== 'results') stopAnim();
   screen = name;
@@ -306,7 +365,9 @@ document.addEventListener('click', e => {
   if (langOpen && !e.target.closest('.menu, #lang-btn')) { langOpen = false; renderOverlay(); }
 }, true);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && (langOpen || legendOpen || tip || aboutOpen || $('tp'))) { closeOverlays(); }
+  if (e.key === 'Escape' && $('tp')) closeTimePicker(false);
+  else if (e.key === 'Escape' && (langOpen || legendOpen || tip)) closeOverlays();
+  else if (e.key === 'Escape' && screen === 'home' && !loopMode && ask.view === 'ask') ACT.askBack();
 });
 
 ACT.home = () => { stopLive(); go('home'); };
@@ -321,12 +382,12 @@ ACT.setLang = el => {
   switchLang(code);
 };
 ACT.legend = () => { legendOpen = !legendOpen; renderOverlay(); };
-ACT.about = () => { openAbout(); };
 ACT.closeOverlay = () => closeOverlays();
 ACT.searchA = () => openSearch('A');
 ACT.searchB = () => openSearch('B');
-ACT.locate = () => locate(true);
+ACT.locate = () => { if (!(ask.res && ask.res.kind === 'clarify' && ask.res.response.loop)) askManual(); locate(true); };
 ACT.swap = () => {
+  askManual();
   const old = { A, B, la: labels.A, lb: labels.B };
   A = old.B; B = old.A; labels.A = old.lb; labels.B = old.la;
   drawAB();
@@ -334,71 +395,401 @@ ACT.swap = () => {
 };
 ACT.mode = el => {
   mode = el.dataset.mode;
-  if (screen === 'home') renderHome(); else if (A && B) compute();
+  if (screen === 'home') renderHome(); else if (loopMode || (A && B)) compute();
 };
 ACT.time = () => openTimePicker();
 ACT.tpNow = () => { at = ''; closeTimePicker(true); };
 ACT.tpDone = () => { const v = tpValue(); at = `${pad2(v.h)}:${pad2(v.m)}`; closeTimePicker(true); };
 ACT.tpCancel = () => closeTimePicker(false);
-ACT.net = el => { prefs.net = el.checked; refreshNet(); };
-ACT.livenet = el => { prefs.livenet = el.checked; liveTick(); };
+
+// ---------- loop walk: points tapped on the map, in that order and back to the first ----------
+function setLoop(on) {
+  askCancel();
+  ask.view = 'form'; ask.res = null; ask.phase = 'idle';
+  loopMode = on;
+  loopRequest = null;
+  loopPts.length = 0;
+  pickMode = null;
+  if (on && mode === 'transit') mode = 'walk';
+  clearAskRoute(); // switching modes also invalidates a route response still in flight
+  hideToast();
+  saveHash();
+  renderHome();
+  drawAB();
+}
+ACT.loop = () => setLoop(!loopMode);
+ACT.loopExit = () => setLoop(false);
+ACT.loopUndo = () => { askManual(); loopPts.pop(); saveHash(); renderHome(); drawAB(); };
+ACT.loopGo = () => compute();
+const loopTitle = n => t(n === 1 ? 'm.loopTitle1' : n < 5 ? 'm.loopTitle2' : 'm.loopTitle', { n });
+function loopSheet() {
+  const n = loopPts.length;
+  return `<section class="sheet" aria-labelledby="h-home">
+    <div class="handle"></div>
+    ${ask.res && ask.res.kind === 'loop' ? askCard() : ''}
+    <div class="row"><h1 id="h-home" class="h-title">${esc(n ? loopTitle(n) : t('m.loopTap'))}</h1>
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="round" data-act="loopUndo" aria-label="${esc(t('m.loopUndo'))}"${n ? '' : ' disabled'}>${I.undo()}</button>
+        <button type="button" class="round" data-act="loopExit" aria-label="${esc(t('m.loopExit'))}">${I.close()}</button>
+      </div></div>
+    ${modeSeg('', ['walk', 'bike'])}
+    <div class="actions"><button type="button" class="primary" data-act="loopGo"${n < 2 ? ' disabled' : ''}>${esc(t('m.loopCalc'))}</button></div>
+  </section>`;
+}
+
+// ---------- ask in your own words (Gemini): the block of the start sheet, design "Запрос своими словами" ----------
+// The engine (availability, recording, WAV, /api/ask) is BzAsk in ../ask.js; this is only the sheet around it.
+// view: the start sheet shows the fields ('form') or the request ('ask'); phase: idle | rec | wait | msg | done
+const ask = { on: false, mic: false, view: 'form', phase: 'idle', text: '', via: 'text', heard: '', remain: 10, elapsed: 0, recDur: 0,
+  msg: null, res: null, req: 0, rec: null, tick: null, starting: false, discard: false };
+const ASK_MSG = {
+  offtopic: [() => I.pin(), 'ask.offTopic'], unclear: [() => I.question(), 'ask.unclear'], ratelimit: [() => I.clock(18), 'm.askTooMany'],
+  unavailable: [() => I.cloudOff(), 'm.askDown'], micdenied: [() => I.micOff(18), 'm.askMicOff'], silence: [() => I.wave(), 'ask.silent'],
+  looptransit: [() => I.question(), 'ask.loopTransit'],
+};
+const askExamples = () => { const x = t('m.askEx'); return Array.isArray(x) ? x : []; };
+const askWaitText = () => t(ask.elapsed >= 8 ? 'm.askWaitLong' : 'ask.thinking');
+const askMeta = () => `${t('m.mode.' + mode)} · ${t('m.leave').toLowerCase()} ${at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now')}`;
+// what a screen reader hears: one live region that stays in the page while the sheet is redrawn
+function askSay(text) {
+  const el = $('sr-live');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = text; }, 60);
+}
+function askRender(focus) {
+  renderHome();
+  const ta = focus && $('ask-ta');
+  if (ta) { ta.focus({ preventScroll: true }); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+// a change of the fields by hand: the request no longer describes them
+function askManual() { loopRequest = null; if (ask.res) { ask.res = null; ask.phase = 'idle'; } }
+function askCancel() {
+  clearInterval(ask.tick);
+  ask.req++;
+  if (ask.starting) ask.discard = true;
+  if (ask.rec) { ask.discard = true; ask.rec.stop(); ask.rec = null; }
+}
+
+function askEntry() {
+  return `<div class="ask-entry">
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="ask-open" data-act="askOpen">${I.chat()}<span>${esc(t('ask.label'))}</span></button>
+        ${ask.mic ? `<button type="button" class="ask-mic-sm" data-act="askMic" aria-label="${esc(t('ask.mic'))}">${I.mic(20)}</button>` : ''}
+      </div>
+      <p class="small">${esc(t('ask.privacy'))}</p>
+    </div>
+    <div class="or-line" aria-hidden="true">${esc(t('m.askOr'))}</div>`;
+}
+function askCard() {
+  const r = ask.res;
+  if (r.kind === 'clarify') {
+    const response = r.response;
+    const choices = ['from', 'to'].map(side => {
+      const places = response.candidates && response.candidates[side] || [];
+      return places.length ? `<p>${esc(t(response.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label'))}</p>` + places.map((p, i) =>
+        `<button type="button" data-act="askChoose" data-side="${side}" data-i="${i}">${esc(p.name)}</button>`).join('') : '';
+    }).join('');
+    return `<section class="ask-card miss" aria-label="${esc(t('m.askMissTitle'))}">
+      <p class="ask-line">${I.searchX()}<span>${esc(r.message)}</span></p>
+      ${r.heard ? `<span class="small">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
+      ${choices ? `<div id="ask-choices" class="ask-choices" role="group" aria-label="${esc(t('ask.choices'))}">${choices}</div>` : ''}
+      <button type="button" class="edit-link" data-act="askEdit" style="align-self: flex-end">${esc(t('m.askEdit'))}</button>
+    </section>`;
+  }
+  const busy = calcReq === routeReq;
+  return `<section class="ask-card" aria-label="${esc(t('m.askGot'))}">
+    <div class="top-row"><span class="sec" style="display: flex; align-items: center; gap: 8px">${I.check()}${esc(t('m.askGot'))}</span></div>
+    <button type="button" class="edit-link" data-act="askEdit" style="position: absolute; right: 4px; top: 0">${esc(t('m.askEdit'))}</button>
+    <span class="h-route">${r.kind === 'loop' ? esc(t('ask.loopUnderstood', { center: r.center })) : `${esc(r.a)} → ${esc(r.b)}`}</span>
+    ${r.kind === 'loop' ? `<span class="small">${esc(t('ask.loopApprox'))}</span>` : ''}
+    <span class="sec">${esc(askMeta())}</span>
+    ${r.heard ? `<span class="small" style="color: var(--bz-ink-2)">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
+    ${r.kind === 'here' ? `<span class="small ask-line" style="font-size: 12px; gap: 6px; color: var(--bz-ink-2)">${SV('<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 14, 2)}<span>${esc(t('m.askHere'))}</span></span>` : ''}
+    ${busy ? `<div class="calc"><span aria-hidden="true" style="display: flex; gap: 3px"><i class="blink"></i><i></i><i></i></span>${esc(t('m.askCalc'))}</div>` : ''}
+  </section>`;
+}
+function askSheet() {
+  const ph = ask.phase, rec = ph === 'rec', wait = ph === 'wait', msg = ph === 'msg' ? ask.msg : null;
+  const denied = msg === 'micdenied', voiceWait = wait && ask.via === 'voice', showTa = !rec && !voiceWait;
+  const sendOff = rec || wait || !ask.text.trim();
+  const segs = (n, on, now) => Array.from({ length: n }, (_, i) => `<i class="${i < on ? 'on' : i === now ? 'now' : ''}"></i>`).join('');
+  let box;
+  if (rec) {
+    box = `<div class="ask-rec"><div class="row"><span class="label" style="display: flex; align-items: center; gap: 8px; color: var(--bz-ink)"><span class="rec-dot pulse"></span>${esc(t('m.askListenTag'))}</span>` +
+      `<span class="ask-remain" id="ask-remain" aria-hidden="true">${ask.remain} s</span></div>` +
+      `<div class="segs" id="ask-rec-segs" aria-hidden="true" style="grid-template-columns: repeat(10, minmax(0, 1fr))">${segs(10, ask.remain, -1)}</div></div>`;
+  } else if (voiceWait) {
+    box = `<div class="ask-voice">${I.mic(18)}${esc(t('m.askVoice', { s: ask.recDur }))}</div>`;
+  } else {
+    box = `<textarea class="ask-ta" id="ask-ta" aria-labelledby="ask-title" maxlength="300" rows="3" enterkeyhint="search" placeholder="${esc(t('ask.placeholder'))}"${wait ? ' readonly' : ''}>${esc(ask.text)}</textarea>`;
+  }
+  const mic = !ask.mic ? '' : `<button type="button" class="ask-mic${denied ? ' off' : ''}" data-act="askMic" aria-pressed="${rec}" ` +
+    `aria-label="${esc(rec ? t('ask.stop') : denied ? t('m.askMicNa') : t('ask.mic'))}"${wait || denied ? ' disabled' : ''}>${rec ? I.stopSq() : denied ? I.micOff(22) : I.mic(22)}</button>`;
+  const msgBox = msg ? `<div class="ask-msg" id="ask-msg"><p class="ask-line">${ASK_MSG[msg][0]()}<span>${esc(t(ASK_MSG[msg][1]))}</span></p>` +
+    (msg === 'ratelimit' || msg === 'unavailable' ? `<button type="button" class="secondary sm" data-act="askFields">${esc(t('m.askFields'))}</button>` : '') + '</div>' : '';
+  const examples = ph === 'idle' || msg ? `<div class="ask-exs" id="ask-ex"${ph !== 'idle' || ask.text.trim() ? ' hidden' : ''}><span class="label">${esc(t('m.askExamples'))}</span>` +
+    `<div class="ask-ex">${askExamples().map((x, i) => `<button type="button" data-act="askEx" data-i="${i}">${esc(x)}</button>`).join('')}</div></div>` : '';
+  return `<section class="sheet" aria-labelledby="ask-title">
+    <div class="handle"></div>
+    <div class="ask-head"><button type="button" class="back" data-act="askBack" aria-label="${esc(t('m.askBack'))}">${I.back()}</button>
+      <h2 id="ask-title">${esc(t('ask.label'))}</h2>${showTa ? `<span class="ask-count" id="ask-count" aria-hidden="true">${ask.text.length}/300</span>` : ''}</div>
+    ${box}
+    <p class="small" style="margin-top: -4px">${esc(t('ask.privacy'))}</p>
+    <div class="ask-btns">${mic}<button type="button" class="ask-go" id="ask-go" data-act="askSend"${sendOff ? ' disabled' : ''}>${esc(t('ask.go'))}${I.arrowR()}</button></div>
+    ${rec ? `<p style="font-size: 14px; line-height: 1.45">${esc(t('ask.listening'))}</p>` : ''}
+    ${wait ? `<div style="display: flex; flex-direction: column; gap: 8px"><div class="segs" id="ask-wait-segs" aria-hidden="true" style="grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 2px">${segs(20, ask.elapsed, ask.elapsed)}</div>` +
+      `<div class="row" style="align-items: baseline; font-size: 14px; line-height: 1.45"><span id="ask-wait-text">${esc(askWaitText())}</span>` +
+      `<span class="mono" id="ask-wait-s" aria-hidden="true" style="font-size: 11px; white-space: nowrap; color: var(--bz-ink-2)">${esc(t('m.askWaitS', { s: ask.elapsed }))}</span></div></div>` : ''}
+    ${msgBox}${examples}
+  </section>`;
+}
+// the box is redrawn with the sheet: typing only updates the counter, the button and the examples
+function askBind(keep) {
+  const ta = $('ask-ta');
+  if (!ta) return;
+  ta.addEventListener('input', () => {
+    ask.text = ta.value.slice(0, 300);
+    const c = $('ask-count');
+    if (c) c.textContent = `${ask.text.length}/300`;
+    if (ask.phase === 'msg' && ask.msg !== 'micdenied') { ask.phase = 'idle'; ask.msg = null; const m = $('ask-msg'); if (m) m.remove(); }
+    const g = $('ask-go');
+    if (g) g.disabled = !ask.text.trim() || ask.phase === 'wait' || ask.phase === 'rec';
+    const ex = $('ask-ex');
+    if (ex) ex.hidden = !!ask.text.trim() || ask.phase !== 'idle';
+  });
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); askSendText(); } });
+  if (keep) { ta.focus({ preventScroll: true }); ta.setSelectionRange(keep[0], keep[1]); }
+}
+
+ACT.askOpen = () => { ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null; askRender(true); };
+ACT.askBack = () => { askCancel(); ask.view = 'form'; ask.phase = ask.res ? 'done' : 'idle'; ask.msg = null; renderHome(); };
+ACT.askSend = () => askSendText();
+ACT.askEx = el => { ask.text = askExamples()[+el.dataset.i] || ''; ask.phase = 'idle'; ask.msg = null; askRender(true); };
+ACT.askFields = () => { ask.view = 'form'; ask.phase = 'idle'; ask.msg = null; ask.res = null; renderHome(); };
+ACT.askEdit = () => {
+  routeReq++;                                           // a route still being calculated for this request is dropped
+  if (loopMode) { loopMode = false; loopRequest = null; loopPts.length = 0; drawAB(); }
+  if (ask.via === 'voice' && ask.heard) ask.text = ask.heard;
+  ask.res = null; ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null;
+  askRender(true);
+};
+// the box that was not understood: the search for that point, with the name already typed in
+ACT.askFind = el => {
+  const r = ask.res, which = el.dataset.which || r.which, side = which === 'A' ? 'from' : 'to', inp = $(side);
+  openSearch(which);
+  inp.value = (r.response.queries && r.response.queries[side]) || (which === r.which ? r.missing : '') || '';
+  inp.select();
+  sQuery();
+};
+ACT.askChoose = el => {
+  const r = ask.res && ask.res.response, side = el.dataset.side;
+  const place = r && r.candidates && r.candidates[side] && r.candidates[side][+el.dataset.i];
+  if (!place) return;
+  askSelect(side, place);
+};
+function askSelect(side, place) {
+  const r = ask.res.response;
+  const next = { ...r, [side]: place, missing: (r.missing || []).filter(s => s !== side),
+    ambiguity: (r.ambiguity || []).filter(s => s !== side), candidates: { ...r.candidates, [side]: [] } };
+  const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
+  next.kind = remaining.length ? 'clarify' : next.to ? (next.loop ? 'loop' : 'route') : 'unclear';
+  next.which = remaining[0] || 'to';
+  next.name = null;
+  askApply(next); // a place confirmed by the user needs no further Gemini request
+}
+ACT.askMic = () => {
+  if (ask.phase === 'wait' || ask.starting) return;
+  if (ask.phase === 'rec') { if (ask.rec) ask.rec.stop(); return; }
+  askStartRec();
+};
+function askStartRec() {
+  ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null; ask.discard = false; ask.starting = true;
+  renderHome();
+  BzAsk.record(askRecorded).then(handle => {
+    ask.starting = false;
+    if (!handle) return;                                  // refused: askRecorded has said so
+    if (ask.discard) { handle.stop(); return; }
+    ask.rec = handle; ask.phase = 'rec'; ask.remain = 10;
+    renderHome();
+    askSay(t('ask.listening'));
+    clearInterval(ask.tick);
+    ask.tick = setInterval(() => {
+      ask.remain = Math.max(0, ask.remain - 1);
+      const r = $('ask-remain'), segs = $('ask-rec-segs');
+      if (r) r.textContent = ask.remain + ' s';
+      if (segs) [...segs.children].forEach((el, i) => { el.className = i < ask.remain ? 'on' : ''; });
+      if (!ask.remain && ask.rec) ask.rec.stop();
+    }, 1000);
+  });
+}
+function askRecorded(res) {
+  clearInterval(ask.tick);
+  ask.rec = null;
+  if (ask.discard) { ask.discard = false; return; }
+  if (res.wav) { ask.recDur = Math.max(1, 10 - ask.remain); askSend({ audio: res.wav, mime: 'audio/wav' }, 'voice'); return; }
+  ask.view = 'ask'; ask.phase = 'msg'; ask.msg = res.silent ? 'silence' : 'micdenied';
+  askRender(ask.msg === 'micdenied');
+  askSay(t(ASK_MSG[ask.msg][1]));
+}
+function askSendText() {
+  const text = ask.text.trim();
+  if (text && ask.phase !== 'wait' && ask.phase !== 'rec') askSend({ text }, 'text');
+}
+function askSend(payload, via) {
+  const id = ++ask.req;
+  ask.via = via; ask.view = 'ask'; ask.phase = 'wait'; ask.elapsed = 0; ask.msg = null;
+  renderHome();
+  askSay(t('ask.thinking'));
+  clearInterval(ask.tick);
+  ask.tick = setInterval(() => {
+    ask.elapsed++;
+    const segs = $('ask-wait-segs'), s = $('ask-wait-s'), tx = $('ask-wait-text');
+    if (segs) [...segs.children].forEach((el, i) => { el.className = i < ask.elapsed ? 'on' : i === ask.elapsed ? 'now' : ''; });
+    if (s) s.textContent = t('m.askWaitS', { s: ask.elapsed });
+    if (tx) tx.textContent = askWaitText();
+    if (ask.elapsed === 8) askSay(t('m.askWaitLong'));
+  }, 1000);
+  // BzAsk uses the same deadline on both pages, including the backend's retries and place-search rounds.
+  const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
+  BzAsk.send(payload, near).then(res => {
+    if (id !== ask.req) return;
+    clearInterval(ask.tick);
+    if (res.ok) { askApply(res.body); return; }
+    ask.phase = 'msg'; ask.msg = res.code === 'too_many' ? 'ratelimit' : 'unavailable';
+    renderHome();
+    askSay(t(ASK_MSG[ask.msg][1]));
+  });
+}
+// the answer: only our own phrases; a route fills the fields and is calculated at once
+function askApply(r) {
+  const heard = ask.via === 'voice' ? String(r.heard || '').trim() : '';
+  ask.heard = heard;
+  if (r.kind === 'off_topic' || r.kind === 'unsupported') {
+    if (heard) ask.text = heard;                          // the transcript goes into the box, to be corrected
+    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : 'looptransit';
+    renderHome();
+    askSay(t(ASK_MSG[ask.msg][1]));
+    return;
+  }
+  clearAskRoute();
+  loopMode = false; loopRequest = null; loopPts.length = 0;
+  ask.res = null;
+  ask.view = 'form'; ask.phase = 'done';
+  if (r.kind === 'loop') {
+    mode = r.mode || 'walk';
+    if (r.at) at = r.at;
+    clearPoint('A'); clearPoint('B');
+    loopMode = true; pickMode = null;
+    ask.res = { kind: 'loop', center: r.to ? r.to.name : t('myLocation'), heard };
+    const req = ++routeReq;
+    calcReq = req;
+    renderHome();
+    askSay(t('ask.loopUnderstood', { center: ask.res.center }));
+    BzAsk.loopParams(r).then(params => {
+      if (req !== routeReq) return;
+      loopRequest = params;
+      computeLoop(true);
+    }).catch(err => {
+      if (req !== routeReq) return;
+      calcReq = -1;
+      renderHome();
+      toast(t('geoError', { msg: err.message }));
+    });
+    return;
+  }
+  if (r.kind !== 'route') {
+    const missing = r.missing || [], ambiguity = r.ambiguity || [];
+    const unresolved = ['from', 'to'].filter(s => missing.includes(s) || ambiguity.includes(s));
+    for (const side of unresolved) clearPoint(side === 'from' ? 'A' : 'B');
+    if (r.from_here && !r.from) clearPoint('A');
+    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+    if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+    if (['walk', 'bike', 'transit'].includes(r.mode)) mode = r.mode;
+    if (r.at) at = r.at;
+    const side = r.which === 'from' ? 'from' : 'to', box = t(r.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label');
+    const message = ambiguity.includes(side) ? t('ask.choose', { box })
+      : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
+        : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
+    ask.res = { kind: 'clarify', response: r, which: side === 'from' ? 'A' : 'B',
+      unresolved: unresolved.map(s => s === 'from' ? 'A' : 'B'), missing: r.name || '', message, heard,
+      tagA: !!r.from, tagB: !!r.to };
+    renderHome();
+    askSay(message);
+    return;
+  }
+  if (['walk', 'bike', 'transit'].includes(r.mode)) mode = r.mode;
+  if (r.at) at = r.at;
+  if (r.from_here && !r.from) clearPoint('A');
+  setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+  const keepStart = !r.from && A && !r.from_here;
+  if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+  const here = !r.from && !keepStart;
+  ask.res = { kind: here ? 'here' : 'route', a: r.from ? r.from.name : keepStart ? labels.A : t('myLocation'), b: r.to.name, heard, tagA: !keepStart, tagB: true };
+  renderHome();
+  askSay(`${t('m.askGot')}: ${ask.res.a} → ${ask.res.b} · ${askMeta()}`);
+  if (here) locate(true, true); else compute(true);
+}
 
 // ---------- start screen ----------
 SCREENS.home = renderHome;
 function renderHome() {
   if (screen !== 'home') return;
-  const aLabel = A ? labels.A : t('m.myLocation');
-  const timeLabel = at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now');
+  const ta = $('ask-ta'), keep = ta && document.activeElement === ta ? [ta.selectionStart, ta.selectionEnd] : null;
+  const asking = !loopMode && ask.on && ask.view === 'ask';
   $('screen').innerHTML = `
-  <div class="top" style="justify-content: space-between">
-    <div class="brand">${WORDMARK}<span class="sec">${esc(t('m.tagline'))}</span></div>
+  <div class="top" style="justify-content: flex-end">
     <div style="display: flex; gap: 8px">
+      <button type="button" class="round" data-act="loop" aria-pressed="${loopMode}" aria-label="${esc(t('m.loopBtn'))}">${I.loop()}</button>
       <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
       <button type="button" class="round" data-act="legend" aria-expanded="${legendOpen}" aria-label="${esc(t('m.legendLayers'))}">${I.legend()}</button>
     </div>
   </div>
-  <div class="note-chip"><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg><span>${esc(t('m.coverage'))}</span></div>
-  <section class="sheet" aria-labelledby="h-home">
+  ${loopMode ? loopSheet() : asking ? askSheet() : homeSheet()}`;
+  if (asking) askBind(keep);
+}
+function homeSheet() {
+  const aLabel = A ? labels.A : t('m.myLocation'), r = ask.res;
+  const tag = on => (on ? `<span class="from-ask">${esc(t('m.askFromReq'))}</span>` : '');
+  const miss = (which, pin, label) => `<button type="button" class="field miss" data-act="askFind" data-which="${which}" aria-label="${esc(t(label) + ': ' + t('m.askPickHere'))}">${pin}<span class="val">${esc(t('m.askPickHere'))}</span></button>`;
+  const aField = r && r.kind === 'clarify' && r.unresolved.includes('A') ? miss('A', '<span class="pin-a" aria-hidden="true">A</span>', 'fromLabel')
+    : `<div class="field"><span class="pin-a" aria-hidden="true">A</span>
+        <button type="button" class="fbtn" data-act="searchA" aria-label="${esc(t('fromLabel') + ': ' + aLabel)}">${esc(aLabel)}</button>${tag(r && r.tagA)}
+        <button type="button" class="icon-in" data-act="locate" aria-label="${esc(t('locate'))}" style="color: var(--bz-ink-2)">${I.locate()}</button></div>`;
+  const bField = r && r.kind === 'clarify' && r.unresolved.includes('B') ? miss('B', '<span class="pin-b" aria-hidden="true">B</span>', 'toLabel')
+    : `<button type="button" class="field" data-act="searchB" aria-label="${esc(t('toLabel') + (B ? ': ' + labels.B : ''))}"><span class="pin-b" aria-hidden="true">B</span>
+        <span class="${B ? 'val' : 'ph'}">${esc(B ? labels.B : t('toPlaceholder'))}</span>${tag(r && r.tagB)}</button>`;
+  return `<section class="sheet" aria-label="${esc(t('m.where'))}">
     <div class="handle"></div>
-    <div style="display: flex; flex-direction: column; gap: 4px"><h1 id="h-home" class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>
+    ${r ? askCard() : `<div style="display: flex; flex-direction: column; gap: 4px"><h1 class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>${ask.on ? askEntry() : ''}`}
     <div class="fields">
-      <div class="fields-col">
-        <div class="field"><span class="pin-a" aria-hidden="true">A</span>
-          <button type="button" class="fbtn" data-act="searchA" aria-label="${esc(t('fromLabel') + ': ' + aLabel)}">${esc(aLabel)}</button>
-          <button type="button" class="icon-in" data-act="locate" aria-label="${esc(t('locate'))}" style="color: var(--bz-ink-2)">${I.locate()}</button></div>
-        <button type="button" class="field" data-act="searchB" aria-label="${esc(t('toLabel') + (B ? ': ' + labels.B : ''))}"><span class="pin-b" aria-hidden="true">B</span>
-          <span class="${B ? 'val' : 'ph'}">${esc(B ? labels.B : t('toPlaceholder'))}</span></button>
-      </div>
+      <div class="fields-col">${aField}${bField}</div>
       <button type="button" class="swap" data-act="swap" aria-label="${esc(t('swap'))}">${I.swap()}</button>
     </div>
-    ${modeSeg('')}
-    <div class="row">
-      <button type="button" class="chip-btn" data-act="time" aria-haspopup="dialog">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(timeLabel)}</strong></span>${I.down()}</button>
-      <button type="button" class="link-btn" data-act="about">${esc(t('m.aboutData'))}</button>
-    </div>
-    <p class="small" style="margin-top: auto">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
+    ${modeSeg('compact')}
   </section>`;
 }
-
-function modeSeg(cls) {
-  const b = (m, icon, key) => `<button type="button" data-act="mode" data-mode="${m}" aria-pressed="${mode === m}">${icon}${esc(t(key))}</button>`;
-  return `<div class="seg ${cls}" role="group" aria-label="${esc(t('travelLabel'))}">${b('walk', I.walk(cls ? 16 : 18), 'm.walk')}${b('bike', I.bike(cls ? 16 : 18), 'm.bike')}${b('transit', I.bus(cls ? 16 : 18), 'm.transit')}</div>`;
+// the leaving time matters for timetables: it is set where transit is shown
+function timeChip() {
+  const label = at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now');
+  return `<button type="button" class="chip-btn" data-act="time" aria-haspopup="dialog" style="align-self: flex-start">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(label)}</strong></span>${I.down()}</button>`;
 }
 
-// ---------- search (built once: ../ask.js binds to its Gemini form) ----------
-let sItems = [], sActive = 0, sReq = 0, sTimer = null;
+function modeSeg(cls, modes = ['walk', 'bike', 'transit']) {
+  const icon = { walk: I.walk, bike: I.bike, transit: I.bus };
+  const b = m => `<button type="button" data-act="mode" data-mode="${m}" aria-pressed="${mode === m}">${icon[m](cls ? 16 : 18)}${esc(t('m.' + m))}</button>`;
+  const cols = modes.length === 3 ? '' : ` style="grid-template-columns: repeat(${modes.length}, minmax(0, 1fr))"`;
+  return `<div class="seg ${cls}" role="group" aria-label="${esc(t('travelLabel'))}"${cols}>${modes.map(b).join('')}</div>`;
+}
+
+// ---------- search (built once, with its listeners) ----------
+let sItems = [], sActive = 0, sReq = 0, sTimer = null, sFor = '', sPickWhenReady = false;   // sFor: the text the list was made for
 function buildSearch() {
   $('scr-search').innerHTML = `
   <div class="s-head">
     <div class="s-title"><button type="button" class="back" id="s-back" aria-label="${esc(t('m.backMap'))}">${I.back()}</button><h1 id="s-h1"></h1></div>
     <label class="field"><span class="pin-a" aria-hidden="true">A</span><input id="from" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="${esc(t('fromLabel'))}" aria-controls="s-list" aria-autocomplete="list"><button type="button" class="icon-in" data-clear="from" aria-label="${esc(t('m.clear'))}"><span class="clear-x">${I.close()}</span></button></label>
     <label class="field"><span class="pin-b" aria-hidden="true">B</span><input id="to" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="${esc(t('toLabel'))}" aria-controls="s-list" aria-autocomplete="list"><button type="button" class="icon-in" data-clear="to" aria-label="${esc(t('m.clear'))}"><span class="clear-x">${I.close()}</span></button></label>
-    <form class="ask" id="ask" hidden>
-      <div class="ask-row"><input id="ask-text" type="text" maxlength="300" autocomplete="off" enterkeyhint="go"><button type="button" id="ask-mic" aria-pressed="false"></button><button type="submit" id="ask-go"></button></div>
-      <p id="ask-note" aria-live="polite" hidden></p>
-      <div id="ask-choices" class="ask-choices" hidden></div>
-      <p class="small" id="ask-privacy"></p>
-    </form>
   </div>
   <div class="s-meta"><span class="label" id="s-count"></span><span class="mono small" id="s-from"></span></div>
   <ul class="s-list" id="s-list" role="listbox" aria-label="${esc(t('m.suggestions'))}"></ul>
@@ -411,10 +802,18 @@ function buildSearch() {
   for (const id of ['from', 'to']) {
     const inp = $(id);
     inp.addEventListener('focus', () => { searchFor = id === 'from' ? 'A' : 'B'; $('s-h1').textContent = t(searchFor === 'A' ? 'm.chooseStart' : 'm.chooseDest'); $('s-pick-text').textContent = t('m.tapMapLink', { p: searchFor }); sQuery(); });
-    inp.addEventListener('input', () => { clearTimeout(sTimer); sTimer = setTimeout(sQuery, 150); });
+    inp.addEventListener('input', () => {
+      // the old list goes at once: Enter must not pick a suggestion for the previous text
+      sItems = searchFor === 'A' ? [{ kind: 'gps', name: t('myLocation') }] : []; sFor = ''; sPickWhenReady = false; sActive = 0; sRender(inp.value.trim());
+      clearTimeout(sTimer); sTimer = setTimeout(sQuery, 150);
+    });
     inp.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (sItems.length) { sActive = (sActive + (e.key === 'ArrowDown' ? 1 : -1) + sItems.length) % sItems.length; sRender(); } }
-      else if (e.key === 'Enter') { e.preventDefault(); if (sItems[sActive]) sPick(sItems[sActive]); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (sFor === inp.value.trim() || inp.value.trim().length < 2) { if (sItems[sActive]) sPick(sItems[sActive]); }
+        else { sPickWhenReady = true; clearTimeout(sTimer); sQuery(); }            // pick when the list for this text comes
+      }
       else if (e.key === 'Escape') { history.back(); }
     });
   }
@@ -461,11 +860,15 @@ function boldMatch(name, q) {
 function sQuery() {
   const inp = $(searchFor === 'A' ? 'from' : 'to'), q = inp.value.trim(), mine = ++sReq;
   const gps = searchFor === 'A' ? [{ kind: 'gps', name: t('myLocation') }] : [];
-  if (q.length < 2) { sItems = gps; sActive = 0; sRender(q); return; }
+  if (q.length < 2) { sItems = gps; sFor = q; sActive = 0; sRender(q); return; }
   fetch('/api/geocode?limit=8&q=' + encodeURIComponent(q))
     .then(r => (r.ok ? r.json() : { results: [] }))
-    .then(d => { if (mine === sReq) { sItems = gps.concat(d.results || []); sActive = gps.length && sItems.length > 1 ? 1 : 0; sRender(q); } })
-    .catch(() => {});
+    .then(d => {
+      if (mine !== sReq) return;
+      sItems = gps.concat(d.results || []); sFor = q; sActive = gps.length && sItems.length > 1 ? 1 : 0; sRender(q);
+      if (sPickWhenReady) { sPickWhenReady = false; if (sItems.length > gps.length) sPick(sItems[sActive]); }
+    })
+    .catch(() => { if (mine === sReq) { sItems = gps; sFor = q; sPickWhenReady = false; sRender(q); } });
 }
 function sRender(q = '') {
   const real = sItems.filter(r => r.kind !== 'gps').length;
@@ -482,6 +885,13 @@ function sRender(q = '') {
 }
 function sPick(r) {
   if (!r) return;
+  if (ask.res && ask.res.kind === 'clarify' && ask.res.response.loop) {
+    if (r.kind === 'gps') { locate(true); return; }
+    go('home', false);
+    askSelect(searchFor === 'A' ? 'from' : 'to', r);
+    return;
+  }
+  askManual();
   if (r.kind === 'gps') { go(B ? 'home' : 'search', false); locate(true); if (!B) openSearch('B'); return; }
   setPoint(searchFor, [r.lat, r.lon], r.name);
   $(searchFor === 'A' ? 'from' : 'to').value = r.name;
@@ -490,31 +900,31 @@ function sPick(r) {
 }
 
 // ---------- computing a route ----------
-function compute() {
+function compute(stay = false) {
+  if (loopMode) { computeLoop(); return; }
   if (!B) { openSearch('B'); return; }
-  if (!A) { locate(true); return; }
+  if (!A) { locate(true, stay); return; }
+  if (meters(A, B) < 20) { go('home'); toast(t('m.alreadyThere'), 5000); return; }
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
   saveHash();
   stopAnim(); stopLive();
   plan = null; part = null;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
-  go(mode === 'transit' ? 'transit' : 'results');
-  fit(L.latLngBounds([A, B]).pad(0.2));
+  calcReq = req;
+  if (stay) renderHome();
+  else { go(mode === 'transit' ? 'transit' : 'results'); fit(L.latLngBounds([A, B]).pad(0.2)); }
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${mode}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
       if (req !== routeReq) return;
+      calcReq = -1;
       plan = d; live = null;
-      if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', false); }
-      else { if (screen !== 'results') go('results', false); reveal(false); }
-      const rt = restoreTo;
-      restoreTo = null;
-      if (rt && ['details', 'stop'].includes(rt.screen)) {
-        if (rt.sel && plan.routes[rt.sel]) sel = rt.sel;
-        if (rt.screen === 'details' || ride()) go(rt.screen);
-      } else if (rt && rt.screen === 'results' && rt.sel && plan.routes[rt.sel] && rt.sel !== sel) pick(rt.sel);
+      if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', stay); }
+      else { if (screen !== 'results') go('results', stay); reveal(false); }
+      restoreScreen();
     })
     .catch(err => {
       if (req !== routeReq) return;
+      calcReq = -1;
       const d = err.detail || {};
       let text;
       if (d.code === 'outside_coverage') {
@@ -524,9 +934,55 @@ function compute() {
         const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
         text = d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       }
+      if (screen === 'home') renderHome(); else go('home');
+      toast(text);
+    });
+}
+function computeLoop(stay = false) {
+  if (!loopRequest && loopPts.length < 2) { go('home'); return; }
+  const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
+  if (mode === 'transit') mode = 'walk';
+  saveHash();
+  stopAnim(); stopLive();
+  plan = null; part = null;
+  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
+  calcReq = req;
+  if (stay) renderHome(); else go('results');
+  if (loopPts.length) fit(L.latLngBounds(loopPts).pad(0.2));
+  const query = loopRequest ? new URLSearchParams(loopRequest) : new URLSearchParams({ points: loopPts.map(f).join(';') });
+  query.set('mode', mode);
+  if (at) query.set('at', at);
+  getJSON(`/api/loop?${query}`)
+    .then(d => {
+      if (req !== routeReq) return;
+      calcReq = -1;
+      plan = d; live = null;
+      loopPts.splice(0, loopPts.length, ...d.points.map(p => L.latLng(p.lat, p.lon)));
+      saveHash();
+      drawAB();
+      if (screen !== 'results') go('results', false);
+      reveal(false);
+      restoreScreen();
+    })
+    .catch(err => {
+      if (req !== routeReq) return;
+      calcReq = -1;
+      const d = err.detail || {};
+      const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
+      const text = d.code === 'no_loop_area' ? t('ask.loopUnavailable') : d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
+        : d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       go('home');
       toast(text);
     });
+}
+// back from a language switch: the same screen and the same route as before
+function restoreScreen() {
+  const rt = restoreTo;
+  restoreTo = null;
+  if (rt && ['details', 'stop'].includes(rt.screen)) {
+    if (rt.sel && plan.routes[rt.sel]) sel = rt.sel;
+    if (rt.screen === 'details' || ride()) go(rt.screen);
+  } else if (rt && rt.screen === 'results' && rt.sel && plan.routes[rt.sel] && rt.sel !== sel) pick(rt.sel);
 }
 const leaveHM = () => (plan ? plan.at.slice(11, 16) : '');
 // "+N min" between the two cards: the difference of the minutes the cards show, so 19 and 21 never read "+1"
@@ -542,24 +998,32 @@ const arriveHM = r => fmtHM(hm(leaveHM()) + r.minutes);
 const routeTitle = kind => (plan && plan.verdict.kind === 'same' ? t(plan.verdict.pick === 'better_lit' ? 'm.litSame' : 'm.fastestOne') : t(kind === 'fastest' ? 'm.fastest' : 'm.litter'));
 
 // ---------- drawing routes ----------
-function drawMain(r, kind, layer = routeLayer, hit = true) {  // eslint-disable-line no-unused-vars
-  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates));
-  L.polyline(lines, { renderer: svgR, color: '#F2F2F2', weight: 10, opacity: 0.32, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
-  L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: 12, opacity: 1, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
+// a route as the design draws it: dark casing, a wrap (white for the chosen route, grey for the alternative) and,
+// where the street is not confirmed lit, a dark channel with the coloured core inside the wrap
+function wrapped(r, layer, o) {
+  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates)), out = [], op = o.opacity ?? 1;
+  out.push(L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: o.caseW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
+  out.push(L.polyline(lines, { renderer: svgR, color: o.wrap, weight: o.wrapW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
   for (const f of r.geometry.features) {
-    const s = ST[f.properties.status] || ST.unknown, pts = ll(f.geometry.coordinates);
-    L.polyline(pts, { renderer: svgR, color: s.c, weight: 6, opacity: 1, dashArray: s.d, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer);
-    if (hit) L.polyline(pts, { renderer: svgR, weight: 24, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, kind, e.latlng)).addTo(layer);
+    const st = f.properties.status, s = ST[st] || ST.unknown;
+    if (st === 'lit_confirmed') continue;
+    const p = ll(f.geometry.coordinates);
+    out.push(L.polyline(p, { renderer: svgR, color: '#0B0B0B', weight: o.chanW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'butt' }).addTo(layer));
+    out.push(L.polyline(p, { renderer: svgR, color: s.c, weight: o.coreW, opacity: op, dashArray: o.alt ? s.alt : s.d, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer));
+  }
+  return out;
+}
+function drawMain(r, kind, layer = routeLayer, hit = true, k = 1) {
+  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates));
+  L.polyline(lines, { renderer: svgR, color: '#F2F2F2', weight: 12 * k, opacity: 0.3, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
+  wrapped(r, layer, { wrap: '#F2F2F2', caseW: 15 * k, wrapW: 10 * k, chanW: 6.4 * k, coreW: 4 * k });
+  if (hit) for (const f of r.geometry.features) {
+    L.polyline(ll(f.geometry.coordinates), { renderer: svgR, weight: 24, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, kind, e.latlng)).addTo(layer);
   }
 }
-function drawAlt(r, kind, layer = routeLayer, opacity = 0.8) {
-  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates)), out = [];
-  out.push(L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: 8, opacity: Math.min(1, opacity / 0.8), interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
-  for (const f of r.geometry.features) {
-    const s = ST[f.properties.status] || ST.unknown;
-    out.push(L.polyline(ll(f.geometry.coordinates), { renderer: svgR, color: s.c, weight: 3, opacity, dashArray: s.alt, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer));
-  }
-  L.polyline(lines, { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', () => pick(kind)).addTo(layer);
+function drawAlt(r, kind, layer = routeLayer, opacity = 1) {
+  const out = wrapped(r, layer, { wrap: '#8A8A8A', caseW: 10, wrapW: 6, chanW: 3.4, coreW: 2.2, alt: true, opacity });
+  L.polyline(r.geometry.features.map(f => ll(f.geometry.coordinates)), { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', () => pick(kind)).addTo(layer);
   return out;
 }
 function midOf(f) {
@@ -589,8 +1053,9 @@ function drawLife(sg, numbered) {
   for (const s of sg.stops) if (s.lat != null) L.marker([s.lat, s.lon], { icon: MK.stop(numbered ? ++n : 0), keyboard: false, title: s.name }).addTo(lifeLayer);
 }
 
-// ---------- the reveal: fastest draws itself, then bends into the better-lit route (once per new calculation) ----------
-const MOTION = { draw: 900, pause: 250, morph: 800, spread: 80 };
+// ---------- the reveal: the route draws itself in its final look, then the fastest bends into the better-lit one ----------
+// (once per new calculation). Slower than the design's 900/250/800 ms: a longer look at the fastest before it bends.
+const MOTION = { draw: 1100, pause: 500, morph: 1000, spread: 160 };
 const pts = r => {
   const out = [];
   for (const f of r.geometry.features) for (const c of f.geometry.coordinates) {
@@ -625,7 +1090,8 @@ function branches(fast, lit) {
   const s = Math.max(0, i - 1);
   return { head: fast.slice(0, i), tail: fast.slice(fast.length - j), fb: fast.slice(s, fast.length - j + (j ? 1 : 0)), lb: lit.slice(s, lit.length - j + (j ? 1 : 0)) };
 }
-const calcKey = () => [plan.from.lat, plan.from.lon, plan.to.lat, plan.to.lon, plan.mode, plan.at, plan.routes.fastest.length_m, plan.routes.better_lit.length_m].join('|');
+const calcKey = () => [plan.from.lat, plan.from.lon, plan.to.lat, plan.to.lon, plan.mode, plan.at, plan.routes.fastest.length_m, plan.routes.better_lit.length_m,
+  (plan.points || []).map(p => p.lat + ',' + p.lon).join(';')].join('|');
 
 // cumulative distance along a point list, so a frame cuts the line with a binary search instead of re-measuring it
 function cumOf(ps) { const c = [0]; for (let i = 1; i < ps.length; i++) c.push(c[i - 1] + meters(ps[i - 1], ps[i])); return c; }
@@ -637,13 +1103,48 @@ function cutC(ps, cum, len) {
   const k = (len - cum[lo]) / ((cum[hi] - cum[lo]) || 1), a = ps[lo], b = ps[hi];
   return ps.slice(0, lo + 1).concat([L.latLng(a.lat + (b.lat - a.lat) * k, a.lng + (b.lng - a.lng) * k)]);
 }
-// a light trail while it moves: a wide translucent stroke instead of the blur filter, which is too slow to redraw every frame
-const trail = () => ({
-  glow: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 16, opacity: 0.12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  cas: L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  line: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 6, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-});
-const setTrail = (g, ll) => { g.glow.setLatLngs(ll); g.cas.setLatLngs(ll); g.line.setLatLngs(ll); };
+// The route in its final look while its end moves: casing, white wrap and, where the street is not confirmed lit,
+// the dark channel with the coloured core, all cut at the same distance; the ◇! mark appears when the end passes it.
+// While it moves, the glow is a wide translucent stroke (the blur filter is too slow to redraw every frame), and
+// the lines are not simplified (smoothFactor 0), so the moving end does not jitter.
+const animLine = o => L.polyline([], { renderer: svgR, interactive: false, lineJoin: 'round', lineCap: 'round', smoothFactor: 0, ...o }).addTo(routeLayer);
+function growing(r) {
+  const P = pts(r), C = cumOf(P), g = { P, C, L: C[C.length - 1], cores: [], warns: [] };
+  g.glow = animLine({ color: '#F2F2F2', weight: 20, opacity: 0.12 });
+  g.cas = animLine({ color: '#0B0B0B', weight: 15 });
+  g.wrap = animLine({ color: '#F2F2F2', weight: 10 });
+  let from = 0;
+  for (const f of r.geometry.features) {
+    const fp = f.geometry.coordinates.map(c => L.latLng(c[1], c[0])), fc = cumOf(fp), len = fc[fc.length - 1], st = f.properties.status;
+    if (st !== 'lit_confirmed') {
+      const sty = ST[st] || ST.unknown;
+      g.cores.push({ from, to: from + len, P: fp, C: fc, shown: -1,
+        chan: animLine({ color: '#0B0B0B', weight: 6.4, lineCap: 'butt' }),
+        core: animLine({ color: sty.c, weight: 4, dashArray: sty.d, lineCap: sty.cap }) });
+      if (st === 'dark_reported') g.warns.push({ at: from + len / 2, latlng: midOf(f), marker: null });
+    }
+    from += len;
+  }
+  return g;
+}
+function grow(g, len) {
+  const vis = cutC(g.P, g.C, len);
+  g.glow.setLatLngs(vis); g.cas.setLatLngs(vis); g.wrap.setLatLngs(vis);
+  for (const c of g.cores) {
+    const state = len <= c.from ? 0 : len >= c.to ? 2 : 1;
+    if (state === c.shown && state !== 1) continue;
+    const part = state === 0 ? [] : state === 2 ? c.P : cutC(c.P, c.C, len - c.from);
+    c.chan.setLatLngs(part); c.core.setLatLngs(part); c.shown = state;
+  }
+  for (const w of g.warns) if (!w.marker && len >= w.at) w.marker = L.marker(w.latlng, { icon: MK.warn(true), interactive: false, keyboard: false }).addTo(markLayer);
+  return vis[vis.length - 1];
+}
+const growLayers = g => [g.glow, g.cas, g.wrap].concat(...g.cores.map(c => [c.chan, c.core]));
+function fadeMarker(m, ms = 300) {
+  const el = m.getElement && m.getElement();
+  if (el) { el.style.transition = `opacity ${ms}ms cubic-bezier(.33,1,.68,1)`; el.style.opacity = '0'; }
+  setTimeout(() => m.remove(), ms + 40);
+}
 // the old drawing fades away on top of the new one, so a stage change never flashes
 function fadeOut(layers, ms = 300) {
   for (const l of layers) { routeLayer.removeLayer(l); l.addTo(fadeLayer); }
@@ -658,14 +1159,18 @@ function reveal(force) {
   const v = plan.verdict, final = v.kind === 'same' ? (v.pick || 'fastest') : v.kind === 'too_long' ? 'fastest' : 'better_lit', key = calcKey();
   if ((!force && (seen.has(key) || quietReveal)) || reduced()) { seen.add(key); quietReveal = false; sel = final; finishReveal(); fitPlan(); return; }
   seen.add(key);
-  const fast = plan.routes.fastest, fastPts = pts(fast), morph = v.kind === 'show', cum = cumOf(fastPts);
+  // with a morph the fastest route draws itself and then bends; without one the route that stays on screen draws itself,
+  // so nothing seen during the drawing (a stretch reported as unlit) disappears when it ends
+  const morph = v.kind === 'show', first = morph ? 'fastest' : final;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers();
-  const g = trail();
-  const head = L.marker(fastPts[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
-  anim = { t0: performance.now(), raf: 0, final, morph, fastPts, cum, L: cum[cum.length - 1], g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
+  const g = growing(plan.routes[first]);
+  const head = L.marker(g.P[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
+  anim = { t0: performance.now(), raf: 0, final, first, morph, g, head, stage: 0,
+    end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 350 };
   if (morph) {
-    const br = branches(fastPts, pts(plan.routes.better_lit)), N = 64;
-    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1) });
+    const br = branches(g.P, pts(plan.routes.better_lit)), N = 64;
+    const headLen = br.head.length ? g.C[br.head.length - 1] : 0, tailLen = br.tail.length ? g.L - g.C[g.P.length - br.tail.length] : 0;
+    Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1), headLen, tailLen });
   }
   sel = null;
   renderResults();
@@ -682,39 +1187,34 @@ function reveal(force) {
 function frame(t) {
   const a = anim, fast = plan.routes.fastest, lit = plan.routes.better_lit;
   if (t < MOTION.draw) {
-    const vis = cutC(a.fastPts, a.cum, easeDraw(clamp(t / MOTION.draw)) * a.L);
-    setTrail(a.g, vis);
-    a.head.setLatLng(vis[vis.length - 1]);
+    a.head.setLatLng(grow(a.g, easeDraw(clamp(t / MOTION.draw)) * a.g.L));
   } else if (a.stage === 0) {
     a.stage = 1;
-    setTrail(a.g, a.fastPts);
-    a.head.remove();
-    const old = [a.g.glow, a.g.cas, a.g.line];
-    drawMain(fast, 'fastest', routeLayer, false, true);
-    drawWarnings([fast]);
-    fadeOut(old, MOTION.pause);
+    grow(a.g, a.g.L);
+    fadeMarker(a.head);
   }
   if (a.morph && t >= MOTION.draw + MOTION.pause) {
     const tm = t - MOTION.draw - MOTION.pause, u = clamp(tm / MOTION.morph);
     if (a.stage === 1) {
       a.stage = 2;
-      const old = [];
-      routeLayer.eachLayer(l => old.push(l));
       a.alt = drawAlt(fast, 'fastest', routeLayer, 0);
-      a.m = trail();
-      setTrail(a.m, a.fastPts);
-      fadeOut(old, 200);
+      growLayers(a.g).forEach(l => l.bringToFront());          // the alternative goes under the moving route
+      // the pattern of the bending part fades away; the shared trunk keeps it (same streets, same status)
+      const lo = a.headLen + 0.5, hi = a.g.L - a.tailLen - 0.5, gone = [];
+      a.g.cores = a.g.cores.filter(c => { if (c.to > lo && c.from < hi) { gone.push(c.chan, c.core); return false; } return true; });
+      fadeOut(gone, 280);
     }
     const mid = a.rf.map((p, i) => {
       const k = easeMorph(clamp((tm - MOTION.spread * i / (a.N - 1)) / MOTION.morph)), q = a.rl[i];
       return L.latLng(p.lat + (q.lat - p.lat) * k, p.lng + (q.lng - p.lng) * k);
     });
-    setTrail(a.m, a.headPts.concat(mid, a.tailPts));
-    const altOp = 0.8 * easeOut(u);
-    a.alt.forEach((p, i) => p.setStyle({ opacity: i === 0 ? altOp / 0.8 : altOp }));
+    const line = a.headPts.concat(mid, a.tailPts);
+    a.g.glow.setLatLngs(line); a.g.cas.setLatLngs(line); a.g.wrap.setLatLngs(line);
+    const altOp = easeOut(u);
+    a.alt.forEach(p => p.setStyle({ opacity: altOp }));
     // the cards follow the line
     const q = easeMorph(clamp((u - 0.25) / 0.55));
-    setOp('card-better_lit', easeOut(clamp(tm / 220)));
+    setOp('card-better_lit', easeOut(clamp(tm / 300)));
     const n = $('n-better_lit'); if (n) n.textContent = Math.round(fast.minutes + (lit.minutes - fast.minutes) * q);
     const d = $('d-better_lit'); if (d) d.textContent = `${km(fast.length_m + (lit.length_m - fast.length_m) * q)} · ${arriveHM(q < 0.5 ? fast : lit)}`;
     setOp('plus-better_lit', clamp((u - 0.7) / 0.25));
@@ -722,10 +1222,10 @@ function frame(t) {
     setOp('lifelink', clamp((u - 0.6) / 0.3));
     setOp('plus-chip', clamp((u - 0.55) / 0.3));
   } else if (!a.morph && t >= MOTION.draw) {
-    setOp('lifelink', clamp((t - MOTION.draw) / 300));
-    setOp('card-better_lit', clamp((t - MOTION.draw) / 300));
+    setOp('lifelink', clamp((t - MOTION.draw) / 350));
+    setOp('card-better_lit', clamp((t - MOTION.draw) / 350));
   }
-  const fq = easeOut(clamp((t - 500) / 400)), fc = $('card-fastest');
+  const fq = easeOut(clamp((t - MOTION.draw * 0.55) / (MOTION.draw * 0.45))), fc = $('card-fastest');
   if (fc) { fc.style.opacity = fq.toFixed(3); fc.style.transform = `translateY(${(8 * (1 - fq)).toFixed(1)}px)`; }
 }
 function setOp(id, x) { const el = $(id); if (el) { el.style.opacity = x.toFixed(3); el.style.visibility = x > 0 ? 'visible' : 'hidden'; } }
@@ -748,7 +1248,7 @@ function pick(kind) {
 SCREENS.results = renderResults;
 ACT.pickFast = () => pick('fastest');
 ACT.pickLit = () => pick('better_lit');
-ACT.recalc = () => { if (plan && screen === 'results') reveal(true); else if (A && B) compute(); };
+ACT.recalc = () => { if (plan && screen === 'results') reveal(true); else if (loopMode || (A && B)) compute(); };
 ACT.details = () => go('details');
 ACT.start = () => startNav();
 ACT.backResults = () => go(sel === 'transit' ? 'transit' : 'results');
@@ -758,13 +1258,16 @@ function resultsTop() {
     `<button type="button" class="round" data-act="recalc" aria-label="${esc(t('m.recalc'))}">${I.recalc()}</button>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
 }
+const isLoop = () => (plan ? !!plan.loop : loopMode);
+const tripTitle = () => (isLoop() ? ask.res && ask.res.kind === 'loop' ? t('ask.loopUnderstood', { center: ask.res.center })
+  : loopTitle(plan ? plan.points.length : loopPts.length) : `${labels.A} → ${labels.B}`);
 function routeSub() {
   const when = plan ? (at ? t('m.leaveAt', { time: leaveHM() }) : t('m.leaveNow', { time: leaveHM() })) : '';
   return `${t('m.mode.' + mode)}${when ? ' · ' + when : ''}`;
 }
 function renderResults() {
   if (screen !== 'results') return;
-  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}`;
+  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(tripTitle())}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact', isLoop() ? ['walk', 'bike'] : undefined)}${mode === 'transit' && !isLoop() ? timeChip() : ''}`;
   if (!plan) {
     $('screen').innerHTML = resultsTop() + `<section class="sheet" aria-busy="true">${head}<p class="loading">${esc(t('computing'))}</p></section>`;
     return;
@@ -832,7 +1335,7 @@ function placePlusChip() {
 }
 function transitWhyNot() {
   const tr = plan.transit, s = plan.settings.transit;
-  const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m }) : tr.reason === 'no_line' ? t('noLine') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
+  const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m }) : tr.reason === 'no_line' ? t('noLine') : tr.reason === 'no_timetable' ? t('noTimetable') : tr.reason === 'too_close' ? t('tooClose') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
   const more = [tr.last ? t(tr.last.missed ? 'lastMissed' : 'lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
   return `<div class="warnbox"><span style="font-size: 14px; font-weight: 600">${esc(t('m.noTransit'))}</span><span class="sec">${esc(why + (more ? ' ' + more : ''))}</span><span class="small">${esc(t('m.walkBelow'))}</span></div>`;
 }
@@ -863,16 +1366,15 @@ function openTip(f, kind, latlng) {
   if (id) getJSON('/api/segments/' + encodeURIComponent(id)).then(d => { if (tip && tip.f === f) { tip.ev = d.properties.ev || []; renderOverlay(); } }).catch(() => { if (tip && tip.f === f) { tip.ev = []; renderOverlay(); } });
 }
 
-// ---------- overlays: legend, segment, about the data ----------
+// ---------- overlays: language, legend (with the covered area and the data), segment ----------
 function closeOverlays() {
+  $('screen').inert = false; $('map').inert = false;
   langOpen = false;
-  legendOpen = false; tip = null; aboutOpen = false;
+  legendOpen = false; tip = null;
   markLayer.eachLayer(l => { if (l.options.ring) markLayer.removeLayer(l); });
   $('overlay').innerHTML = '';
   for (const b of document.querySelectorAll('#screen [data-act="legend"]')) b.setAttribute('aria-expanded', 'false');
 }
-let aboutOpen = false;
-function openAbout() { legendOpen = false; tip = null; aboutOpen = true; renderOverlay(); }
 function renderOverlay() {
   for (const b of document.querySelectorAll('#screen [data-act="legend"]')) b.setAttribute('aria-expanded', String(legendOpen));
   const close = `<button type="button" class="close" data-act="closeOverlay" aria-label="${esc(t('m.close'))}">${I.close()}</button>`;
@@ -896,16 +1398,29 @@ function renderOverlay() {
         <span><span class="pin-a" style="width: 16px; height: 16px; font-size: 9px">A</span>${esc(t('m.mkStart'))}</span>
         <span><span class="pin-b" style="width: 16px; height: 16px; font-size: 9px">B</span>${esc(t('m.mkDest'))}</span>
         <span>${I.place()}${esc(t('m.mkOpen'))}</span><span>${I.stopMk()}${esc(t('m.mkStop'))}</span>
-        <span><svg width="28" height="10" viewBox="0 0 28 10" aria-hidden="true"><path d="M2 5h24" stroke="#F2F2F2" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
-        <span><svg width="28" height="10" viewBox="0 0 28 10" aria-hidden="true"><path d="M2 5h24" stroke="#F2F2F2" stroke-opacity="0.75" stroke-width="2.5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
+        <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M5 6h18" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
+        <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M4 6h20" stroke="#8A8A8A" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
         <span><svg width="40" height="24" viewBox="-20 -12 40 24" aria-hidden="true"><rect x="-17" y="-10" width="34" height="20" rx="5" fill="#F2F2F2"/><text y="4" text-anchor="middle" font-family="Inter Tight, Inter, sans-serif" font-weight="600" font-size="12" fill="#0B0B0B">16</text></svg>${esc(t('m.mkVehicle'))}</span>
+        <span><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg>${esc(t('m.coverage'))}</span>
       </div>
       <span class="small">${esc(t('m.tapPart'))}</span>
       <div class="divider"></div>
-      <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-act="net" ${prefs.net ? 'checked' : ''}></label>
-      <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-act="livenet" ${prefs.livenet ? 'checked' : ''}></label>
+      <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-pref="net" ${netOn() ? 'checked' : ''}></label>
+      <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-pref="livenet" ${prefs.livenet ? 'checked' : ''}></label>
+      <div class="divider"></div>
+      <details><summary>${I.chev(12, 'chev')}<span>${esc(t('m.aboutData'))}</span></summary>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px">
+          <p class="sec">${esc(metaText())}</p>
+          <ul class="src">${ORDER.map(k => `<li>${esc(t('legend.' + k))}</li>`).join('')}</ul>
+          <p class="small">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
+          <p class="small">${esc(t('m.aboutNote'))}</p>
+        </div>
+      </details>
     </section>`;
-    for (const c of $('overlay').querySelectorAll('input[type="checkbox"]')) c.addEventListener('change', () => ACT[c.dataset.act](c));
+    for (const c of $('overlay').querySelectorAll('input[data-pref]')) c.addEventListener('change', () => {
+      if (c.dataset.pref === 'net') { if (screen === 'home') prefs.net = c.checked; else prefs.netRoute = c.checked; refreshNet(); }
+      else { prefs.livenet = c.checked; liveTick(); }
+    });
     return;
   }
   if (tip) {
@@ -916,15 +1431,6 @@ function renderOverlay() {
       <span style="font-size: 13px">${esc([p.name || t('noName'), Math.round(p.len) + ' m', t(plan && plan.verdict.kind === 'same' && screen === 'results' ? 'm.onThis' : tip.kind === 'fastest' ? 'm.onFastest' : 'm.onLitter')].join(' · '))}</span>
       <ul class="src">${src}</ul>
       <span class="small">${esc(t('m.note.' + st) + (summary ? ' ' + t('dataAsOf', { date: summary.as_of }) : ''))}</span>
-    </section>`;
-    return;
-  }
-  if (aboutOpen) {
-    $('overlay').innerHTML = `<section class="panel" aria-label="${esc(t('m.aboutData'))}">${close}
-      <h2 style="font-size: 16px; font-weight: 600; padding-right: 36px">${esc(t('m.aboutData'))}</h2>
-      <p class="sec">${esc($('meta-text') ? '' : metaText())}</p>
-      <ul class="src">${ORDER.map(k => `<li>${esc(t('legend.' + k))}</li>`).join('')}</ul>
-      <p class="small">${esc(t('m.aboutNote'))}</p>
     </section>`;
     return;
   }
@@ -1036,7 +1542,7 @@ function renderTransit() {
   const top = `<div class="top"><button type="button" class="round" data-act="home" aria-label="${esc(t('m.back'))}">${I.back()}</button><span class="grow"></span>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
   if (!plan) {
-    $('screen').innerHTML = top + `<section class="sheet" aria-busy="true"><div class="handle"></div><div><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}<p class="loading">${esc(t('computing'))}</p></section>`;
+    $('screen').innerHTML = top + `<section class="sheet" aria-busy="true"><div class="handle"></div><div><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}${timeChip()}<p class="loading">${esc(t('computing'))}</p></section>`;
     return;
   }
   const tr = plan.transit, [w1, rd, w2] = tr.legs, type = t('rt.' + rd.route_type);
@@ -1056,9 +1562,10 @@ function renderTransit() {
   $('screen').innerHTML = top + `
   <section class="sheet" aria-labelledby="h-tr" style="max-height: calc(100% - 230px)">
     <div class="handle"></div>
-    <div style="display: flex; flex-direction: column; gap: 2px"><h1 id="h-tr" style="display: flex; align-items: baseline; gap: 10px; font-weight: 600"><span style="font-family: var(--bz-display); font-size: 28px; line-height: 1.1">${minN(tr.minutes)} min</span><span style="font-size: 15px; color: var(--bz-ink-2); font-weight: 500">${esc(t('m.arrival'))} ${esc(tr.arrive_at)}</span></h1>
+    <div style="display: flex; flex-direction: column; gap: 2px"><h1 id="h-tr" style="display: flex; align-items: baseline; gap: 10px; font-weight: 600"><span style="font-family: var(--bz-display); font-size: 28px; line-height: 1.1">${minN(tr.minutes + Math.max(0, tr.wait_min))} min</span><span style="font-size: 15px; color: var(--bz-ink-2); font-weight: 500">${esc(t('m.arrival'))} ${esc(tr.arrive_at)}</span></h1>
       <p class="sec">${esc(labels.A)} → ${esc(labels.B)}</p></div>
     ${modeSeg('compact')}
+    ${timeChip()}
     ${tl}
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
     ${historyBox(rd)}${steps}${last}
@@ -1075,10 +1582,8 @@ function drawTransit() {
   L.polyline(line, { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   L.polyline(line, { renderer: svgR, color: '#6B6B6B', weight: 7, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   for (const w of [w1, w2]) {
-    L.polyline(w.geometry.features.map(f => ll(f.geometry.coordinates)), { renderer: svgR, color: '#0B0B0B', weight: 10, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
+    wrapped(w, routeLayer, { wrap: '#F2F2F2', caseW: 10, wrapW: 6, chanW: 3.4, coreW: 2.2, alt: true });
     for (const f of w.geometry.features) {
-      const s = ST[f.properties.status] || ST.unknown;
-      L.polyline(ll(f.geometry.coordinates), { renderer: svgR, color: s.c, weight: 5, dashArray: s.alt || null, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(routeLayer);
       L.polyline(ll(f.geometry.coordinates), { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, 'better_lit', e.latlng)).addTo(routeLayer);
     }
   }
@@ -1265,72 +1770,35 @@ function navRoute() {
   const kind = sel === 'fastest' ? 'fastest' : 'better_lit';
   return { r: plan.routes[kind], kind, toStop: false };
 }
-function buildPath(r) {
-  // the route as points with distance along it, and the manoeuvres where the street name changes
-  const P = [], feats = r.geometry.features;
-  let acc = 0;
-  feats.forEach((f, fi) => {
-    for (const c of f.geometry.coordinates) {
-      const p = L.latLng(c[1], c[0]), last = P[P.length - 1];
-      if (last && last.p.lat === p.lat && last.p.lng === p.lng) continue;
-      if (last) acc += meters(last.p, p);
-      P.push({ p, d: acc, fi });
-    }
-  });
-  const bearing = (a, b) => (Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat) * 180 / Math.PI + 360) % 360;
-  const man = [];
-  let name = feats.length ? feats[0].properties.name : null;
-  for (let i = 1; i < P.length - 1; i++) {
-    const f = feats[P[i].fi], nm = f.properties.name;
-    if (P[i].fi !== P[i - 1].fi && nm && nm !== name) {
-      let j = i - 1; while (j > 0 && meters(P[j].p, P[i].p) < 8) j--;
-      let k = i + 1; while (k < P.length - 1 && meters(P[i].p, P[k].p) < 8) k++;
-      let turn = bearing(P[i].p, P[k].p) - bearing(P[j].p, P[i].p);
-      turn = ((turn + 540) % 360) - 180;
-      man.push({ d: P[i].d, type: Math.abs(turn) < 35 ? 'straight' : turn > 0 ? 'right' : 'left', street: nm });
-    }
-    if (nm) name = nm;
-  }
-  man.push({ d: acc, type: 'arrive', street: '' });
-  return { P, man, total: acc };
-}
-function project(path, pos) {
-  let best = null;
-  const k = Math.cos(pos.lat * Math.PI / 180) * 111320, kl = 110540;
-  for (let i = 1; i < path.P.length; i++) {
-    const a = path.P[i - 1], b = path.P[i];
-    const ax = (a.p.lng - pos.lng) * k, ay = (a.p.lat - pos.lat) * kl, bx = (b.p.lng - pos.lng) * k, by = (b.p.lat - pos.lat) * kl;
-    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
-    const u = L2 ? clamp(-(ax * dx + ay * dy) / L2) : 0;
-    const x = ax + u * dx, y = ay + u * dy, off = Math.hypot(x, y);
-    if (!best || off < best.off) best = { off, d: a.d + u * (b.d - a.d), i };
-  }
-  return best;
-}
 function startNav() {
   if (!plan) return;
   const { r, kind, toStop } = navRoute();
-  const sim = /[?&]sim=1/.test(location.search) || !navigator.geolocation;
-  nav = { r, kind, toStop, path: buildPath(r), progress: 0, off: 0, watch: null, sim, simT: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
+  const path = BzNav.buildPath(r);
+  if (BzNav.trivial(path)) { toast(t('m.alreadyThere'), 5000); return; }
+  // the demo walk only on request (?sim=1); a GPS error never replaces the real position by a simulated one
+  const sim = /[?&]sim=1/.test(location.search);
+  nav = { r, kind, toStop, path, progress: 0, off: 0, onRoute: true, watch: null, sim, simT: null, gps: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
   go('nav');
   if (sim) startSim();
-  else {
-    nav.watch = navigator.geolocation.watchPosition(onPos, () => { toast(t('m.simNote'), 6000); startSim(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
-  }
+  else if (!navigator.geolocation) { nav.gps = 2; updateNav(); }
+  else nav.watch = navigator.geolocation.watchPosition(onPos, onGpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
+}
+// the watch keeps trying after a timeout; the screen says it waits, and a refused permission is said plainly
+function onGpsError(err) {
+  if (!nav) return;
+  nav.gps = err && err.code === 1 ? 1 : 2;
+  updateNav();
 }
 function startSim() {
   if (!nav) return;
-  if (nav.watch != null) { navigator.geolocation.clearWatch(nav.watch); nav.watch = null; }
   nav.sim = true;
   const speed = (mode === 'bike' && !nav.toStop ? 4.2 : 1.35) * 6;   // six times faster than walking, for a demo
   let d = nav.progress;
   clearInterval(nav.simT);
   nav.simT = setInterval(() => {
     d = Math.min(nav.path.total, d + speed / 2);
-    const P = nav.path.P;
-    let i = 1; while (i < P.length - 1 && P[i].d < d) i++;
-    const a = P[i - 1], b = P[i], k = b.d > a.d ? (d - a.d) / (b.d - a.d) : 1;
-    onPos({ coords: { latitude: a.p.lat + (b.p.lat - a.p.lat) * k, longitude: a.p.lng + (b.p.lng - a.p.lng) * k, accuracy: 5, heading: null } });
+    const p = BzNav.pointAt(nav.path, d);
+    onPos({ coords: { latitude: p.lat, longitude: p.lng, accuracy: 5, heading: null } });
   }, 500);
 }
 function stopNav() {
@@ -1343,6 +1811,7 @@ function stopNav() {
 }
 function onPos(pos) {
   if (!nav) return;
+  nav.gps = null;
   const p = L.latLng(pos.coords.latitude, pos.coords.longitude);
   let heading = pos.coords.heading;
   if ((heading == null || isNaN(heading)) && nav.last && meters(nav.last, p) > 3) {
@@ -1351,12 +1820,16 @@ function onPos(pos) {
   if (heading != null && !isNaN(heading)) nav.heading = heading;
   nav.last = p;
   nav.acc = pos.coords.accuracy;
-  const pr = project(nav.path, p);
-  nav.progress = Math.max(nav.progress, pr.d);
-  nav.off = pr.off;
+  // progress only from a fix on the route, looked for around the current progress (a loop's start is not its
+  // end); arrival only with the phone near the destination itself
+  const st = BzNav.track(nav.path, nav.progress, { lat: p.lat, lng: p.lng, accuracy: pos.coords.accuracy }, !nav.fixes);
+  nav.fixes = (nav.fixes || 0) + 1;
+  nav.progress = st.progress;
+  nav.off = st.off;
+  nav.onRoute = st.onRoute;
   showMe(p.lat, p.lng, nav.heading);
   map.setView(p, Math.max(map.getZoom(), 17), { animate: true });
-  if (nav.path.total - nav.progress < 20) {
+  if (st.arrived) {
     const toStop = nav.toStop;
     stopNav();
     toast(t(toStop ? 'm.atStopNow' : 'm.arrived'), 5000);
@@ -1386,8 +1859,8 @@ function renderNav() {
     <div style="display: flex; flex-direction: column; gap: 6px"><span id="nav-bar"></span><span class="small" id="nav-foot"></span></div>
   </section>`;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers();
-  if (nav.toStop) drawTransit(); else { drawMain(nav.r, nav.kind); drawWarnings([nav.r]); }
-  nav.done = L.polyline([], { renderer: svgR, color: '#333333', weight: 6, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
+  if (nav.toStop) drawTransit(); else { drawMain(nav.r, nav.kind, routeLayer, true, 1.3); drawWarnings([nav.r]); }
+  nav.done = L.polyline([], { renderer: svgR, color: '#333333', weight: 13, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   map.setView(nav.path.P[0].p, 17);
   updateNav();
 }
@@ -1403,32 +1876,34 @@ function updateNav() {
   const round = x => (x >= 1000 ? km(x) : (x > 100 ? Math.round(x / 10) * 10 : Math.max(0, Math.round(x / 5) * 5)) + ' m');
   $('nav-icon').innerHTML = (I[man.type] || I.straight)(52);
   $('nav-dist').textContent = round(left);
-  $('nav-text').textContent = t('m.turn.' + man.type, { street: man.street });
-  $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: t('m.turn.' + after.type, { street: after.street }) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
+  const say = x => t((x.street ? 'm.turn.' : 'm.turnBare.') + x.type, { street: x.street });
+  $('nav-text').textContent = say(man);
+  $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: say(after) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
   if (nav.voice && window.speechSynthesis && left < 60 && nav.spoken !== nextI) {
     nav.spoken = nextI;
-    const u = new SpeechSynthesisUtterance(`${round(left)}. ${t('m.turn.' + man.type, { street: man.street })}`);
+    const u = new SpeechSynthesisUtterance(`${round(left)}. ${say(man)}`);
     u.lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
     speechSynthesis.speak(u);
   }
   // the next stretch reported as dark within 500 m: warn, offer the better-lit route if there is one
   const runs = runsOf(nav.r), dark = runs.find(x => x.status === 'dark_reported' && x.to > pr && x.from - pr < 500 && !nav.dismissed.has(Math.round(x.from)));
   const canDetour = !nav.toStop && nav.kind === 'fastest' && plan.verdict.kind !== 'same';
-  $('nav-warn').innerHTML = nav.off > 40
+  $('nav-warn').innerHTML = nav.gps
+    ? `<section class="warnbox" role="status"><span style="font-size: 15px; font-weight: 600">${esc(t(nav.gps === 1 ? 'm.gpsDenied' : 'm.gpsWait'))}</span></section>`
+    : !nav.onRoute
     ? `<section class="warnbox"><span style="font-size: 15px; font-weight: 600">${esc(t('m.offRoute', { m: Math.round(nav.off) }))}</span><button type="button" class="primary" data-act="recalcHere" style="height: 44px; font-size: 15px">${esc(t('m.recalcHere'))}</button></section>`
-    : dark ? `<section class="warnbox" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
+    : dark ? `<section class="warnbox dark" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
       `<div style="display: flex; gap: 8px">${canDetour ? `<button type="button" class="primary" data-act="detour" style="height: 44px; font-size: 15px">${esc(t('m.detour', { min: Math.max(1, extraMin()) }))}</button>` : ''}<button type="button" class="secondary sm" data-act="keep" data-d="${Math.round(dark.from)}">${esc(t('m.keepGoing'))}</button></div></section>`
       : '';
   const remain = path.total - pr, speed = mode === 'bike' && !nav.toStop ? 4.2 : 1.35, minLeft = remain / speed / 60;
   const now = new Date(), arr = fmtHM(now.getHours() * 60 + now.getMinutes() + minLeft);
   $('nav-eta').textContent = `${minN(minLeft)} min · ${arr}`;
-  $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : labels.B, route: routeTitle(nav.kind).toLowerCase() });
+  $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : plan.loop ? t('m.loopStart') : labels.B, route: routeTitle(nav.kind).toLowerCase() });
   $('nav-bar').innerHTML = statusBar(nav.r, 8, 5, pr);
   $('nav-foot').innerHTML = `${esc(t('m.lightLeft'))} · <span class="mono" style="font-size: 11px">${nav.sim ? esc(t('m.simTag')) : 'GPS ±' + Math.round(nav.acc || 0) + ' m'}</span> · ${esc(t('m.locStays'))}`;
-  const P = path.P, done = [];
-  for (const q of P) { if (q.d > pr) break; done.push(q.p); }
-  if (myPos) done.push(myPos);
-  nav.done.setLatLngs(done);
+  // the walked part: along the route up to the progress point, never a straight line to where the phone is
+  if (!path.pp) { path.pp = path.P.map(q => q.p); path.pd = path.P.map(q => q.d); }
+  nav.done.setLatLngs(pr > 0 ? cutC(path.pp, path.pd, pr) : []);
   placeSide();
 }
 
@@ -1440,6 +1915,7 @@ let tpPrevFocus = null;
 function openTimePicker() {
   closeOverlays();
   tpPrevFocus = document.activeElement;
+  $('screen').inert = true; $('map').inert = true;
   const now = new Date();
   let h = now.getHours(), m = now.getMinutes();
   if (at) { const v = at.includes('T') ? at.slice(11, 16) : at; [h, m] = v.split(':').map(Number); }
@@ -1559,11 +2035,17 @@ map.on('click', e => {
     const which = pickMode;
     pickMode = null;
     hideToast();
+    askManual();
     setPoint(which, e.latlng, t('m.pointOnMap'));
     if (A && B) compute(); else if (which === 'B') locate(true); else openSearch('B');
     return;
   }
-  if (tip || legendOpen || aboutOpen) closeOverlays();
+  if (loopMode && screen === 'home') {
+    if (tip || legendOpen) { closeOverlays(); return; }
+    if (loopPts.length < LOOP_MAX) { askManual(); loopPts.push(e.latlng); saveHash(); renderHome(); drawAB(); }
+    return;
+  }
+  if (tip || legendOpen) closeOverlays();
 });
 map.on('moveend', () => { clearTimeout(map._netT); map._netT = setTimeout(refreshNet, 200); });
 // the phone's height changes when the browser hides its address bar (100dvh), or the tab was laid out while hidden
@@ -1574,6 +2056,10 @@ if (window.ResizeObserver) new ResizeObserver(onResize).observe($('phone')); els
 document.documentElement.lang = t('htmlLang');
 $('map').setAttribute('aria-label', t('mapLabel'));
 buildSearch();
+if (typeof BzAsk !== 'undefined') {
+  ask.mic = BzAsk.canRecord();
+  BzAsk.enabled().then(on => { ask.on = on; renderHome(); });
+}
 history.replaceState({ screen: 'home' }, '');
 renderHome();
 getJSON('/api/summary').then(s => {
@@ -1587,9 +2073,9 @@ getJSON('/api/summary').then(s => {
 let back = null;
 try { back = JSON.parse(sessionStorage.getItem('bz.back') || 'null'); sessionStorage.removeItem('bz.back'); } catch (e) { back = null; }
 if (readHash()) {
-  if (back && back.screen === 'home') { fit(L.latLngBounds([A, B]).pad(0.3)); }
+  if (back && back.screen === 'home') { fit(L.latLngBounds(loopMode ? loopPts : [A, B]).pad(0.3)); }
   else {
     if (back) { quietReveal = true; restoreTo = back; }
     compute();
   }
-}
+} else if (loopMode && loopPts.length) fit(L.latLngBounds(loopPts).pad(0.3), 16);

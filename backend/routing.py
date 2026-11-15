@@ -35,6 +35,8 @@ SETTINGS = {
     "warn_dark_unknown_share": 0.20,        # warn: "dark" + "no data" share above this
     "snap_max_m": 300.0,                    # a point farther than this from the network is outside coverage
                                             # (300 m still reaches the middle of a mall, a yard or a park lawn)
+    "loop_max_points": 10,                  # a loop walk goes through 2 to this many points
+    "loop_reuse_factor": 2.0,               # later legs of a loop pay this much more for segments it already used
 }
 MODES = ("walk", "bike")
 NO_WALK_HIGHWAYS = {"motorway", "motorway_link"}
@@ -287,8 +289,9 @@ class Network:
         return {"type": "Feature", "geometry": {"type": "LineString", "coordinates": self.ll[i]}, "properties": props}
 
     # ---------- routing ----------
-    def _search(self, A, B, factor, mode="walk"):
-        """A* from snapped point A to snapped point B; cost = length x factor[status] x slowness. Returns pieces or None."""
+    def _search(self, A, B, factor, mode="walk", avoid=None):
+        """A* from snapped point A to snapped point B; cost = length x factor[status] x slowness. Returns pieces or None.
+        avoid: {segment index: extra cost multiplier} for the segments between A and B."""
         g = self.graphs[mode]
         a, b, ln, st, adj, xy, slow, both = self.a, self.b, self.len, self.st, g["adj"], self.node_xy, g["slow"], g["both"]
         fa, fb = factor[st[A.seg]] * slow[A.seg], factor[st[B.seg]] * slow[B.seg]
@@ -319,7 +322,7 @@ class Network:
             if u in remaining and d + remaining[u] < best:
                 best, best_end = d + remaining[u], u
             for v, s in adj[u]:
-                push(v, d + ln[s] * factor[st[s]] * slow[s], (u, s))
+                push(v, d + ln[s] * factor[st[s]] * slow[s] * (avoid.get(s, 1.0) if avoid else 1.0), (u, s))
         if best_end is None:
             return None
         if best_end == "direct":
@@ -430,28 +433,59 @@ class Network:
         bad = share(fastest, ("dark_reported", "unknown")) - share(lit, ("dark_reported", "unknown"))
         return max(confirmed, bad)
 
+    @classmethod
+    def _verdict(cls, fastest, lit):
+        """Whether the better-lit route is worth showing next to the fastest one (spec section 12): one card when there
+        is nothing to choose, "pick" says which route that card shows. Both routes need "_key" and "_sec"."""
+        gain = cls.lit_gain(fastest, lit)
+        removes_dark_run = fastest["max_dark_run_m"] > SETTINGS["warn_dark_run_m"] >= lit["max_dark_run_m"]
+        extra_min = (lit["_sec"] - fastest["_sec"]) / 60
+        extra_share = (lit["_sec"] - fastest["_sec"]) / fastest["_sec"] if fastest["_sec"] else 0.0
+        if fastest["_key"] == lit["_key"]:
+            return {"kind": "same"}
+        if gain < SETTINGS["same_if_gain_below"] and not removes_dark_run:
+            # different streets, but practically the same lighting: the shorter route
+            return {"kind": "same", "near": True, "pick": "fastest", "lit_gain": round(gain, 3)}
+        if extra_min <= SETTINGS["lit_free_extra_min"]:
+            # better lit and practically as fast: the fastest route has nothing to offer
+            return {"kind": "same", "near": True, "pick": "better_lit", "lit_gain": round(gain, 3), "extra_min": round(extra_min, 1)}
+        too_long = extra_min > SETTINGS["hide_if_extra_min"] or extra_share > SETTINGS["hide_if_extra_share"]
+        return {"kind": "too_long" if too_long else "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
+
+    @classmethod
+    def _answer(cls, fastest, lit):
+        verdict = cls._verdict(fastest, lit)
+        for r in (fastest, lit):
+            del r["_key"], r["_sec"]
+        return {"routes": {"fastest": fastest, "better_lit": lit}, "verdict": verdict}
+
     def plan(self, A, B, mode="walk"):
         """Fastest and better-lit routes plus the verdict whether the lit one is worth showing (spec section 12).
         A and B must be snapped with the same mode."""
         fastest, lit = self.route(A, B, mode=mode), self.route(A, B, SETTINGS["factor_better_lit"], mode=mode)
         if fastest is None or lit is None:
             return None
-        gain = self.lit_gain(fastest, lit)
-        removes_dark_run = fastest["max_dark_run_m"] > SETTINGS["warn_dark_run_m"] >= lit["max_dark_run_m"]
-        extra_min = (lit["_sec"] - fastest["_sec"]) / 60
-        extra_share = (lit["_sec"] - fastest["_sec"]) / fastest["_sec"] if fastest["_sec"] else 0.0
-        # one card when there is nothing to choose; "pick" says which route that card shows
-        if fastest["_key"] == lit["_key"]:
-            verdict = {"kind": "same"}
-        elif gain < SETTINGS["same_if_gain_below"] and not removes_dark_run:
-            # different streets, but practically the same lighting: the shorter route
-            verdict = {"kind": "same", "near": True, "pick": "fastest", "lit_gain": round(gain, 3)}
-        elif extra_min <= SETTINGS["lit_free_extra_min"]:
-            # better lit and practically as fast: the fastest route has nothing to offer
-            verdict = {"kind": "same", "near": True, "pick": "better_lit", "lit_gain": round(gain, 3), "extra_min": round(extra_min, 1)}
-        else:
-            too_long = extra_min > SETTINGS["hide_if_extra_min"] or extra_share > SETTINGS["hide_if_extra_share"]
-            verdict = {"kind": "too_long" if too_long else "show", "extra_min": round(extra_min, 1), "extra_share": round(extra_share, 3)}
-        for r in (fastest, lit):
-            del r["_key"], r["_sec"]
-        return {"routes": {"fastest": fastest, "better_lit": lit}, "verdict": verdict}
+        return self._answer(fastest, lit)
+
+    def loop(self, points, mode="walk"):
+        """A closed walk or ride through snapped points in their order and back to the first, answered like plan():
+        the fastest and the better-lit loop and the verdict. Later legs pay loop_reuse_factor on the segments the loop
+        has already used, so the way back takes other streets where there are any. None if a leg has no route."""
+        loops = []
+        for factors in (None, SETTINGS["factor_better_lit"]):
+            factor = [1.0] * len(STATUSES) if factors is None else [float(factors[s]) for s in STATUSES]
+            pieces, used = [], {}
+            for a, b in zip(points, points[1:] + points[:1]):
+                if a.seg == b.seg and abs(a.t - b.t) < 1.0:
+                    continue                                        # the same place twice in a row
+                leg = self._search(a, b, factor, mode, avoid=used)
+                if leg is None:
+                    return None
+                leg = [p for p in leg if p["len"] > 0.5] or leg[:1]
+                for p in leg:
+                    used[p["seg"]] = SETTINGS["loop_reuse_factor"]
+                pieces.extend(leg)
+            if not pieces:
+                return None
+            loops.append(self._summarize(pieces, mode))
+        return self._answer(*loops)

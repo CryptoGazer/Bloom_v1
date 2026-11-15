@@ -124,3 +124,19 @@ def test_a_clock_time_well_before_now_means_tomorrow():
     assert leaving_time("00:05", now=late) == dt.datetime(2026, 11, 15, 0, 5)      # after midnight, not this morning
     assert leaving_time("23:30", now=late) == dt.datetime(2026, 11, 14, 23, 30)    # half an hour ago: still today
     assert leaving_time("08:00", now=dt.datetime(2026, 11, 14, 7, 0)) == dt.datetime(2026, 11, 14, 8, 0)
+
+
+def test_a_time_with_a_zone_is_read_as_timisoara_wall_clock():
+    from backend.app import leaving_time
+    assert leaving_time("2026-11-15T21:00:00+02:00") == dt.datetime(2026, 11, 15, 21, 0)
+    assert leaving_time("2026-11-15T19:00:00Z") == dt.datetime(2026, 11, 15, 21, 0)    # UTC+2 in November
+
+
+def test_start_and_destination_at_the_same_place_offer_no_ride(planner):
+    r = planner.plan(at(planner, 0), at(planner, 0), when(21, 50))           # 100 m from a stop, A = B
+    assert r["kind"] == "none" and r["reason"] == "too_close"
+
+
+def test_a_day_without_a_loaded_timetable_says_so(planner):
+    r = planner.plan(at(planner, 0), at(planner, 2000), when(10, 0, day=dt.date(2026, 11, 20)))
+    assert r["kind"] == "none" and r["reason"] == "no_timetable"

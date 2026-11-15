@@ -17,7 +17,11 @@ By default it stops at the next 04:05 in Europe/Bucharest. Stop earlier with Ctr
 import argparse
 import csv
 import datetime as dt
-import fcntl
+try:
+    import fcntl
+except ImportError:      # Windows: msvcrt locks the file instead
+    fcntl = None
+    import msvcrt
 import gzip
 import importlib.util
 import json
@@ -254,8 +258,11 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     lock = (out / ".logger.lock").open("w")
     try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
+        if fcntl:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        else:
+            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+    except (BlockingIOError, OSError):
         sys.exit(f"Another logger is already writing to {out}. Stop it first (scripts/transit/logger.sh stop).")
     pid_path = out / "logger.pid"
     pid_path.write_text(str(os.getpid()))

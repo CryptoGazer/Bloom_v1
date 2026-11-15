@@ -1,0 +1,584 @@
+{
+  "date": "2026-11-15",
+  "backend_tests": 246,
+  "navigation_tests": 10,
+  "existing_browser_regression": {
+    "desktop": 7,
+    "mobile": 9
+  },
+  "method": "12 fixture scenarios with real routing in each UI; 6 real Gemini requests from desktop, exact answers replayed to mobile, real routing and visible geometry/cards in both. Voice is Russian synthetic speech recorded through browser controls with test audio substituted before the provider request.",
+  "fixtures": [
+    {
+      "id": "centre-ru",
+      "text": "Обойди центр Тимишоары по кругу, прогулка пешком с возвратом в начало",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3580,
+          "minutes": 44.2,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3580,
+          "minutes": 44.2,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      }
+    },
+    {
+      "id": "botanic-voice-ru",
+      "text": "Построй небольшую круговую прогулку вокруг Ботанического парка с возвратом к началу",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 791.8,
+          "minutes": 9.8,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 791.8,
+          "minutes": 9.8,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      }
+    },
+    {
+      "id": "bike-c12-ro",
+      "text": "Vreau un circuit cu bicicleta în jurul căminului C12, cu întoarcere la început.",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4157.6,
+          "minutes": 16.5,
+          "mode": "bike",
+          "points": 6,
+          "center": {
+            "lat": 45.749852,
+            "lon": 21.240281
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4157.6,
+          "minutes": 16.5,
+          "mode": "bike",
+          "points": 6,
+          "center": {
+            "lat": 45.749852,
+            "lon": 21.240281
+          }
+        }
+      }
+    },
+    {
+      "id": "around-me-en",
+      "text": "A short circular walk around me, starting here and returning here.",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 2371.4,
+          "minutes": 29.3,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.7531,
+            "lon": 21.2257
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 2371.4,
+          "minutes": 29.3,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.7531,
+            "lon": 21.2257
+          }
+        }
+      }
+    },
+    {
+      "id": "ordinary-journey",
+      "text": "От C12 до Piața Victoriei пешком",
+      "kind": "route",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 1573.7,
+          "minutes": 19.4,
+          "mode": "walk"
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 1573.7,
+          "minutes": 19.4,
+          "mode": "walk"
+        }
+      }
+    },
+    {
+      "id": "off-topic",
+      "text": "Write bubble sort for a circular array",
+      "kind": "off_topic",
+      "desktop": {
+        "pass": true,
+        "status": 200
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200
+      }
+    },
+    {
+      "id": "named-start-and-time",
+      "text": "От C12 по кругу вокруг центра в 23:30",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4658.5,
+          "minutes": 57.5,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4658.5,
+          "minutes": 57.5,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      }
+    },
+    {
+      "id": "confirm-centre",
+      "text": "Прогулка вокруг площади",
+      "kind": "clarify",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3233.7,
+          "minutes": 39.9,
+          "mode": "walk",
+          "points": 6,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3233.7,
+          "minutes": 39.9,
+          "mode": "walk",
+          "points": 6,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      }
+    },
+    {
+      "id": "manual-centre",
+      "text": "Прогулка вокруг непонятного места",
+      "kind": "not_found",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3233.7,
+          "minutes": 39.9,
+          "mode": "walk",
+          "points": 6,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3233.7,
+          "minutes": 39.9,
+          "mode": "walk",
+          "points": 6,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      }
+    },
+    {
+      "id": "confirm-start-with-gps",
+      "text": "Круг вокруг центра от дома",
+      "kind": "unclear",
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3661.2,
+          "minutes": 45.2,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3661.2,
+          "minutes": 45.2,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      }
+    },
+    {
+      "id": "transit-loop",
+      "text": "Прогулка по кругу на трамвае",
+      "kind": "unsupported",
+      "desktop": {
+        "pass": true,
+        "status": 200
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200
+      }
+    },
+    {
+      "id": "no-space-for-loop",
+      "text": "Круг на границе карты",
+      "kind": "loop",
+      "desktop": {
+        "pass": true,
+        "status": 200
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200
+      }
+    }
+  ],
+  "live": [
+    {
+      "id": "centre-ru",
+      "text": "Обойди центр Тимишоары по кругу, прогулка пешком с возвратом в начало",
+      "answer": {
+        "kind": "loop",
+        "from": null,
+        "from_here": false,
+        "to": {
+          "kind": "street",
+          "name": "Piața Libertății",
+          "lat": 45.756027,
+          "lon": 21.226635
+        },
+        "mode": "walk",
+        "at": null,
+        "heard": "",
+        "loop": true,
+        "radius_m": 400
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3580,
+          "minutes": 44.2,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 3580,
+          "minutes": 44.2,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.756027,
+            "lon": 21.226635
+          }
+        }
+      }
+    },
+    {
+      "id": "botanic-voice-ru",
+      "text": "Построй небольшую круговую прогулку вокруг Ботанического парка с возвратом к началу",
+      "answer": {
+        "kind": "loop",
+        "from": null,
+        "from_here": false,
+        "to": {
+          "kind": "place",
+          "name": "Parcul Botanic",
+          "lat": 45.760166,
+          "lon": 21.224805
+        },
+        "mode": "walk",
+        "at": null,
+        "heard": "Построй небольшую круговую прогулку вокруг Ботанического парка с возвратом к началу",
+        "loop": true,
+        "radius_m": 200
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 791.8,
+          "minutes": 9.8,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 791.8,
+          "minutes": 9.8,
+          "mode": "walk",
+          "points": 8,
+          "center": {
+            "lat": 45.760166,
+            "lon": 21.224805
+          }
+        }
+      }
+    },
+    {
+      "id": "bike-c12-ro",
+      "text": "Vreau un circuit cu bicicleta în jurul căminului C12, cu întoarcere la început.",
+      "answer": {
+        "kind": "loop",
+        "from": null,
+        "from_here": false,
+        "to": {
+          "kind": "place",
+          "name": "Căminul C12 UVT",
+          "lat": 45.749852,
+          "lon": 21.240281
+        },
+        "mode": "bike",
+        "at": null,
+        "heard": "",
+        "loop": true,
+        "radius_m": 400
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4157.6,
+          "minutes": 16.5,
+          "mode": "bike",
+          "points": 6,
+          "center": {
+            "lat": 45.749852,
+            "lon": 21.240281
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 4157.6,
+          "minutes": 16.5,
+          "mode": "bike",
+          "points": 6,
+          "center": {
+            "lat": 45.749852,
+            "lon": 21.240281
+          }
+        }
+      }
+    },
+    {
+      "id": "around-me-en",
+      "text": "A short circular walk around me, starting here and returning here.",
+      "answer": {
+        "kind": "loop",
+        "from": null,
+        "from_here": true,
+        "to": null,
+        "mode": "walk",
+        "at": null,
+        "heard": "",
+        "loop": true,
+        "radius_m": 200
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 2371.4,
+          "minutes": 29.3,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.7531,
+            "lon": 21.2257
+          }
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 2371.4,
+          "minutes": 29.3,
+          "mode": "walk",
+          "points": 9,
+          "center": {
+            "lat": 45.7531,
+            "lon": 21.2257
+          }
+        }
+      }
+    },
+    {
+      "id": "ordinary-journey",
+      "text": "От C12 до Piața Victoriei пешком",
+      "answer": {
+        "kind": "route",
+        "from": {
+          "kind": "place",
+          "name": "Căminul C12 UVT",
+          "lat": 45.749852,
+          "lon": 21.240281
+        },
+        "from_here": false,
+        "to": {
+          "kind": "street",
+          "name": "Piața Victoriei",
+          "lat": 45.753113,
+          "lon": 21.2257
+        },
+        "mode": "walk",
+        "at": null,
+        "heard": ""
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 1573.7,
+          "minutes": 19.4,
+          "mode": "walk"
+        }
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200,
+        "route": {
+          "meters": 1573.7,
+          "minutes": 19.4,
+          "mode": "walk"
+        }
+      }
+    },
+    {
+      "id": "off-topic",
+      "text": "Write bubble sort for a circular array",
+      "answer": {
+        "kind": "off_topic",
+        "heard": ""
+      },
+      "desktop": {
+        "pass": true,
+        "status": 200
+      },
+      "mobile": {
+        "pass": true,
+        "status": 200
+      }
+    }
+  ]
+}
