@@ -36,7 +36,7 @@ Object.assign(I18N.ro, { m: {
   share: { lit_confirmed: '{p} iluminat confirmat', lit_likely: '{p} probabil', unknown: '{p} fără date', dark_reported: '{p} semnalat ca neiluminat' },
   legShare: { lit_confirmed: '{p} confirmat', lit_likely: '{p} probabil', unknown: '{p} fără date', dark_reported: '{p} semnalat' },
   st: { lit_confirmed: 'Iluminat confirmat', lit_likely: 'Probabil iluminat', unknown: 'Fără date', dark_reported: 'Semnalat ca neiluminat' },
-  lightOnPart: 'Lumină pe porțiune', mkStart: 'plecare', mkDest: 'destinație', mkOpen: 'loc deschis', mkStop: 'stație cu curse',
+  lightOnPart: 'Lumină pe porțiune · culoarea din interior', mkStart: 'plecare', mkDest: 'destinație', mkOpen: 'loc deschis', mkStop: 'stație cu curse',
   mkChosen: 'traseul ales', mkAlt: 'alternativa', mkVehicle: 'vehicul în timp real', tapPart: 'Atingeți o porțiune pentru surse și date.',
   partDetails: 'Detalii porțiune', loadingSrc: 'Încărcăm sursele…', onFastest: 'pe traseul cel mai rapid', onLitter: 'pe traseul mai luminat', onThis: 'pe acest traseu',
   note: {
@@ -121,7 +121,7 @@ Object.assign(I18N.en, { m: {
   share: { lit_confirmed: '{p} confirmed lit', lit_likely: '{p} likely', unknown: '{p} no data', dark_reported: '{p} reported unlit' },
   legShare: { lit_confirmed: '{p} confirmed', lit_likely: '{p} likely', unknown: '{p} no data', dark_reported: '{p} reported' },
   st: { lit_confirmed: 'Confirmed lit', lit_likely: 'Likely lit', unknown: 'No data', dark_reported: 'Reported as unlit' },
-  lightOnPart: 'Light on the stretch', mkStart: 'start', mkDest: 'destination', mkOpen: 'open place', mkStop: 'stop with departures',
+  lightOnPart: 'Light on the stretch · the colour inside', mkStart: 'start', mkDest: 'destination', mkOpen: 'open place', mkStop: 'stop with departures',
   mkChosen: 'chosen route', mkAlt: 'alternative', mkVehicle: 'live vehicle', tapPart: 'Tap a stretch for sources and dates.',
   partDetails: 'Stretch details', loadingSrc: 'Loading the sources…', onFastest: 'on the fastest route', onLitter: 'on the better-lit route', onThis: 'on this route',
   note: {
@@ -206,7 +206,7 @@ Object.assign(I18N.ru, { m: {
   share: { lit_confirmed: 'освещено {p}', lit_likely: 'вероятно {p}', unknown: 'нет данных {p}', dark_reported: 'сообщали о темноте {p}' },
   legShare: { lit_confirmed: 'подтверждено {p}', lit_likely: 'вероятно {p}', unknown: 'нет данных {p}', dark_reported: 'темно {p}' },
   st: { lit_confirmed: 'Освещено, подтверждено', lit_likely: 'Вероятно освещено', unknown: 'Нет данных', dark_reported: 'Сообщали, что темно' },
-  lightOnPart: 'Свет на участке', mkStart: 'старт', mkDest: 'куда', mkOpen: 'открытое место', mkStop: 'остановка с рейсами',
+  lightOnPart: 'Свет на участке · цвет внутри линии', mkStart: 'старт', mkDest: 'куда', mkOpen: 'открытое место', mkStop: 'остановка с рейсами',
   mkChosen: 'выбранный маршрут', mkAlt: 'альтернатива', mkVehicle: 'машина в реальном времени', tapPart: 'Нажмите на участок, чтобы увидеть источники и даты.',
   partDetails: 'Об участке', loadingSrc: 'Загружаем источники…', onFastest: 'на самом быстром маршруте', onLitter: 'на более освещённом маршруте', onThis: 'на этом маршруте',
   note: {
