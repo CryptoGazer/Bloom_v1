@@ -21,7 +21,7 @@ The Android app uses the hosted backend at `https://bezna.xyz`; it does not run 
 - **Lighting evidence.** Four statuses: confirmed lit, likely lit, no data and reported unlit. Line patterns distinguish them; tapping a street shows sources and dates.
 - **Text and voice input.** Gemini parses the request, uses local place-search tools and asks for clarification when needed. The backend validates places and calculates the route. Unrelated requests are rejected.
 - **Public transport.** Combine walking with an SMTT service. Show live vehicle positions, reported delays and observation age, with timetable fallback when live data is unavailable. Optional Tiger Data history shows how the line ran on recent days.
-- **Navigation.** GPS progress, turns, arrival and warnings before reported unlit stretches. Open places and nearby departures provide additional context along the route.
+- **Navigation.** GPS progress, turns, arrival and warnings before reported unlit stretches.
 - **Optional spoken directions.** ElevenLabs provides Romanian and English voices. Voice output is off by default and remembers the user's choice. Browser or Android speech is used if the cloud voice is unavailable.
 - **Web and Android.** Romanian and English interfaces on the desktop page, mobile page and Android app. Android packages the same mobile interface and adds native GPS, compass, speech fallback and screen-awake support.
 

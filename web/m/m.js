@@ -180,7 +180,6 @@ const areaLayer = L.layerGroup().addTo(map);
 const netLayer = L.layerGroup().addTo(map);
 const routeLayer = L.layerGroup().addTo(map);
 const fadeLayer = L.layerGroup().addTo(map);   // a drawing that is fading out, above the new one
-const lifeLayer = L.layerGroup().addTo(map);
 const markLayer = L.layerGroup().addTo(map);
 const abLayer = L.layerGroup().addTo(map);
 const vehLayer = L.layerGroup().addTo(map);
@@ -195,9 +194,6 @@ const MK = {
     ? '<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="3"/><text y="4.5" text-anchor="middle" font-size="12.5" fill="#0B0B0B">1</text></svg>'
     : `<svg width="28" height="28" viewBox="-14 -14 28 28"><circle r="11" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/><text y="4.5" text-anchor="middle" font-size="${n > 9 ? 11 : 12.5}" fill="#F2F2F2">${n}</text></svg>`, 28, 28),
   me: heading => divIcon(`<svg width="64" height="64" viewBox="-32 -32 64 64">${heading != null ? `<path d="M0 4 L-12 -24 A 26 26 0 0 1 12 -24 Z" fill="url(#bzcone)" transform="rotate(${heading})"/>` : ''}<circle r="30" fill="url(#bzhalo)"/><circle r="10" fill="none" stroke="#F2F2F2" stroke-opacity="0.35"/><circle r="7" fill="#F2F2F2" stroke="#0B0B0B" stroke-width="2.5"/></svg>`, 64, 64),
-  // the fade-in runs on an inner element: Leaflet positions the icon itself with a transform
-  place: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><circle r="8.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.place(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
-  stop: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.stopMk(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
   warn: pop => divIcon(pop ? '<span class="mk-in"><svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg></span>' : '<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
   ring: () => divIcon('<svg width="36" height="36" viewBox="-18 -18 36 36"><circle r="16" fill="none" stroke="#F2F2F2" stroke-width="1.5" stroke-dasharray="3 3"/></svg>', 36, 36),
   head: () => divIcon('<svg width="42" height="42" viewBox="-21 -21 42 42"><circle r="20" fill="url(#bzhead)"/><circle r="6.5" fill="#FFFFFF" stroke="#0B0B0B" stroke-width="2"/></svg>', 42, 42),
@@ -290,7 +286,7 @@ function clearAskRoute() {
   calcReq = -1;
   stopAnim(); stopLive();
   plan = null; part = null;
-  for (const layer of [routeLayer, markLayer, lifeLayer, vehLayer, fadeLayer]) layer.clearLayers();
+  for (const layer of [routeLayer, markLayer, vehLayer, fadeLayer]) layer.clearLayers();
   history.replaceState(history.state, '', location.pathname + location.search);
 }
 function drawAB() {
@@ -301,7 +297,6 @@ function drawAB() {
 }
 // the points of a loop: numbered, draggable while they are being set; a thin dashed line joins them and closes the loop
 function drawLoop() {
-  if (screen === 'details') return;   // the details number the places along the way: loop numbers would read as that list
   const editing = screen === 'home';
   if (editing && loopPts.length > 1) {
     L.polyline(loopPts.concat([loopPts[0]]), { renderer: svgR, color: '#8A8A8A', weight: 2, dashArray: '2 6', lineCap: 'round', interactive: false }).addTo(abLayer);
@@ -987,7 +982,7 @@ function compute(stay = false) {
   saveHash();
   stopAnim(); stopLive();
   plan = null; part = null;
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
+  routeLayer.clearLayers(); markLayer.clearLayers(); vehLayer.clearLayers();
   calcReq = req;
   if (stay) renderHome();
   else { go(mode === 'transit' ? 'transit' : 'results'); fit(L.latLngBounds([A, B]).pad(0.2)); }
@@ -1023,7 +1018,7 @@ function computeLoop(stay = false) {
   saveHash();
   stopAnim(); stopLive();
   plan = null; part = null;
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
+  routeLayer.clearLayers(); markLayer.clearLayers(); vehLayer.clearLayers();
   calcReq = req;
   if (stay) renderHome(); else go('results');
   if (loopPts.length) fit(L.latLngBounds(loopPts).pad(0.2));
@@ -1065,8 +1060,6 @@ function restoreScreen() {
 const leaveHM = () => (plan ? plan.at.slice(11, 16) : '');
 // "+N min" between the two cards: the difference of the minutes the cards show, so 19 and 21 never read "+1"
 const extraMin = () => Math.max(0, Math.round(plan.routes.better_lit.minutes) - Math.round(plan.routes.fastest.minutes));
-const lifeText = sg => [t(sg.open_places.length === 1 ? 'm.lifeOpen1' : 'm.lifeOpen', { n: sg.open_places.length }),
-  t(sg.stops.length === 1 ? 'm.lifeStops1' : 'm.lifeStops', { n: sg.stops.length })].join(' · ');
 function fitPlan() {
   if (!plan) return;
   const all = plan.verdict.kind === 'same' ? pts(plan.routes[plan.verdict.pick || 'fastest']) : pts(plan.routes.fastest).concat(pts(plan.routes.better_lit));
@@ -1121,14 +1114,6 @@ function drawRoutes(keepOld) {
   if (other) drawAlt(other, otherKind);
   drawMain(r, sel);
   drawWarnings([r, other].filter(Boolean));
-  drawLife(r.signs, false);
-}
-function drawLife(sg, numbered) {
-  lifeLayer.clearLayers();
-  if (!sg) return;
-  let n = 0;
-  for (const p of sg.open_places) L.marker([p.lat, p.lon], { icon: MK.place(numbered ? ++n : 0), keyboard: false, title: p.name }).addTo(lifeLayer);
-  for (const s of sg.stops) if (s.lat != null) L.marker([s.lat, s.lon], { icon: MK.stop(numbered ? ++n : 0), keyboard: false, title: s.name }).addTo(lifeLayer);
 }
 
 // ---------- the reveal: the route draws itself in its final look, then the fastest bends into the better-lit one ----------
@@ -1240,7 +1225,7 @@ function reveal(force) {
   // with a morph the fastest route draws itself and then bends; without one the route that stays on screen draws itself,
   // so nothing seen during the drawing (a stretch reported as unlit) disappears when it ends
   const morph = v.kind === 'show', first = morph ? 'fastest' : final;
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers();
+  routeLayer.clearLayers(); markLayer.clearLayers(); fadeLayer.clearLayers();
   const g = growing(plan.routes[first]);
   const head = L.marker(g.P[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
   anim = { t0: performance.now(), raf: 0, final, first, morph, g, head, stage: 0,
@@ -1297,10 +1282,8 @@ function frame(t) {
     const d = $('d-better_lit'); if (d) d.textContent = `${km(fast.length_m + (lit.length_m - fast.length_m) * q)} · ${arriveHM(q < 0.5 ? fast : lit)}`;
     setOp('plus-better_lit', clamp((u - 0.7) / 0.25));
     setOp('why-better_lit', clamp((u - 0.75) / 0.25));
-    setOp('lifelink', clamp((u - 0.6) / 0.3));
     setOp('plus-chip', clamp((u - 0.55) / 0.3));
   } else if (!a.morph && t >= MOTION.draw) {
-    setOp('lifelink', clamp((t - MOTION.draw) / 350));
     setOp('card-better_lit', clamp((t - MOTION.draw) / 350));
   }
   const fq = easeOut(clamp((t - MOTION.draw * 0.55) / (MOTION.draw * 0.45))), fc = $('card-fastest');
@@ -1360,14 +1343,10 @@ function renderResults() {
   } else {
     cards = `<div class="cards">${card('fastest', fastest, animating)}${card('better_lit', lit, animating)}</div>`;
   }
-  const r = plan.routes[sel || anim && anim.final || 'better_lit'], sg = r && r.signs;
-  const lifeLabel = v.kind === 'same' ? t('m.onThisRoute') : (sel || (anim && anim.final)) === 'fastest' ? t('m.onFastRoute') : t('m.onLitRoute');
-  const life = sg ? `<button type="button" class="lifelink" id="lifelink" data-act="details" style="${animating ? 'opacity: 0; visibility: hidden' : ''}">` +
-    `<span aria-hidden="true" style="display: flex; gap: 3px">${I.place()}${I.stopMk()}</span><span class="grow" style="min-width: 0"><span class="muted">${esc(lifeLabel)}</span> ${esc(lifeText(sg))}</span>${I.chev()}</button>` : '';
   const transitNote = mode === 'transit' && plan.transit && plan.transit.kind !== 'ok' ? transitWhyNot() : '';
   const chip = v.kind === 'show' ? plusChip() : '';
   $('screen').innerHTML = resultsTop() + chip +
-    `<section class="sheet" aria-label="${esc(t('m.variants'))}">${head}${transitNote}${cards}${life}` +
+    `<section class="sheet" aria-label="${esc(t('m.variants'))}">${head}${transitNote}${cards}` +
     `<div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>${voiceBtn()}` +
     `<button type="button" class="secondary" data-act="details" style="width: 112px">${esc(t('m.details'))}</button></div></section>`;
   if (chip) placePlusChip();
@@ -1444,7 +1423,7 @@ function openTip(f, kind, latlng) {
   if (id) getJSON('/api/segments/' + encodeURIComponent(id)).then(d => { if (tip && tip.f === f) { tip.ev = d.properties.ev || []; renderOverlay(); } }).catch(() => { if (tip && tip.f === f) { tip.ev = []; renderOverlay(); } });
 }
 
-// ---------- overlays: language, legend (with the covered area and the data), segment ----------
+// ---------- overlays: language, legend, segment ----------
 function closeOverlays() {
   $('screen').inert = false; $('map').inert = false;
   langOpen = false;
@@ -1475,7 +1454,6 @@ function renderOverlay() {
       <div class="legend-marks">
         <span><span class="pin-a" style="width: 16px; height: 16px; font-size: 9px">A</span>${esc(t('m.mkStart'))}</span>
         <span><span class="pin-b" style="width: 16px; height: 16px; font-size: 9px">B</span>${esc(t('m.mkDest'))}</span>
-        <span>${I.place()}${esc(t('m.mkOpen'))}</span><span>${I.stopMk()}${esc(t('m.mkStop'))}</span>
         <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M5 6h18" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
         <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M4 6h20" stroke="#8A8A8A" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
         <span><svg width="40" height="24" viewBox="-20 -12 40 24" aria-hidden="true"><rect x="-17" y="-10" width="34" height="20" rx="5" fill="#F2F2F2"/><text y="4" text-anchor="middle" font-family="Inter Tight, Inter, sans-serif" font-weight="600" font-size="12" fill="#0B0B0B">16</text></svg>${esc(t('m.mkVehicle'))}</span>
@@ -1485,15 +1463,6 @@ function renderOverlay() {
       <div class="divider"></div>
       <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-pref="net" ${netOn() ? 'checked' : ''}></label>
       <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-pref="livenet" ${prefs.livenet ? 'checked' : ''}></label>
-      <div class="divider"></div>
-      <details><summary>${I.chev(12, 'chev')}<span>${esc(t('m.aboutData'))}</span></summary>
-        <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px">
-          <p class="sec">${esc(metaText())}</p>
-          <ul class="src">${ORDER.map(k => `<li>${esc(t('legend.' + k))}</li>`).join('')}</ul>
-          <p class="small">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
-          <p class="small">${esc(t('m.aboutNote'))}</p>
-        </div>
-      </details>
     </section>`;
     for (const c of $('overlay').querySelectorAll('input[data-pref]')) c.addEventListener('change', () => {
       if (c.dataset.pref === 'net') { if (screen === 'home') prefs.net = c.checked; else prefs.netRoute = c.checked; refreshNet(); }
@@ -1514,26 +1483,21 @@ function renderOverlay() {
   }
   $('overlay').innerHTML = '';
 }
-function metaText() {
-  if (!summary) return '';
-  const g = summary.groups.streets_and_sidewalks, src = summary.sources;
-  return t('meta', { km: dec(g.km), lit: dec(g.lit_confirmed), likely: dec(g.lit_likely), dark: dec(g.dark_reported), unknown: dec(g.unknown), asof: summary.as_of,
-    osm: (summary.network.fetched_at || '').slice(0, 10), mly: (src.mapillary.last_seen_range || []).join('…'), ses: (src.sesizari.created_range || []).join('…'),
-    walk: dec((3.6 * speedMps('walk')).toFixed(1)), bike: dec((3.6 * speedMps('bike')).toFixed(0)) });
-}
-
 // ---------- details ----------
 SCREENS.details = renderDetails;
-ACT.part = el => { part = +el.dataset.i; renderDetails(); };
+ACT.part = el => {
+  if (!plan) return;
+  const kind = sel === 'transit' || !sel ? 'better_lit' : sel;
+  const run = runsOf(plan.routes[kind])[+el.dataset.i];
+  if (!run) return;
+  part = +el.dataset.i;
+  for (const button of document.querySelectorAll('.prof button')) button.setAttribute('aria-pressed', String(button === el));
+  openTip(run.feats.reduce((a, b) => b.properties.len > a.properties.len ? b : a), kind);
+};
 function renderDetails() {
   if (!plan) { go('home', false); return; }
-  const kind = sel === 'transit' || !sel ? 'better_lit' : sel, r = plan.routes[kind], runs = runsOf(r), sg = r.signs;
-  if (part == null || part >= runs.length) {
-    let best = -1;
-    runs.forEach((x, i) => { if (x.status !== 'lit_confirmed' && (best < 0 || x.len > runs[best].len)) best = i; });
-    part = best >= 0 ? best : 0;
-  }
-  const run = runs[part], f = run.feats.reduce((a, b) => (b.properties.len > a.properties.len ? b : a));
+  const kind = sel === 'transit' || !sel ? 'better_lit' : sel, r = plan.routes[kind], runs = runsOf(r);
+  if (part != null && part >= runs.length) part = null;
   const total = r.length_m || 1;
   const bar = runs.map((x, i) => {
     const s = ST[x.status], w = 100 * x.len / total;
@@ -1544,10 +1508,6 @@ function renderDetails() {
   const step = total > 2500 ? 1000 : 500, ticks = ['0'];
   for (let m = step; m < total - step * 0.4; m += step) ticks.push(km(m).replace(',00', ''));
   ticks.push(km(total));
-  let n = 0;
-  const lifeItems = sg ? sg.open_places.map(p => `<li><span class="num" aria-hidden="true">${++n}</span><span>${esc(p.name)}</span><span class="sec">${esc(p.always ? t('signsAlways') : t('m.open'))}</span></li>`)
-    .concat(sg.stops.map(s => `<li><span class="num sq" aria-hidden="true">${++n}</span><span>${esc(s.name)}</span><span class="sec">${esc(s.departures.slice(0, 3).map(d => d.line + ' ' + d.time).join(', '))}</span></li>`)) : [];
-  const time = (plan.at || '').slice(11, 16);
   $('screen').innerHTML = `
   <section class="sheet tall" aria-labelledby="h-det" style="max-height: calc(100% - 190px)">
     <div class="handle"></div>
@@ -1558,34 +1518,13 @@ function renderDetails() {
       <div class="row"><h2 id="h-prof" class="label">${esc(t('m.lightAlong'))}</h2><span class="small" style="color: var(--bz-ink-2)">${esc(t('m.darkM', { m: Math.round(r.by_status_m.dark_reported) }))}</span></div>
       <div class="prof">${bar}</div>
       <div class="ticks">${ticks.map(x => `<span>${esc(x)}</span>`).join('')}</div>
-      <span class="small" style="color: var(--bz-ink-2)">${esc(shares(r))}. ${esc(t('m.tapBar'))}</span>
     </section>
-    <section class="box" aria-labelledby="h-why">
-      <div style="display: flex; align-items: center; gap: 10px">${sample(run.status, 34)}<h2 id="h-why" style="font-size: 15px; font-weight: 600">${esc(t('m.whyTitle', { status: t('status.' + run.status) }))}</h2></div>
-      <p style="font-size: 14px; line-height: 1.45" class="muted"><strong style="color: var(--bz-ink); font-weight: 600">${esc((f.properties.name || t('noName')) + ', ' + Math.round(run.len) + ' m')}</strong> ${esc(t('m.ringNote'))} ${esc(t('m.why.' + run.status))}</p>
-      <details id="why-src"><summary>${I.chev(12, 'chev')}<span id="why-src-n">${esc(t('m.sources', { n: '…' }))}</span></summary><ul class="src" id="why-src-list" style="margin-top: 4px"></ul></details>
-    </section>
-    ${sg ? `<section aria-labelledby="h-life" style="display: flex; flex-direction: column; gap: 8px">
-      <h2 id="h-life" class="label">${esc(t('m.onRouteAt', { time }))}</h2>
-      ${lifeItems.length ? `<ul class="nlist">${lifeItems.join('')}</ul>` : `<p class="sec">${esc(t('signsNoneOpen'))}</p>`}
-      <p class="small">${esc(t('m.lifeSummary', { n: sg.places_unknown_hours, p: pct(sg.main_share) }))}</p>
-      <details><summary>${I.chev(12, 'chev')}${esc(t('m.sources', { n: 2 }))}</summary><p class="sec" style="margin-top: 4px">${esc(t('m.lifeSources', { feed: plan.transit && plan.transit.feed ? plan.transit.feed : (summary ? summary.as_of : '') }))}</p></details>
-    </section>` : ''}
     <div class="actions" style="padding-top: 4px"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>${voiceBtn()}</div>
   </section>`;
   routeLayer.clearLayers(); markLayer.clearLayers();
   drawMain(r, kind);
   drawWarnings([r]);
-  drawLife(sg, true);
-  L.marker(midOf(f), { icon: MK.ring(), interactive: false, keyboard: false }).addTo(markLayer);
   fit(L.latLngBounds(pts(r)).pad(0.05));
-  const id = (f.properties.ids || [])[0];
-  if (id) getJSON('/api/segments/' + encodeURIComponent(id)).then(d => {
-    const ev = d.properties.ev || [], list = $('why-src-list');
-    if (!list) return;
-    $('why-src-n').textContent = t('m.sources', { n: ev.length });
-    list.innerHTML = ev.length ? ev.map(e => `<li>${esc(evidenceLine(e))}</li>`).join('') : `<li>${esc(t('noEvidence'))}</li>`;
-  }).catch(() => {});
 }
 
 // ---------- walk + public transport ----------
@@ -1655,7 +1594,7 @@ function renderTransit() {
   updateLive();
 }
 function drawTransit() {
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers();
+  routeLayer.clearLayers(); markLayer.clearLayers();
   const [w1, rd, w2] = plan.transit.legs, line = ll(rd.coords);
   L.polyline(line, { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   L.polyline(line, { renderer: svgR, color: '#6B6B6B', weight: 7, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
@@ -1964,7 +1903,7 @@ function renderNav() {
       <button type="button" class="secondary sm" data-act="navStop" style="flex: none">${I.stopSq()}${esc(t('m.stop'))}</button></div>
     <div style="display: flex; flex-direction: column; gap: 6px"><span id="nav-bar"></span><span class="small" id="nav-foot"></span></div>
   </section>`;
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers();
+  routeLayer.clearLayers(); markLayer.clearLayers();
   if (nav.toStop) drawTransit(); else { drawMain(nav.r, nav.kind, routeLayer, true, 1.3); drawWarnings([nav.r]); }
   nav.done = L.polyline([], { renderer: svgR, color: '#333333', weight: 13, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   map.setView(nav.path.P[0].p, 17);
