@@ -9,13 +9,21 @@ from backend.app import create_app
 from backend.ask import Asker, Gemini, clean
 from backend.geocode import Places
 from backend.loops import around
-from backend.routing import Network
+from backend.routing import Network, SETTINGS
 from backend.tests.test_ask import ENTRIES, WAV, FakeTransport
 from backend.tests.test_ask_grounding import EXTRA, function, tool_answer
 from backend.tests.test_routing import LAT0, LON0, ll, seg
 
 FORM = {"intent": "loop", "to": "Piața Libertății", "from_here": False,
         "mode": "unspecified", "heard": "", "radius_m": 400}
+
+
+@pytest.mark.parametrize('speed, expected', [(4.3 / 3.6, '71.67 m/min'), (1.35, '81.00 m/min')])
+def test_gemini_duration_estimates_follow_routing_speed(monkeypatch, speed, expected):
+    monkeypatch.setitem(SETTINGS, 'walk_mps', speed)
+    body = Gemini('test')._body(text='Круговая прогулка на 20 минут')
+    prompt = body['systemInstruction']['parts'][0]['text']
+    assert expected in prompt and 'at 80 m/min' not in prompt
 
 
 def build(form):
@@ -170,6 +178,19 @@ def test_generated_circuit_closes_surrounds_centre_and_stays_on_accessible_netwo
 def test_a_corridor_or_an_edge_without_space_is_not_an_invented_circle():
     net = Network([seg("line", 1, 2, [(-600, 0), (600, 0)], "lit_confirmed")])
     assert around(net, (LAT0, LON0), 400) is None
+
+
+def test_bike_loop_around_c12_still_fits_the_expanded_network():
+    from backend.app import DEFAULT_SEGMENTS
+    places = Places.load(DEFAULT_SEGMENTS.parent / 'places.json.gz')
+    p = places.search('Căminul C12 UVT', 1)[0]
+    result = around(Network.load(DEFAULT_SEGMENTS), (p['lat'], p['lon']), 400, 'bike')
+    assert result is not None
+    points, plan, radius = result
+    assert 4 <= len(points) <= 9 and radius <= 400
+    for route in plan['routes'].values():
+        lines = [f['geometry']['coordinates'] for f in route['geometry']['features']]
+        assert lines[0][0] == pytest.approx(lines[-1][-1], abs=1e-6)
 
 
 @pytest.fixture()

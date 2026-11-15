@@ -25,6 +25,7 @@ from zoneinfo import ZoneInfo
 
 from backend.geocode import CATEGORY_WORDS, normalize, tokens
 from backend.ask_places import AskPlaces, CATEGORIES, alias_key, category_of
+from backend.routing import SETTINGS
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODELS = "gemini-3.5-flash-lite,gemini-3.6-flash"
@@ -79,7 +80,7 @@ Fields when intent is "route" or "loop" (otherwise null, false, "unspecified", "
 - ambiguity: list of "from"/"to" whose description could match several real places. Keep all other understood fields, even for unclear. For off_topic clear all route fields.
 - from_candidates, to_candidates: for an ambiguous side list up to 5 IDs from the catalog/search that fit the description, instead of choosing arbitrarily.
 - from_query, to_query: the original place phrases copied VERBATIM from the request/transcription, before translation or correction. Preserve uncertain foreign names phonetically here; do not replace a strange hospital name with a famous hospital. Use search_places with the original phrase when the normalized name is not found. Results marked requires_confirmation must be offered as candidates, never silently selected.
-- radius_m: only for loop, approximate radius in metres, 100 to 1200; null defaults to 400 m (a neighbourhood walk). A short/small circuit can use 200, a longer circuit 700. If the user names a total distance, estimate radius as distance/(2*pi); if they name a walking duration, estimate total distance at 80 m/min first. This is a target, not a promised exact distance or duration. Keep an explicitly requested transit mode: the UI will explain that loops support walking and cycling only.
+- radius_m: only for loop, approximate radius in metres, 100 to 1200; null defaults to 400 m (a neighbourhood walk). A short/small circuit can use 200, a longer circuit 700. If the user names a total distance, estimate radius as distance/(2*pi); if they name a walking duration, estimate total distance using the configured walking speed supplied below first. This is a target, not a promised exact distance or duration. Keep an explicitly requested transit mode: the UI will explain that loops support walking and cycling only.
 For loops, returning to the starting point does NOT imply from_here=true or from=the centre. Only set a start when explicitly named, or geolocation when explicitly requested. Do not set time to the current time unless a leaving time was actually requested. "небольшую", "short", "scurtă" mean a SMALL circuit, not the default 400 m radius.
 - waypoints: only for loop THROUGH named places, an ORDERED array of 2 to 10 {query, name, id} objects. query is the original verbatim place phrase, name is its Romanian map spelling, id is optional and must come from the catalog/search. Include EVERY requested place in its order; never compress a 3-place circuit into from/to or a circle around the first place. Return to the first automatically; do not repeat it at the end. For a circle around one centre leave waypoints empty. For a generic loop without places use historic centre Piața Libertății, not random from/to places.
 Spatial descriptions such as "nearest park north of Victoriei" MUST keep the directional condition in from/to and mark ambiguity until search_places has verified the actual direction. Never simplify this to just "parc" or pick a familiar park from memory. An explicit request for the nearest matching category may be resolved to the first spatially filtered search result.
@@ -298,7 +299,7 @@ class Gemini:
         if audio:
             parts.append({"inlineData": {"mimeType": mime, "data": audio}})
         return {
-            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT + "\nPublic landmark catalog: " + json.dumps(catalog, ensure_ascii=False)}]},
+            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT + f"\nConfigured walking speed for duration estimates: {SETTINGS['walk_mps'] * 60:.2f} m/min.\nPublic landmark catalog: " + json.dumps(catalog, ensure_ascii=False)}]},
             "contents": [{"role": "user", "parts": parts}],
             "generationConfig": {"temperature": 0, "maxOutputTokens": 1200, "responseMimeType": "application/json",
                                  "responseSchema": RESPONSE_SCHEMA},

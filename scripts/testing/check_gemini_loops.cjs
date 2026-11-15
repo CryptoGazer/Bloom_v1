@@ -13,7 +13,7 @@ const live = process.argv.includes('--live');
 const base = process.env.GEMINI_TEST_URL || 'http://127.0.0.1:8019';
 const origin = new URL(base).origin;
 const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'bezna-gemini-loops-'));
-const places = JSON.parse(execFileSync('.venv/bin/python', ['-c', "import gzip,json; print(json.dumps(json.load(gzip.open('data/out/city/places.json.gz','rt'))['entries']))"], { encoding: 'utf8' }));
+const places = ui.places();
 const place = name => {
   const p = places.find(p => p.n === name);
   assert.ok(p, name);

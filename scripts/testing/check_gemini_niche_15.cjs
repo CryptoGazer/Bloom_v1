@@ -18,7 +18,7 @@ const results = [];
 const nowRo = () => new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Bucharest',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date()).replace(' ', 'T');
 const tomorrow = () => new Date(Date.parse(nowRo().slice(0, 10) + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10);
 
-const places = JSON.parse(execFileSync('.venv/bin/python', ['-c', "import gzip,json; print(json.dumps(json.load(gzip.open('data/out/city/places.json.gz','rt'))['entries']))"], {encoding:'utf8'}));
+const places = ui.places();
 const byName = name => places.find(p => p.n === name);
 let submitted = [];
 async function rateWindow() {

@@ -18,7 +18,7 @@ def around(net, center, radius_m=DEFAULT_RADIUS_M, mode="walk", start=None):
     """
     lat, lon = center
     cx, cy = lon * KX, lat * KY
-    for scale in (1, .8, .6):
+    for scale in (1, .8, .75, .6):
         radius = max(MIN_RADIUS_M, radius_m * scale)
         for rotation in (0, math.pi / 8):
             points = []
