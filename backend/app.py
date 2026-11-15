@@ -28,7 +28,7 @@ from backend.liveliness import LIVELY, Signs
 from backend.loops import DEFAULT_RADIUS_M, MAX_RADIUS_M, MIN_RADIUS_M, around
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
-from backend.web_assets import WebAssets
+from backend.web_assets import APINoStore, WebAssets
 
 LOCAL_TZ = ZoneInfo("Europe/Bucharest")
 
@@ -136,14 +136,8 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(GZipMiddleware, minimum_size=1000)  # a map window is ~250 KB of JSON, ~40 KB compressed
+    app.add_middleware(APINoStore)
     web = WebAssets(directory=ROOT / 'web', html=True)
-
-    @app.middleware('http')
-    async def api_cache(request, call_next):
-        response = await call_next(request)
-        if request.url.path.startswith('/api/'):
-            response.headers['Cache-Control'] = 'no-store'
-        return response
 
     def network():
         if state["net"] is None:

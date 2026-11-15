@@ -7,10 +7,23 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.datastructures import Headers
+from starlette.datastructures import Headers, MutableHeaders
 from starlette.staticfiles import NotModifiedResponse
 
 ASSET_REF = re.compile(r'(?P<prefix>\b(?:src|href)=["\'])(?P<url>[^"\']+\.(?:js|css)(?:\?[^"\']*)?)(?P<quote>["\'])')
+
+
+class APINoStore:
+    """Set API cache headers without buffering streams or wrapping cancelled browser requests."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        async def outgoing(message):
+            if message['type'] == 'http.response.start' and scope.get('path', '').startswith('/api/'):
+                MutableHeaders(scope=message)['Cache-Control'] = 'no-store'
+            await send(message)
+        await self.app(scope, receive, outgoing)
 
 
 @lru_cache(maxsize=2)
