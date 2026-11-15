@@ -31,6 +31,7 @@ LIVE = {
     "delay_min_s": -10 * 60,      # a reported delay outside [-10, +30] min is not used for a forecast
     "delay_max_s": 30 * 60,
     "track_before_s": 60 * 60,    # a planned trip is tracked from an hour before its departure
+    "track_after_s": 2 * 60 * 60, # ...until two hours after it: a trip_id repeats every day, older ones are not ours
     "area_pad_deg": 0.01,         # vehicles shown within ~1 km around the stops of the map area
     "user_agent": "Bloom-UniHack-2026 (night route, Timisoara)",
 }
@@ -172,6 +173,8 @@ class Live:
           live          - expected at dep_ts + delay ("timetable + reported delay": an estimate, not the operator's ETA)."""
         if dep_ts - now > LIVE["track_before_s"]:
             return {"status": "later"}
+        if now - dep_ts > LIVE["track_after_s"]:
+            return {"status": "passed"}
         v = next((x for x in vehicles if trip_id and x["trip_id"] == trip_id), None)
         if v is None:
             return self._previous(vehicles, trip_id, dep_ts, now, day) or {"status": "no_vehicle"}

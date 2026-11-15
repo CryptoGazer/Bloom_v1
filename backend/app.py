@@ -5,6 +5,7 @@ docs: http://localhost:8001/docs
 Data: data/out/city/segments.geojson.gz from backend/build_city.py; override with LIGHTMAP_SEGMENTS=<path>.
 """
 import json
+import math
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -66,7 +67,9 @@ def leaving_time(at, now=None):
         return now
     try:
         if "T" in at:
-            return dt.datetime.fromisoformat(at)
+            when = dt.datetime.fromisoformat(at)
+            # a time with a zone ("…+02:00", "…Z") is read as Timișoara wall-clock time, like every other time here
+            return when.astimezone(LOCAL_TZ).replace(tzinfo=None) if when.tzinfo else when
         hour, minute = (int(x) for x in at.split(":"))
         when = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         return when + dt.timedelta(days=1) if when < now - LATE_GRACE else when
@@ -174,7 +177,7 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
             west, south, east, north = (float(x) for x in bbox.split(","))
         except ValueError:
             raise HTTPException(422, detail={"code": "bad_bbox", "message": "bbox must be west,south,east,north"})
-        if west >= east or south >= north:
+        if not all(math.isfinite(x) for x in (west, south, east, north)) or west >= east or south >= north:
             raise HTTPException(422, detail={"code": "bad_bbox", "message": "bbox must be west,south,east,north with west < east and south < north"})
         net = network()
         idx = net.segments_in_bbox(west, south, east, north)

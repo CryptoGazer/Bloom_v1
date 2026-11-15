@@ -248,3 +248,9 @@ def test_the_planned_ride_names_its_trip_and_boarding_stop_sequence(planner):  #
     tr = Transit(planner.net, Timetable(data))
     ride = tr.plan(at(planner, 0), at(planner, 2000), when(21, 50))["legs"][1]
     assert (ride["trip_id"], ride["board_seq"], ride["route_id"], ride["day"], ride["dep_s"]) == ("8.1_A_07", 12, "R8", "2026-11-14", 22 * 3600)
+
+
+def test_a_trip_of_another_day_is_not_matched_to_todays_vehicle():
+    # the same trip_id runs every day: yesterday's departure must not become "live" with a day-long negative ETA
+    t = trip(car(), dep=NOW - 86400 + 6 * 60)
+    assert t["status"] != "live" and "eta_s" not in t

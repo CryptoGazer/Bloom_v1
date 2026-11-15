@@ -270,6 +270,7 @@ function readHash() {
 const SCREENS = {};
 function go(name, push = true) {
   closeOverlays();
+  if (name === 'home' || name === 'search') routeReq++;   // back from a route: a late answer must not bring it back
   if (screen === 'nav' && name !== 'nav') stopNav();
   if (name !== 'results') stopAnim();
   screen = name;
@@ -300,7 +301,8 @@ document.addEventListener('click', e => {
   if (langOpen && !e.target.closest('.menu, #lang-btn')) { langOpen = false; renderOverlay(); }
 }, true);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && (langOpen || legendOpen || tip || aboutOpen || $('tp'))) { closeOverlays(); }
+  if (e.key === 'Escape' && $('tp')) closeTimePicker(false);
+  else if (e.key === 'Escape' && (langOpen || legendOpen || tip || aboutOpen)) closeOverlays();
 });
 
 ACT.home = () => { stopLive(); go('home'); };
@@ -377,7 +379,7 @@ function modeSeg(cls) {
 }
 
 // ---------- search (built once: ../ask.js binds to its Gemini form) ----------
-let sItems = [], sActive = 0, sReq = 0, sTimer = null;
+let sItems = [], sActive = 0, sReq = 0, sTimer = null, sFor = '', sPickWhenReady = false;   // sFor: the text the list was made for
 function buildSearch() {
   $('scr-search').innerHTML = `
   <div class="s-head">
@@ -401,10 +403,18 @@ function buildSearch() {
   for (const id of ['from', 'to']) {
     const inp = $(id);
     inp.addEventListener('focus', () => { searchFor = id === 'from' ? 'A' : 'B'; $('s-h1').textContent = t(searchFor === 'A' ? 'm.chooseStart' : 'm.chooseDest'); $('s-pick-text').textContent = t('m.tapMapLink', { p: searchFor }); sQuery(); });
-    inp.addEventListener('input', () => { clearTimeout(sTimer); sTimer = setTimeout(sQuery, 150); });
+    inp.addEventListener('input', () => {
+      // the old list goes at once: Enter must not pick a suggestion for the previous text
+      sItems = searchFor === 'A' ? [{ kind: 'gps', name: t('myLocation') }] : []; sFor = ''; sPickWhenReady = false; sActive = 0; sRender(inp.value.trim());
+      clearTimeout(sTimer); sTimer = setTimeout(sQuery, 150);
+    });
     inp.addEventListener('keydown', e => {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (sItems.length) { sActive = (sActive + (e.key === 'ArrowDown' ? 1 : -1) + sItems.length) % sItems.length; sRender(); } }
-      else if (e.key === 'Enter') { e.preventDefault(); if (sItems[sActive]) sPick(sItems[sActive]); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (sFor === inp.value.trim() || inp.value.trim().length < 2) { if (sItems[sActive]) sPick(sItems[sActive]); }
+        else { sPickWhenReady = true; clearTimeout(sTimer); sQuery(); }            // pick when the list for this text comes
+      }
       else if (e.key === 'Escape') { history.back(); }
     });
   }
@@ -451,11 +461,15 @@ function boldMatch(name, q) {
 function sQuery() {
   const inp = $(searchFor === 'A' ? 'from' : 'to'), q = inp.value.trim(), mine = ++sReq;
   const gps = searchFor === 'A' ? [{ kind: 'gps', name: t('myLocation') }] : [];
-  if (q.length < 2) { sItems = gps; sActive = 0; sRender(q); return; }
+  if (q.length < 2) { sItems = gps; sFor = q; sActive = 0; sRender(q); return; }
   fetch('/api/geocode?limit=8&q=' + encodeURIComponent(q))
     .then(r => (r.ok ? r.json() : { results: [] }))
-    .then(d => { if (mine === sReq) { sItems = gps.concat(d.results || []); sActive = gps.length && sItems.length > 1 ? 1 : 0; sRender(q); } })
-    .catch(() => {});
+    .then(d => {
+      if (mine !== sReq) return;
+      sItems = gps.concat(d.results || []); sFor = q; sActive = gps.length && sItems.length > 1 ? 1 : 0; sRender(q);
+      if (sPickWhenReady) { sPickWhenReady = false; if (sItems.length > gps.length) sPick(sItems[sActive]); }
+    })
+    .catch(() => { if (mine === sReq) { sItems = gps; sFor = q; sPickWhenReady = false; sRender(q); } });
 }
 function sRender(q = '') {
   const real = sItems.filter(r => r.kind !== 'gps').length;
@@ -483,6 +497,7 @@ function sPick(r) {
 function compute() {
   if (!B) { openSearch('B'); return; }
   if (!A) { locate(true); return; }
+  if (meters(A, B) < 20) { go('home'); toast(t('m.alreadyThere'), 5000); return; }
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
   saveHash();
   stopAnim(); stopLive();
@@ -865,7 +880,7 @@ function placePlusChip() {
 }
 function transitWhyNot() {
   const tr = plan.transit, s = plan.settings.transit;
-  const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m }) : tr.reason === 'no_line' ? t('noLine') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
+  const why = tr.reason === 'no_stop_near' ? t('noStopNear', { m: s.max_walk_m }) : tr.reason === 'no_line' ? t('noLine') : tr.reason === 'no_timetable' ? t('noTimetable') : tr.reason === 'too_close' ? t('tooClose') : t('noTripSoon', { min: Math.round(s.max_wait_s / 60) });
   const more = [tr.last ? t(tr.last.missed ? 'lastMissed' : 'lastWas', tr.last) : '', tr.next ? t('nextIs', tr.next) : ''].filter(Boolean).join(' ');
   return `<div class="warnbox"><span style="font-size: 14px; font-weight: 600">${esc(t('m.noTransit'))}</span><span class="sec">${esc(why + (more ? ' ' + more : ''))}</span><span class="small">${esc(t('m.walkBelow'))}</span></div>`;
 }
@@ -898,6 +913,7 @@ function openTip(f, kind, latlng) {
 
 // ---------- overlays: legend, segment, about the data ----------
 function closeOverlays() {
+  $('screen').inert = false; $('map').inert = false;
   langOpen = false;
   legendOpen = false; tip = null; aboutOpen = false;
   markLayer.eachLayer(l => { if (l.options.ring) markLayer.removeLayer(l); });
@@ -1084,7 +1100,7 @@ function renderTransit() {
   $('screen').innerHTML = top + `
   <section class="sheet" aria-labelledby="h-tr" style="max-height: calc(100% - 230px)">
     <div class="handle"></div>
-    <div style="display: flex; flex-direction: column; gap: 2px"><h1 id="h-tr" style="display: flex; align-items: baseline; gap: 10px; font-weight: 600"><span style="font-family: var(--bz-display); font-size: 28px; line-height: 1.1">${minN(tr.minutes)} min</span><span style="font-size: 15px; color: var(--bz-ink-2); font-weight: 500">${esc(t('m.arrival'))} ${esc(tr.arrive_at)}</span></h1>
+    <div style="display: flex; flex-direction: column; gap: 2px"><h1 id="h-tr" style="display: flex; align-items: baseline; gap: 10px; font-weight: 600"><span style="font-family: var(--bz-display); font-size: 28px; line-height: 1.1">${minN(tr.minutes + Math.max(0, tr.wait_min))} min</span><span style="font-size: 15px; color: var(--bz-ink-2); font-weight: 500">${esc(t('m.arrival'))} ${esc(tr.arrive_at)}</span></h1>
       <p class="sec">${esc(labels.A)} → ${esc(labels.B)}</p></div>
     ${modeSeg('compact')}
     ${tl}
@@ -1291,72 +1307,35 @@ function navRoute() {
   const kind = sel === 'fastest' ? 'fastest' : 'better_lit';
   return { r: plan.routes[kind], kind, toStop: false };
 }
-function buildPath(r) {
-  // the route as points with distance along it, and the manoeuvres where the street name changes
-  const P = [], feats = r.geometry.features;
-  let acc = 0;
-  feats.forEach((f, fi) => {
-    for (const c of f.geometry.coordinates) {
-      const p = L.latLng(c[1], c[0]), last = P[P.length - 1];
-      if (last && last.p.lat === p.lat && last.p.lng === p.lng) continue;
-      if (last) acc += meters(last.p, p);
-      P.push({ p, d: acc, fi });
-    }
-  });
-  const bearing = (a, b) => (Math.atan2((b.lng - a.lng) * Math.cos(a.lat * Math.PI / 180), b.lat - a.lat) * 180 / Math.PI + 360) % 360;
-  const man = [];
-  let name = feats.length ? feats[0].properties.name : null;
-  for (let i = 1; i < P.length - 1; i++) {
-    const f = feats[P[i].fi], nm = f.properties.name;
-    if (P[i].fi !== P[i - 1].fi && nm && nm !== name) {
-      let j = i - 1; while (j > 0 && meters(P[j].p, P[i].p) < 8) j--;
-      let k = i + 1; while (k < P.length - 1 && meters(P[i].p, P[k].p) < 8) k++;
-      let turn = bearing(P[i].p, P[k].p) - bearing(P[j].p, P[i].p);
-      turn = ((turn + 540) % 360) - 180;
-      man.push({ d: P[i].d, type: Math.abs(turn) < 35 ? 'straight' : turn > 0 ? 'right' : 'left', street: nm });
-    }
-    if (nm) name = nm;
-  }
-  man.push({ d: acc, type: 'arrive', street: '' });
-  return { P, man, total: acc };
-}
-function project(path, pos) {
-  let best = null;
-  const k = Math.cos(pos.lat * Math.PI / 180) * 111320, kl = 110540;
-  for (let i = 1; i < path.P.length; i++) {
-    const a = path.P[i - 1], b = path.P[i];
-    const ax = (a.p.lng - pos.lng) * k, ay = (a.p.lat - pos.lat) * kl, bx = (b.p.lng - pos.lng) * k, by = (b.p.lat - pos.lat) * kl;
-    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
-    const u = L2 ? clamp(-(ax * dx + ay * dy) / L2) : 0;
-    const x = ax + u * dx, y = ay + u * dy, off = Math.hypot(x, y);
-    if (!best || off < best.off) best = { off, d: a.d + u * (b.d - a.d), i };
-  }
-  return best;
-}
 function startNav() {
   if (!plan) return;
   const { r, kind, toStop } = navRoute();
-  const sim = /[?&]sim=1/.test(location.search) || !navigator.geolocation;
-  nav = { r, kind, toStop, path: buildPath(r), progress: 0, off: 0, watch: null, sim, simT: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
+  const path = BzNav.buildPath(r);
+  if (BzNav.trivial(path)) { toast(t('m.alreadyThere'), 5000); return; }
+  // the demo walk only on request (?sim=1); a GPS error never replaces the real position by a simulated one
+  const sim = /[?&]sim=1/.test(location.search);
+  nav = { r, kind, toStop, path, progress: 0, off: 0, onRoute: true, watch: null, sim, simT: null, gps: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
   go('nav');
   if (sim) startSim();
-  else {
-    nav.watch = navigator.geolocation.watchPosition(onPos, () => { toast(t('m.simNote'), 6000); startSim(); }, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
-  }
+  else if (!navigator.geolocation) { nav.gps = 2; updateNav(); }
+  else nav.watch = navigator.geolocation.watchPosition(onPos, onGpsError, { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 });
+}
+// the watch keeps trying after a timeout; the screen says it waits, and a refused permission is said plainly
+function onGpsError(err) {
+  if (!nav) return;
+  nav.gps = err && err.code === 1 ? 1 : 2;
+  updateNav();
 }
 function startSim() {
   if (!nav) return;
-  if (nav.watch != null) { navigator.geolocation.clearWatch(nav.watch); nav.watch = null; }
   nav.sim = true;
   const speed = (mode === 'bike' && !nav.toStop ? 4.2 : 1.35) * 6;   // six times faster than walking, for a demo
   let d = nav.progress;
   clearInterval(nav.simT);
   nav.simT = setInterval(() => {
     d = Math.min(nav.path.total, d + speed / 2);
-    const P = nav.path.P;
-    let i = 1; while (i < P.length - 1 && P[i].d < d) i++;
-    const a = P[i - 1], b = P[i], k = b.d > a.d ? (d - a.d) / (b.d - a.d) : 1;
-    onPos({ coords: { latitude: a.p.lat + (b.p.lat - a.p.lat) * k, longitude: a.p.lng + (b.p.lng - a.p.lng) * k, accuracy: 5, heading: null } });
+    const p = BzNav.pointAt(nav.path, d);
+    onPos({ coords: { latitude: p.lat, longitude: p.lng, accuracy: 5, heading: null } });
   }, 500);
 }
 function stopNav() {
@@ -1369,6 +1348,7 @@ function stopNav() {
 }
 function onPos(pos) {
   if (!nav) return;
+  nav.gps = null;
   const p = L.latLng(pos.coords.latitude, pos.coords.longitude);
   let heading = pos.coords.heading;
   if ((heading == null || isNaN(heading)) && nav.last && meters(nav.last, p) > 3) {
@@ -1377,16 +1357,16 @@ function onPos(pos) {
   if (heading != null && !isNaN(heading)) nav.heading = heading;
   nav.last = p;
   nav.acc = pos.coords.accuracy;
-  const pr = project(nav.path, p);
-  // a fix counts as on the route within 40 m, or within its own accuracy up to 80 m (a ±70 m Wi-Fi fix near
-  // the route is not "off the route"); only such a fix moves the walked part forward, so a stray fix 86 m
-  // away never paints streets you have not walked
-  nav.allow = Math.min(80, Math.max(40, pos.coords.accuracy || 0));
-  if (pr.off <= nav.allow) nav.progress = Math.max(nav.progress, pr.d);
-  nav.off = pr.off;
+  // progress only from a fix on the route, looked for around the current progress (a loop's start is not its
+  // end); arrival only with the phone near the destination itself
+  const st = BzNav.track(nav.path, nav.progress, { lat: p.lat, lng: p.lng, accuracy: pos.coords.accuracy }, !nav.fixes);
+  nav.fixes = (nav.fixes || 0) + 1;
+  nav.progress = st.progress;
+  nav.off = st.off;
+  nav.onRoute = st.onRoute;
   showMe(p.lat, p.lng, nav.heading);
   map.setView(p, Math.max(map.getZoom(), 17), { animate: true });
-  if (nav.path.total - nav.progress < 20) {
+  if (st.arrived) {
     const toStop = nav.toStop;
     stopNav();
     toast(t(toStop ? 'm.atStopNow' : 'm.arrived'), 5000);
@@ -1433,18 +1413,21 @@ function updateNav() {
   const round = x => (x >= 1000 ? km(x) : (x > 100 ? Math.round(x / 10) * 10 : Math.max(0, Math.round(x / 5) * 5)) + ' m');
   $('nav-icon').innerHTML = (I[man.type] || I.straight)(52);
   $('nav-dist').textContent = round(left);
-  $('nav-text').textContent = t('m.turn.' + man.type, { street: man.street });
-  $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: t('m.turn.' + after.type, { street: after.street }) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
+  const say = x => t((x.street ? 'm.turn.' : 'm.turnBare.') + x.type, { street: x.street });
+  $('nav-text').textContent = say(man);
+  $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: say(after) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
   if (nav.voice && window.speechSynthesis && left < 60 && nav.spoken !== nextI) {
     nav.spoken = nextI;
-    const u = new SpeechSynthesisUtterance(`${round(left)}. ${t('m.turn.' + man.type, { street: man.street })}`);
+    const u = new SpeechSynthesisUtterance(`${round(left)}. ${say(man)}`);
     u.lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
     speechSynthesis.speak(u);
   }
   // the next stretch reported as dark within 500 m: warn, offer the better-lit route if there is one
   const runs = runsOf(nav.r), dark = runs.find(x => x.status === 'dark_reported' && x.to > pr && x.from - pr < 500 && !nav.dismissed.has(Math.round(x.from)));
   const canDetour = !nav.toStop && nav.kind === 'fastest' && plan.verdict.kind !== 'same';
-  $('nav-warn').innerHTML = nav.off > (nav.allow || 40)
+  $('nav-warn').innerHTML = nav.gps
+    ? `<section class="warnbox" role="status"><span style="font-size: 15px; font-weight: 600">${esc(t(nav.gps === 1 ? 'm.gpsDenied' : 'm.gpsWait'))}</span></section>`
+    : !nav.onRoute
     ? `<section class="warnbox"><span style="font-size: 15px; font-weight: 600">${esc(t('m.offRoute', { m: Math.round(nav.off) }))}</span><button type="button" class="primary" data-act="recalcHere" style="height: 44px; font-size: 15px">${esc(t('m.recalcHere'))}</button></section>`
     : dark ? `<section class="warnbox dark" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
       `<div style="display: flex; gap: 8px">${canDetour ? `<button type="button" class="primary" data-act="detour" style="height: 44px; font-size: 15px">${esc(t('m.detour', { min: Math.max(1, extraMin()) }))}</button>` : ''}<button type="button" class="secondary sm" data-act="keep" data-d="${Math.round(dark.from)}">${esc(t('m.keepGoing'))}</button></div></section>`
@@ -1469,6 +1452,7 @@ let tpPrevFocus = null;
 function openTimePicker() {
   closeOverlays();
   tpPrevFocus = document.activeElement;
+  $('screen').inert = true; $('map').inert = true;
   const now = new Date();
   let h = now.getHours(), m = now.getMinutes();
   if (at) { const v = at.includes('T') ? at.slice(11, 16) : at; [h, m] = v.split(':').map(Number); }

@@ -2,6 +2,8 @@
 /* Texts of the phone layout (m.js), on top of ../i18n.js: I18N.<lang>.m. Romanian first; the word "safe" is never used.
    Romanian wording follows the design canvas; it still needs a native speaker's check. */
 Object.assign(I18N.ro, { m: {
+  alreadyThere: 'Sunteți deja la destinație.', gpsWait: 'Așteptăm semnalul GPS…', gpsDenied: 'Locația este blocată în browser.',
+  turnBare: { right: 'La dreapta', left: 'La stânga', straight: 'Înainte', arrive: 'Destinația' },
   nowBtn: 'Acum',
   leaveTime: 'Ora plecării', hours: 'Ora', minutes: 'Minute', done: 'Gata', today: 'AZI', tomorrow: 'MÂINE',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'acum', close: 'Închide', back: 'Înapoi',
@@ -87,6 +89,8 @@ Object.assign(I18N.ro, { m: {
 } });
 
 Object.assign(I18N.en, { m: {
+  alreadyThere: 'You are already at the destination.', gpsWait: 'Waiting for the GPS signal…', gpsDenied: 'Location is blocked in the browser.',
+  turnBare: { right: 'Turn right', left: 'Turn left', straight: 'Straight on', arrive: 'Destination' },
   nowBtn: 'Now',
   leaveTime: 'Leaving time', hours: 'Hours', minutes: 'Minutes', done: 'Done', today: 'TODAY', tomorrow: 'TOMORROW',
   agoS: '{s} s', agoMS: '{m} min {s} s', now: 'now', close: 'Close', back: 'Back',
@@ -172,6 +176,8 @@ Object.assign(I18N.en, { m: {
 } });
 
 Object.assign(I18N.ru, { m: {
+  alreadyThere: 'Вы уже на месте.', gpsWait: 'Ждём сигнал GPS…', gpsDenied: 'Местоположение запрещено в браузере.',
+  turnBare: { right: 'Направо', left: 'Налево', straight: 'Прямо', arrive: 'Пункт назначения' },
   nowBtn: 'Сейчас',
   leaveTime: 'Время выхода', hours: 'Часы', minutes: 'Минуты', done: 'Готово', today: 'СЕГОДНЯ', tomorrow: 'ЗАВТРА',
   agoS: '{s} с', agoMS: '{m} мин {s} с', now: 'сейчас', close: 'Закрыть', back: 'Назад',
