@@ -654,11 +654,13 @@ function reveal(force) {
   const v = plan.verdict, final = v.kind === 'same' ? (v.pick || 'fastest') : v.kind === 'too_long' ? 'fastest' : 'better_lit', key = calcKey();
   if ((!force && (seen.has(key) || quietReveal)) || reduced()) { seen.add(key); quietReveal = false; sel = final; finishReveal(); fitPlan(); return; }
   seen.add(key);
-  const fast = plan.routes.fastest, fastPts = pts(fast), morph = v.kind === 'show', cum = cumOf(fastPts);
+  // with a morph the fastest route draws itself and then bends; without one the route that stays on screen draws itself,
+  // so nothing seen during the drawing (a stretch reported as unlit) disappears when it ends
+  const morph = v.kind === 'show', first = morph ? 'fastest' : final, fast = plan.routes[first], fastPts = pts(fast), cum = cumOf(fastPts);
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers();
   const g = trail();
   const head = L.marker(fastPts[0], { icon: MK.head(), interactive: false, keyboard: false }).addTo(markLayer);
-  anim = { t0: performance.now(), raf: 0, final, morph, fastPts, cum, L: cum[cum.length - 1], g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
+  anim = { t0: performance.now(), raf: 0, final, first, morph, fastPts, cum, L: cum[cum.length - 1], g, head, stage: 0, end: morph ? MOTION.draw + MOTION.pause + MOTION.morph + MOTION.spread : MOTION.draw + 300 };
   if (morph) {
     const br = branches(fastPts, pts(plan.routes.better_lit)), N = 64;
     Object.assign(anim, { br, rf: resample(br.fb, N), rl: resample(br.lb, N), N, headPts: br.head.slice(0, -1), tailPts: br.tail.slice(1) });
@@ -686,8 +688,8 @@ function frame(t) {
     setTrail(a.g, a.fastPts);
     a.head.remove();
     const old = [a.g.glow, a.g.cas, a.g.line];
-    drawMain(fast, 'fastest', routeLayer, false, true);
-    drawWarnings([fast]);
+    drawMain(plan.routes[a.first], a.first, routeLayer, false);
+    drawWarnings([plan.routes[a.first]]);
     fadeOut(old, MOTION.pause);
   }
   if (a.morph && t >= MOTION.draw + MOTION.pause) {
