@@ -25,6 +25,9 @@ from backend.routing import Network, bike_access, walk_allowed
 AREA = ROOT / 'config/area-expanded.geojson'
 OUT = ROOT / 'data/out/city-expanded'
 QA = ROOT / 'data/cache/expansion'
+BASELINE_AREA = ROOT / 'config/area.geojson'
+BASELINE_OUT = ROOT / 'data/out/city'
+EXTRA_QUERIES = []
 SLUGS = ['fabric', 'tipografilor', 'badea-cartan-kogalniceanu', 'telegrafului-dorobanti']
 
 
@@ -65,7 +68,7 @@ def sources(data):
 def boundary(data):
     inputs = sources(data)
     zones = {f['properties']['slug']: shape(f['geometry']) for f in read(data / 'geojson/city_zones.geojson')['features']}
-    old = shape(read(ROOT / 'config/area.geojson')['features'][0]['geometry'])
+    old = shape(read(BASELINE_AREA)['features'][0]['geometry'])
     modern = zones['modern-crisan-ghiroda-noua'].intersection(box(21, 45, 21.275, 46))
     selected = unary_union([metric(old), metric(modern)] + [metric(zones[s]) for s in SLUGS])
     # Close administrative seams, then fill internal holes. Keep the approved area
@@ -126,7 +129,7 @@ def refine(data):
     result = read(QA / 'audit.json')
     prior = read(AREA)
     area = metric(shape(prior['features'][0]['geometry']))
-    old = metric(shape(read(ROOT / 'config/area.geojson')['features'][0]['geometry']))
+    old = metric(shape(read(BASELINE_AREA)['features'][0]['geometry']))
     bad = [box(c['x'], c['y'], c['x'] + 600, c['y'] + 600)
            for c in result['grid_600m'] if not c['passes']]
     failed_modern = any(not r['passes'] and r['zone'] == 'modern-crisan-ghiroda-noua' for r in result['zones_added'])
@@ -185,7 +188,7 @@ def audit(data):
     summary = read(OUT / 'summary.json')
     net = Network(fc['features'], fc['meta'])
     area = metric(shape(read(AREA)['features'][0]['geometry']))
-    old = metric(shape(read(ROOT / 'config/area.geojson')['features'][0]['geometry']))
+    old = metric(shape(read(BASELINE_AREA)['features'][0]['geometry']))
     core = np.array([i for i, p in enumerate(net.props) if p['kind'] in bc.GROUPS['streets_and_sidewalks']], dtype=int)
     lines = net.lines[core]
     tree = shapely.STRtree(lines)
@@ -283,7 +286,7 @@ def verify(data):
             response = client.get(url)
             assert response.status_code == 200, (url, response.text)
             checks.append({'url': url, 'http': response.status_code})
-        for query in ['Piata Traian', 'Badea Cartan', 'Telegrafului', 'Tipografilor', 'Matasarilor']:
+        for query in ['Piata Traian', 'Badea Cartan', 'Telegrafului', 'Tipografilor', 'Matasarilor'] + EXTRA_QUERIES:
             response = client.get('/api/geocode', params={'q': query})
             found = response.json()['results']
             assert found, f'Expanded search has no result for {query}'
@@ -315,7 +318,7 @@ def verify(data):
             if any(e.get('s') == 'sesizari' and e.get('k') in ['open_area_outage', 'open_lamp_out'] and e.get('age') is not None and e['age'] <= 30 for e in p.get('ev', [])):
                 totals['direct_complaint_dark_m'] += length
         return {k: round(v) for k, v in totals.items()}
-    old = shape(read(ROOT / 'config/area.geojson')['features'][0]['geometry'])
+    old = shape(read(BASELINE_AREA)['features'][0]['geometry'])
     manifest = {'as_of': result['as_of'], 'area_km2': result['area_km2'],
                 'area_sha256': hashlib.sha256(AREA.read_bytes()).hexdigest(),
                 'quality_passes': True, 'routing_passes': True, 'api_checks': checks,
@@ -323,7 +326,7 @@ def verify(data):
                 'grid_600m_cells_checked': len(result['grid_600m']),
                 'max_grid_unknown_pct': max(r['unknown'] for r in result['grid_600m']),
                 'max_grid_walking_unknown_pct': max(r['walking_with_paths']['unknown'] for r in result['grid_600m'] if r['walking_with_paths']['street_km'] >= 1),
-                'red_comparison': {'current': red_lengths(ROOT / 'data/out/city/segments.geojson.gz', old),
+                'red_comparison': {'current': red_lengths(BASELINE_OUT / 'segments.geojson.gz', old),
                                    'expanded': red_lengths(OUT / 'segments.geojson.gz', area)},
                 'files': {name: {'bytes': (OUT / name).stat().st_size,
                                  'sha256': hashlib.sha256((OUT / name).read_bytes()).hexdigest()}
