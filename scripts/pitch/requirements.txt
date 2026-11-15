@@ -1,0 +1,2 @@
+# Optional export dependency; numpy and shapely are already in backend/requirements.txt.
+Pillow>=10

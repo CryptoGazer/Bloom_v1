@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bezna — written by the streets</title>
+<link rel="icon" type="image/svg+xml" href="street-icon-v2.svg">
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:#090d0f;color:#d5dddf;font-family:system-ui,sans-serif}
+main{width:100%;height:100%;display:grid;place-items:center}#art{display:block;width:100%;height:100%;object-fit:contain}
+body.icon #art{max-width:100vh;max-height:100vw}nav{position:fixed;right:20px;bottom:16px;display:flex;gap:16px;opacity:0;transition:opacity .2s;font-size:12px}
+nav:hover,nav:focus-within{opacity:1}a{color:#b8c4c9;text-decoration:none}a:hover{text-decoration:underline}body.clean nav{display:none}
+</style>
+</head>
+<body>
+<main><img id="art" src="street-title-v2.svg" alt="BEZNA, traced only along real streets of Timișoara"></main>
+<nav aria-label="Variants"><a href="title.html">Original title</a><a href="title-streets.html">First street draft</a><a href="title-streets-v2.html">Title</a><a href="?icon=B">App icon</a></nav>
+<script>
+const query=new URLSearchParams(location.search);
+if(query.has('icon')){document.body.classList.add('icon');document.getElementById('art').src='street-icon-v2.svg';}
+if(query.has('clean'))document.body.classList.add('clean');
+</script>
+</body>
+</html>

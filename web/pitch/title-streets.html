@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bezna — titlu, străzi</title>
+<!-- Title slide, second variant: BEZNA drawn only by walks along real streets, like a GPS drawing, over our dark
+     basemap. The walks come from bezna-streets.json (scripts/pitch/street_letters.py). Open full screen, 16:9.
+     ?icon=B: the app icon, one letter on a square, without the caption. -->
+<link rel="stylesheet" href="../vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+html, body { height: 100%; margin: 0; background: #0B0B0B; overflow: hidden; }
+#map { position: absolute; inset: 0; background: #0B0B0B; }
+.leaflet-container { background: #0B0B0B; }
+.bz-tiles { filter: invert(1) grayscale(1) brightness(.5) contrast(1.25); }
+.icon .bz-tiles { filter: invert(1) grayscale(1) brightness(.42) contrast(1.3); }
+.leaflet-control-attribution { background: rgba(11,11,11,.6) !important; color: #6B6B6B; font: 10px Inter, sans-serif; }
+.leaflet-control-attribution a { color: #8A8A8A; }
+.glow { filter: url(#glow); }
+#vignette { position: absolute; inset: 0; pointer-events: none; z-index: 500;
+            background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(11,11,11,0) 50%, rgba(11,11,11,.85) 100%); }
+.icon #vignette { background: radial-gradient(circle at 50% 50%, rgba(11,11,11,0) 45%, rgba(11,11,11,.9) 100%); }
+#caption { position: absolute; left: 4vw; bottom: 4.5vh; z-index: 600; color: #F2F2F2; font-family: Inter, system-ui, sans-serif; }
+#caption b { display: block; font-size: 2.2vw; font-weight: 600; letter-spacing: -0.01em; }
+#caption span { display: block; margin-top: .6vh; font: 500 1vw "JetBrains Mono", monospace; letter-spacing: .12em; color: #8A8A8A; text-transform: uppercase; }
+.icon #caption, .icon .leaflet-control-attribution { display: none; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position: absolute" aria-hidden="true"><defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs></svg>
+<div id="map" role="img" aria-label="bezna"></div>
+<div id="vignette"></div>
+<div id="caption"><b>Prin beznă, spre casă.</b><span>Timișoara · UniHack 2026</span></div>
+<script src="../vendor/leaflet/leaflet.js"></script>
+<script>
+'use strict';
+const ICON = new URLSearchParams(location.search).get('icon');
+if (ICON) document.body.classList.add('icon');
+const map = L.map('map', { zoomControl: false, attributionControl: !ICON, zoomSnap: 0.05, dragging: false, scrollWheelZoom: false,
+  doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false, fadeAnimation: false });
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'bz-tiles',
+  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · bezna' }).addTo(map);
+map.setView([45.7555, 21.2380], 15);
+const svg = L.svg({ padding: 0.3 });
+
+fetch('bezna-streets.json').then(r => r.json()).then(d => {
+  const feats = ICON ? d.features.filter(f => f.properties.letter === ICON.toUpperCase()) : d.features;
+  const lines = feats.flatMap(f => f.geometry.coordinates.map(ln => ln.map(c => L.latLng(c[1], c[0]))));
+  const box = L.latLngBounds(lines.flat());
+  if (ICON) map.fitBounds(box, { padding: [map.getSize().x * 0.2, map.getSize().y * 0.2], animate: false });
+  else map.fitBounds(box, { paddingTopLeft: [map.getSize().x * 0.09, map.getSize().y * 0.2], paddingBottomRight: [map.getSize().x * 0.09, map.getSize().y * 0.26], animate: false });
+  const w = ICON ? map.getSize().x / 512 : 1;          // the icon is drawn at any size with the same proportions
+  L.polyline(lines, { renderer: svg, color: '#FFFFFF', opacity: 0.55, weight: 16 * w, lineCap: 'round', lineJoin: 'round', className: 'glow', interactive: false }).addTo(map);
+  L.polyline(lines, { renderer: svg, color: '#F2F2F2', opacity: 1, weight: (ICON ? 9 : 5.5) * w, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(map);
+  document.body.dataset.ready = String(lines.length);
+});
+</script>
+</body>
+</html>
