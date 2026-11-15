@@ -70,27 +70,30 @@ const I = {
   left: s => SV('<path d="M17 21V11a4 4 0 0 0-4-4H4"/><path d="m8 3-4 4 4 4"/>', s, 2),
   straight: s => SV('<path d="M12 21V4"/><path d="m6 9 6-6 6 6"/>', s, 2),
   arrive: s => SV('<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><rect x="9.5" y="7.5" width="5" height="5" rx="1"/>', s, 2),
-  diamond: (s = 14) => `<svg width="${s}" height="${s}" viewBox="-7 -7 14 14" aria-hidden="true"><rect x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.2"/><path d="M0 -2.4V.6M0 2.3v.1" stroke="#F2F2F2" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+  diamond: (s = 14) => `<svg width="${s}" height="${s}" viewBox="-7 -7 14 14" aria-hidden="true"><rect x="-4.6" y="-4.6" width="9.2" height="9.2" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.2"/><path d="M0 -2.4V.6M0 2.3v.1" stroke="#0B0B0B" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   place: (s = 12) => `<svg width="${s}" height="${s}" viewBox="-6 -6 12 12" aria-hidden="true"><circle r="4.8" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.3"/><circle r="1.6" fill="#F2F2F2"/></svg>`,
   stopMk: (s = 12) => `<svg width="${s}" height="${s}" viewBox="-6 -6 12 12" aria-hidden="true"><rect x="-4.8" y="-4.8" width="9.6" height="9.6" rx="1.8" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.3"/><rect x="-1.8" y="-1.8" width="3.6" height="3.6" fill="#F2F2F2"/></svg>`,
 };
 const WORDMARK = `<svg width="88" height="25" viewBox="0 -1 92 26" role="img" aria-label="bezna"><defs><filter id="zglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.3"/></filter></defs><g fill="none" stroke="#F2F2F2" stroke-width="3.2"><path d="M1.6 0V24"/><circle cx="8" cy="16" r="6.4"/><path d="M21.1 16H33.9"/><path d="M33.9 16A6.4 6.4 0 1 0 32.03 20.53"/><path d="M39 9.6H51.8"/><path d="M39 22.4H51.8"/><path d="M56.9 24V8"/><path d="M56.9 16A6.4 6.4 0 0 1 69.7 16V24"/><circle cx="82.8" cy="16" r="6.4"/><path d="M89.2 8V24"/></g><path d="M50.6 11.4L40.2 20.6" stroke="#FFFFFF" stroke-width="3.2" filter="url(#zglow)" opacity="0.75"/><path d="M50.6 11.4L40.2 20.6" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 
-// ---------- lighting status: tone + line pattern (colour is never the only cue) ----------
+// ---------- lighting status (design "Tihij svet", rev. 15.11): a white wrap, and where the street is not
+// confirmed lit, a dark channel with a coloured core and its own pattern (colour is never the only cue) ----------
 const ST = {
-  lit_confirmed: { c: '#F2F2F2', d: null, cap: 'round', alt: null, net: null, bar: null, sample: null },
-  lit_likely: { c: '#D4D4D4', d: '12 6', cap: 'butt', alt: '8 5', net: '8 5', bar: '7 3', sample: '12 6' },
-  unknown: { c: '#8A8A8A', d: '0.1 11', cap: 'round', alt: '0.1 7', net: '0.1 6', bar: '0.1 7', sample: '0.1 9' },
-  dark_reported: { c: '#A3A3A3', d: '9 10 0.1 10', cap: 'round', alt: '6 7 0.1 7', net: '7 5 0.1 5', bar: '4 8 0.1 8', sample: '8 8 0.1 8' },
+  lit_confirmed: { c: '#F2F2F2', d: null, cap: 'round', alt: null, net: null, netOp: 0.4, bar: null, sample: null },
+  lit_likely: { c: '#FFC83D', d: '10 5', cap: 'butt', alt: '6 4', net: '8 5', netOp: 0.6, bar: '7 3', sample: '8 4' },
+  unknown: { c: '#A3A3A3', d: '0.1 8', cap: 'round', alt: '0.1 5', net: '0.1 6', netOp: 0.75, netC: '#8A8A8A', bar: '0.1 7', sample: '0.1 7' },
+  dark_reported: { c: '#FF5A4F', d: '7 8 0.1 8', cap: 'round', alt: '4 5 0.1 5', net: '7 5 0.1 5', netOp: 0.75, bar: '4 8 0.1 8', sample: '5 6 0.1 6' },
 };
 const ORDER = ['lit_confirmed', 'lit_likely', 'unknown', 'dark_reported'];
 const LIVE_S = 60;   // an observed position younger than this is "LIVE" (design: one of five bars fades every 12 s)
+const DIAMOND = '<rect x="-5" y="-5" width="10" height="10" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.2"/><path d="M0 -2.6V.6M0 2.4v.1" stroke="#0B0B0B" stroke-width="1.5" stroke-linecap="round"/>';
 
-function sample(status, w = 48, sw = 5) {
-  const s = ST[status] || ST.unknown;
-  const line = `<path d="M3 5h${w - (status === 'dark_reported' ? 18 : 6)}" stroke="${s.c}" stroke-width="${sw}"${s.sample ? ` stroke-dasharray="${s.sample}"` : ''} stroke-linecap="${s.cap}"/>`;
-  const warn = status === 'dark_reported' ? `<g transform="translate(${w - 7} 7)"><rect x="-5" y="-5" width="10" height="10" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.2"/><path d="M0 -2.6V.6M0 2.4v.1" stroke="#F2F2F2" stroke-width="1.4" stroke-linecap="round"/></g>` : '';
-  return `<svg width="${w}" height="14" viewBox="0 -2 ${w} 14" aria-hidden="true">${line}${warn}</svg>`;
+function sample(status, w = 48) {
+  const s = ST[status] || ST.unknown, end = w - (status === 'dark_reported' ? 17 : 5);
+  let line = `<path d="M5 6H${end}" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/>`;
+  if (status !== 'lit_confirmed') line += `<path d="M5 6H${end}" stroke="#0B0B0B" stroke-width="5.8"/><path d="M5 6H${end}" stroke="${s.c}" stroke-width="3.6" stroke-dasharray="${s.sample}" stroke-linecap="${s.cap}"/>`;
+  const warn = status === 'dark_reported' ? `<g transform="translate(${w - 7} 6)">${DIAMOND}</g>` : '';
+  return `<svg width="${w}" height="12" viewBox="0 0 ${w} 12" aria-hidden="true">${line}${warn}</svg>`;
 }
 
 // consecutive features with the same status, with their distance along the route
@@ -158,9 +161,9 @@ const MK = {
   // the fade-in runs on an inner element: Leaflet positions the icon itself with a transform
   place: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><circle r="8.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.place(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
   stop: n => divIcon(`<span class="mk-in">${n ? `<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-8.5" y="-8.5" width="17" height="17" rx="3" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><text y="3.5" text-anchor="middle" font-size="10" fill="#F2F2F2">${n}</text></svg>` : I.stopMk(14)}</span>`, n ? 22 : 14, n ? 22 : 14),
-  warn: () => divIcon('<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#F2F2F2" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
+  warn: () => divIcon('<svg width="22" height="22" viewBox="-11 -11 22 22"><rect x="-7.5" y="-7.5" width="15" height="15" transform="rotate(45)" fill="#FF5A4F" stroke="#0B0B0B" stroke-width="1.5"/><path d="M0 -4.2V1.2M0 3.6v.2" stroke="#0B0B0B" stroke-width="1.8" stroke-linecap="round"/></svg>', 22, 22),
   ring: () => divIcon('<svg width="36" height="36" viewBox="-18 -18 36 36"><circle r="16" fill="none" stroke="#F2F2F2" stroke-width="1.5" stroke-dasharray="3 3"/></svg>', 36, 36),
-  head: () => divIcon('<svg width="34" height="34" viewBox="-17 -17 34 34"><circle r="16" fill="url(#bzhead)"/><circle r="4" fill="#FFFFFF"/></svg>', 34, 34),
+  head: () => divIcon('<svg width="42" height="42" viewBox="-21 -21 42 42"><circle r="20" fill="url(#bzhead)"/><circle r="6.5" fill="#FFFFFF" stroke="#0B0B0B" stroke-width="2"/></svg>', 42, 42),
   station: () => divIcon('<svg width="20" height="20" viewBox="-10 -10 20 20"><circle r="7.5" fill="#0B0B0B" stroke="#F2F2F2" stroke-width="2"/></svg>', 20, 20),
   vehicle: (v, mine, old) => {
     const w = Math.max(34, 12 + 9 * String(v.line).length), arrow = typeof v.bearing === 'number' && !old;
@@ -195,7 +198,7 @@ function refreshNet() {
       if (d.truncated) return;
       for (const k of ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported']) {
         const s = ST[k], lines = d.features.filter(f => f.properties.status === k).map(f => ll(f.geometry.coordinates));
-        if (lines.length) L.polyline(lines, { renderer: netR, color: s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: 0.42, dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
+        if (lines.length) L.polyline(lines, { renderer: netR, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: s.netOp, dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
       }
     })
     .catch(() => {});
@@ -338,13 +341,12 @@ function renderHome() {
   const timeLabel = at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now');
   $('screen').innerHTML = `
   <div class="top" style="justify-content: space-between">
-    <div class="brand">${WORDMARK}<span class="sec">${esc(t('m.tagline'))}</span></div>
+    <div class="cov-chip"><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true" style="flex-shrink: 0"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg><span>${esc(t('m.coverage'))}</span></div>
     <div style="display: flex; gap: 8px">
       <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
       <button type="button" class="round" data-act="legend" aria-expanded="${legendOpen}" aria-label="${esc(t('m.legendLayers'))}">${I.legend()}</button>
     </div>
   </div>
-  <div class="note-chip"><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg><span>${esc(t('m.coverage'))}</span></div>
   <section class="sheet" aria-labelledby="h-home">
     <div class="handle"></div>
     <div style="display: flex; flex-direction: column; gap: 4px"><h1 id="h-home" class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>
@@ -528,24 +530,32 @@ const arriveHM = r => fmtHM(hm(leaveHM()) + r.minutes);
 const routeTitle = kind => (plan && plan.verdict.kind === 'same' ? t(plan.verdict.pick === 'better_lit' ? 'm.litSame' : 'm.fastestOne') : t(kind === 'fastest' ? 'm.fastest' : 'm.litter'));
 
 // ---------- drawing routes ----------
-function drawMain(r, kind, layer = routeLayer, hit = true) {  // eslint-disable-line no-unused-vars
-  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates));
-  L.polyline(lines, { renderer: svgR, color: '#F2F2F2', weight: 10, opacity: 0.32, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
-  L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: 12, opacity: 1, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
+// a route as the design draws it: dark casing, a wrap (white for the chosen route, grey for the alternative) and,
+// where the street is not confirmed lit, a dark channel with the coloured core inside the wrap
+function wrapped(r, layer, o) {
+  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates)), out = [], op = o.opacity ?? 1;
+  out.push(L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: o.caseW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
+  out.push(L.polyline(lines, { renderer: svgR, color: o.wrap, weight: o.wrapW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
   for (const f of r.geometry.features) {
-    const s = ST[f.properties.status] || ST.unknown, pts = ll(f.geometry.coordinates);
-    L.polyline(pts, { renderer: svgR, color: s.c, weight: 6, opacity: 1, dashArray: s.d, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer);
-    if (hit) L.polyline(pts, { renderer: svgR, weight: 24, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, kind, e.latlng)).addTo(layer);
+    const st = f.properties.status, s = ST[st] || ST.unknown;
+    if (st === 'lit_confirmed') continue;
+    const p = ll(f.geometry.coordinates);
+    out.push(L.polyline(p, { renderer: svgR, color: '#0B0B0B', weight: o.chanW, opacity: op, interactive: false, lineJoin: 'round', lineCap: 'butt' }).addTo(layer));
+    out.push(L.polyline(p, { renderer: svgR, color: s.c, weight: o.coreW, opacity: op, dashArray: o.alt ? s.alt : s.d, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer));
+  }
+  return out;
+}
+function drawMain(r, kind, layer = routeLayer, hit = true, k = 1) {
+  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates));
+  L.polyline(lines, { renderer: svgR, color: '#F2F2F2', weight: 12 * k, opacity: 0.3, className: 'bz-glow', interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer);
+  wrapped(r, layer, { wrap: '#F2F2F2', caseW: 15 * k, wrapW: 10 * k, chanW: 6.4 * k, coreW: 4 * k });
+  if (hit) for (const f of r.geometry.features) {
+    L.polyline(ll(f.geometry.coordinates), { renderer: svgR, weight: 24, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, kind, e.latlng)).addTo(layer);
   }
 }
-function drawAlt(r, kind, layer = routeLayer, opacity = 0.8) {
-  const lines = r.geometry.features.map(f => ll(f.geometry.coordinates)), out = [];
-  out.push(L.polyline(lines, { renderer: svgR, color: '#0B0B0B', weight: 8, opacity: Math.min(1, opacity / 0.8), interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(layer));
-  for (const f of r.geometry.features) {
-    const s = ST[f.properties.status] || ST.unknown;
-    out.push(L.polyline(ll(f.geometry.coordinates), { renderer: svgR, color: s.c, weight: 3, opacity, dashArray: s.alt, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(layer));
-  }
-  L.polyline(lines, { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', () => pick(kind)).addTo(layer);
+function drawAlt(r, kind, layer = routeLayer, opacity = 1) {
+  const out = wrapped(r, layer, { wrap: '#8A8A8A', caseW: 10, wrapW: 6, chanW: 3.4, coreW: 2.2, alt: true, opacity });
+  L.polyline(r.geometry.features.map(f => ll(f.geometry.coordinates)), { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', () => pick(kind)).addTo(layer);
   return out;
 }
 function midOf(f) {
@@ -625,9 +635,9 @@ function cutC(ps, cum, len) {
 }
 // a light trail while it moves: a wide translucent stroke instead of the blur filter, which is too slow to redraw every frame
 const trail = () => ({
-  glow: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 16, opacity: 0.12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  cas: L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
-  line: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 6, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+  glow: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 20, opacity: 0.12, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+  cas: L.polyline([], { renderer: svgR, color: '#0B0B0B', weight: 15, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
+  line: L.polyline([], { renderer: svgR, color: '#F2F2F2', weight: 10, interactive: false, lineJoin: 'round', lineCap: 'round' }).addTo(routeLayer),
 });
 const setTrail = (g, ll) => { g.glow.setLatLngs(ll); g.cas.setLatLngs(ll); g.line.setLatLngs(ll); };
 // the old drawing fades away on top of the new one, so a stage change never flashes
@@ -696,8 +706,8 @@ function frame(t) {
       return L.latLng(p.lat + (q.lat - p.lat) * k, p.lng + (q.lng - p.lng) * k);
     });
     setTrail(a.m, a.headPts.concat(mid, a.tailPts));
-    const altOp = 0.8 * easeOut(u);
-    a.alt.forEach((p, i) => p.setStyle({ opacity: i === 0 ? altOp / 0.8 : altOp }));
+    const altOp = easeOut(u);
+    a.alt.forEach(p => p.setStyle({ opacity: altOp }));
     // the cards follow the line
     const q = easeMorph(clamp((u - 0.25) / 0.55));
     setOp('card-better_lit', easeOut(clamp(tm / 220)));
@@ -882,8 +892,8 @@ function renderOverlay() {
         <span><span class="pin-a" style="width: 16px; height: 16px; font-size: 9px">A</span>${esc(t('m.mkStart'))}</span>
         <span><span class="pin-b" style="width: 16px; height: 16px; font-size: 9px">B</span>${esc(t('m.mkDest'))}</span>
         <span>${I.place()}${esc(t('m.mkOpen'))}</span><span>${I.stopMk()}${esc(t('m.mkStop'))}</span>
-        <span><svg width="28" height="10" viewBox="0 0 28 10" aria-hidden="true"><path d="M2 5h24" stroke="#F2F2F2" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
-        <span><svg width="28" height="10" viewBox="0 0 28 10" aria-hidden="true"><path d="M2 5h24" stroke="#F2F2F2" stroke-opacity="0.75" stroke-width="2.5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
+        <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M5 6h18" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
+        <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M4 6h20" stroke="#8A8A8A" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
         <span><svg width="40" height="24" viewBox="-20 -12 40 24" aria-hidden="true"><rect x="-17" y="-10" width="34" height="20" rx="5" fill="#F2F2F2"/><text y="4" text-anchor="middle" font-family="Inter Tight, Inter, sans-serif" font-weight="600" font-size="12" fill="#0B0B0B">16</text></svg>${esc(t('m.mkVehicle'))}</span>
       </div>
       <span class="small">${esc(t('m.tapPart'))}</span>
@@ -1053,10 +1063,8 @@ function drawTransit() {
   L.polyline(line, { renderer: svgR, color: '#0B0B0B', weight: 12, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   L.polyline(line, { renderer: svgR, color: '#6B6B6B', weight: 7, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   for (const w of [w1, w2]) {
-    L.polyline(w.geometry.features.map(f => ll(f.geometry.coordinates)), { renderer: svgR, color: '#0B0B0B', weight: 10, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
+    wrapped(w, routeLayer, { wrap: '#F2F2F2', caseW: 10, wrapW: 6, chanW: 3.4, coreW: 2.2, alt: true });
     for (const f of w.geometry.features) {
-      const s = ST[f.properties.status] || ST.unknown;
-      L.polyline(ll(f.geometry.coordinates), { renderer: svgR, color: s.c, weight: 5, dashArray: s.alt || null, lineCap: s.cap, lineJoin: 'round', interactive: false }).addTo(routeLayer);
       L.polyline(ll(f.geometry.coordinates), { renderer: svgR, weight: 22, opacity: 0, bubblingMouseEvents: false }).on('click', e => openTip(f, 'better_lit', e.latlng)).addTo(routeLayer);
     }
   }
@@ -1364,8 +1372,8 @@ function renderNav() {
     <div style="display: flex; flex-direction: column; gap: 6px"><span id="nav-bar"></span><span class="small" id="nav-foot"></span></div>
   </section>`;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers();
-  if (nav.toStop) drawTransit(); else { drawMain(nav.r, nav.kind); drawWarnings([nav.r]); }
-  nav.done = L.polyline([], { renderer: svgR, color: '#333333', weight: 6, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
+  if (nav.toStop) drawTransit(); else { drawMain(nav.r, nav.kind, routeLayer, true, 1.3); drawWarnings([nav.r]); }
+  nav.done = L.polyline([], { renderer: svgR, color: '#333333', weight: 13, interactive: false, lineCap: 'round', lineJoin: 'round' }).addTo(routeLayer);
   map.setView(nav.path.P[0].p, 17);
   updateNav();
 }
@@ -1394,7 +1402,7 @@ function updateNav() {
   const canDetour = !nav.toStop && nav.kind === 'fastest' && plan.verdict.kind !== 'same';
   $('nav-warn').innerHTML = nav.off > 40
     ? `<section class="warnbox"><span style="font-size: 15px; font-weight: 600">${esc(t('m.offRoute', { m: Math.round(nav.off) }))}</span><button type="button" class="primary" data-act="recalcHere" style="height: 44px; font-size: 15px">${esc(t('m.recalcHere'))}</button></section>`
-    : dark ? `<section class="warnbox" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
+    : dark ? `<section class="warnbox dark" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
       `<div style="display: flex; gap: 8px">${canDetour ? `<button type="button" class="primary" data-act="detour" style="height: 44px; font-size: 15px">${esc(t('m.detour', { min: Math.max(1, extraMin()) }))}</button>` : ''}<button type="button" class="secondary sm" data-act="keep" data-d="${Math.round(dark.from)}">${esc(t('m.keepGoing'))}</button></div></section>`
       : '';
   const remain = path.total - pr, speed = mode === 'bike' && !nav.toStop ? 4.2 : 1.35, minLeft = remain / speed / 60;
