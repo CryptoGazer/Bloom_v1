@@ -168,7 +168,7 @@ On Windows, use `.\.venv\Scripts\python.exe` for the Python command. JavaScript 
 | [config/](config/) | Coverage boundaries |
 | [data/out/city-northwest/](data/out/city-northwest/) | Active street network, place index, summary and timetable |
 | [scripts/transit/](scripts/transit/) | Transit logger, CSV import and Tiger Data setup |
-| [docs/](docs/) | Integration guides, data research and test reports |
+| [docs/](docs/README.md) | Integration guides, data research and test reports |
 
 ## Data and licences
 
