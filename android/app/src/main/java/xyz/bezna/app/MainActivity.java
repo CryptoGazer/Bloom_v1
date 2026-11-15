@@ -29,11 +29,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * bezna: the phone page (web/m) in a WebView. The page's files come from the APK, the API from BASE_URL.
- * For the navigator the page gets window.BeznaNative (class Bridge): the system voice, a screen that stays on
- * and the phone's compass, which a browser page does not have.
- */
+/** WebView shell for the bundled mobile UI and native navigation bridge. */
 public class MainActivity extends Activity implements SensorEventListener {
     private static final Uri BASE = Uri.parse(BuildConfig.BASE_URL);
     private static final int ASK_LOCATION = 1, ASK_MIC = 2;
@@ -68,8 +64,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setWebViewClient(new Client());
         web.setWebChromeClient(new Chrome());
-        // Google's engine supports Romanian and English; some phones' own engines list every language but speak only
-        // English (vivo's com.vivo.aiservice). Google's if it is installed, the phone's default otherwise.
+        // Prefer Google TTS for Romanian support; fall back to the default engine.
         final String engine = installed(GOOGLE_TTS) ? GOOGLE_TTS : null;
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
@@ -86,7 +81,6 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override protected void onPause() { compass(false); web.onPause(); super.onPause(); }
     @Override protected void onDestroy() { if (tts != null) tts.shutdown(); super.onDestroy(); }
 
-    /** "Back" walks the page's screens, as in a browser; on the first screen it leaves the app. */
     @Override
     public void onBackPressed() {
         if (web.canGoBack()) web.goBack(); else super.onBackPressed();
@@ -114,9 +108,6 @@ public class MainActivity extends Activity implements SensorEventListener {
         }
     }
 
-    // ---------- the navigator ----------
-
-    /** The navigator is open: the screen stays on and the compass reports the phone's direction. */
     private void setNav(boolean on) {
         navOn = on;
         if (on) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -131,7 +122,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (on && rotation != null) sensors.registerListener(this, rotation, SensorManager.SENSOR_DELAY_UI);
     }
 
-    /** The phone's direction, degrees clockwise from north, to the page at most four times a second. */
+    /** Heading in degrees clockwise from north, limited to four updates per second. */
     @Override
     public void onSensorChanged(SensorEvent event) {
         long now = SystemClock.elapsedRealtime();
@@ -146,7 +137,7 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override public void onAccuracyChanged(Sensor sensor, int accuracy) { }
 
-    /** window.BeznaNative in the page (web/m/m.js). Called on a WebView thread, so everything hops to the UI thread. */
+    /** JavaScript callbacks run on a WebView thread; dispatch native work to the UI thread. */
     private class Bridge {
         @JavascriptInterface
         public void nav(final boolean on) { runOnUiThread(() -> setNav(on)); }
@@ -160,7 +151,7 @@ public class MainActivity extends Activity implements SensorEventListener {
                 int language = tts.setLanguage(locale);
                 if (language < TextToSpeech.LANG_AVAILABLE) {
                     Log.w(TAG, "speak: missing voice data for " + lang);
-                    return; // Do not read Romanian using the previously selected English voice.
+                    return; // Prevent fallback to a voice in another language.
                 }
                 int queued = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bezna");
                 Log.i(TAG, "speak " + lang + ": language " + language + ", queued " + queued + ", voice " + tts.getVoice());
@@ -171,10 +162,8 @@ public class MainActivity extends Activity implements SensorEventListener {
         public void stopSpeaking() { runOnUiThread(() -> { if (ttsReady) tts.stop(); }); }
     }
 
-    // ---------- the page ----------
-
     private class Client extends WebViewClient {
-        /** Files of the page from the APK (the web/ folder); the API and everything else from the network. */
+        /** Serve bundled web assets; leave API requests on the network. */
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Uri u = request.getUrl();
@@ -196,11 +185,10 @@ public class MainActivity extends Activity implements SensorEventListener {
             }
         }
 
-        /** Other sites (map attribution, sources) open in the browser. */
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             if (BASE.getHost().equals(request.getUrl().getHost())) return false;
-            try { startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl())); } catch (Exception noBrowser) { /* nothing to open it with */ }
+            try { startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl())); } catch (Exception noBrowser) { }
             return true;
         }
     }

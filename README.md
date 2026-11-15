@@ -9,7 +9,7 @@
 ## Try the project
 
 - **Browser:** open https://bezna.xyz/m/ on a phone or computer. No account, local setup or API keys are needed.
-- **Android 8.0 or later:** install an `.apk` attached to a [GitHub release](https://github.com/CryptoGazer/Bloom_v1/releases). If no APK is attached, use the build instructions below. GitHub's source-code ZIP is not an installer.
+- **Android 8.0 or later:** install an `.apk` attached to a [GitHub release](https://github.com/CryptoGazer/bezna/releases). If no APK is attached, use the build instructions below. GitHub's source-code ZIP is not an installer.
 - **Install the APK:** download it on an Android phone, open the file and complete Android's installation prompts. Allow location for navigation and microphone access for spoken input when requested. Voice output is optional.
 
 The Android app uses the hosted backend at `https://bezna.xyz`; it does not run its own server. Both versions need network access to that backend. iPhone users can use the browser version.
@@ -42,8 +42,8 @@ Use Python 3.12. The frontend is plain HTML, CSS and JavaScript; it has no separ
 Clone the public repository, or extract a release's source archive:
 
 ```bash
-git clone https://github.com/CryptoGazer/Bloom_v1.git
-cd Bloom_v1
+git clone https://github.com/CryptoGazer/bezna.git
+cd bezna
 ```
 
 To reproduce a specific demo, check out its release tag before building. The APK and source tag should refer to the same version.
