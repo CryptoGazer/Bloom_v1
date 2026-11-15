@@ -75,6 +75,7 @@ const I = {
   stopSq: () => '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>',
   nav: () => '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 20 21 12 17 4 21z" fill="currentColor"/></svg>',
   sound: () => SV('<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>', 20),
+  soundOff: () => SV('<path d="M4 9v6h4l5 4V5L8 9z"/><path d="m16.5 9.5 5 5M21.5 9.5l-5 5"/>', 20),
   flag: () => SV('<path d="M6 21V4"/><rect x="6" y="3" width="12" height="9" rx="2"/><path d="M9 7.5h6"/>', 32),
   alight: () => SV('<path d="M12 3v14M6 11l6 6 6-6"/><path d="M5 21h14"/>', 20),
   wheel: () => '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="' + esc(t('m.wheelchair')) + '"><circle cx="11" cy="4" r="1.5"/><path d="M11 7v6h5l2 5"/><path d="M8 10a6 6 0 1 0 7 8"/></svg>',
@@ -151,8 +152,18 @@ const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the
 let calcReq = -1;                             // routeReq of the route being calculated; another value: none
 // the Android app (android/) puts BeznaNative into the page: voice, a screen that stays on, a compass
 const native = () => window.BeznaNative || null;
-const canSpeak = () => !!(native() || window.speechSynthesis);
-function speak(text) {
+
+// ---------- voice ----------
+// One switch for the whole app, remembered on the phone: with voice or without. With voice, the navigator speaks
+// through an ElevenLabs voice of the interface language (/api/speak, backend/speak.py) where the server has one.
+// Where it has none, and whenever that voice is late or fails, the phone's own voice says the phrase instead:
+// the system engine through the app (BeznaNative) or the browser's speechSynthesis.
+const VOICE_KEY = 'bezna.voice', VOICE_WAIT_MS = 2500;
+const voice = { on: false, cloud: new Set(), clips: new Map(), audio: null, seq: 0, at: 0 };
+try { voice.on = localStorage.getItem(VOICE_KEY) === '1'; } catch (e) { /* storage blocked: off until switched on */ }
+fetch('/api/health').then(r => r.json()).then(h => { voice.cloud = new Set(h.speak || []); }).catch(() => { /* the phone's own voice only */ });
+const canSpeak = () => !!(native() || window.speechSynthesis || voice.cloud.has(LANG));
+function speakSystem(text) {
   const lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
   if (native()) { native().speak(text, lang); return; }
   if (!window.speechSynthesis) return;
@@ -160,7 +171,72 @@ function speak(text) {
   u.lang = lang;
   speechSynthesis.speak(u);
 }
-function hush() { if (native()) native().stopSpeaking(); else if (window.speechSynthesis) speechSynthesis.cancel(); }
+// the recording of a phrase, fetched once per page: a promise of a blob URL
+function clip(text) {
+  const key = LANG + '|' + text;
+  let ready = voice.clips.get(key);
+  if (!ready) {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 8000);
+    ready = fetch(`/api/speak?lang=${LANG}&text=${encodeURIComponent(text)}`, { signal: ctl.signal })
+      .then(r => { if (!r.ok) throw new Error('speak ' + r.status); return r.blob(); })
+      .then(blob => URL.createObjectURL(blob));
+    ready.then(() => clearTimeout(timer), () => { clearTimeout(timer); voice.clips.delete(key); });
+    voice.clips.set(key, ready);
+    if (voice.clips.size > 40) {
+      const [oldest, gone] = voice.clips.entries().next().value;
+      voice.clips.delete(oldest);
+      gone.then(url => URL.revokeObjectURL(url), () => {});
+    }
+  }
+  return ready;
+}
+// have a phrase's recording ready before it is needed
+const warm = text => { if (voice.cloud.has(LANG)) clip(text).catch(() => {}); };
+// Browsers let a page play sound only after a tap: the tap on the switch or on "start" opens the way for the
+// recordings that arrive later. The Android app does not need it and is not harmed by it.
+function unlockAudio() {
+  if (voice.audio) return;
+  voice.audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+  voice.audio.play().catch(() => {});
+}
+function silence() {
+  if (voice.audio) voice.audio.pause();
+  if (native()) native().stopSpeaking(); else if (window.speechSynthesis) speechSynthesis.cancel();
+}
+function speak(text) {
+  const seq = ++voice.seq;   // a newer phrase replaces an older one, also one whose recording is still on its way
+  voice.at = Date.now();
+  silence();
+  if (!voice.cloud.has(LANG)) { speakSystem(text); return; }
+  let said = false;
+  const own = () => { if (!said && seq === voice.seq) { said = true; speakSystem(text); } };
+  const late = setTimeout(own, VOICE_WAIT_MS);   // the recording is late: the phone's own voice says it
+  clip(text).then(url => {
+    clearTimeout(late);
+    if (said || seq !== voice.seq) return;
+    said = true;
+    const a = voice.audio || (voice.audio = new Audio());
+    a.src = url;
+    a.play().catch(() => { if (seq === voice.seq) speakSystem(text); });
+  }, () => { clearTimeout(late); own(); });
+}
+function hush() { voice.seq++; silence(); }
+// A distance as the voice says it: in words, and in coarse steps, so that "50 metres. Right onto X." is one
+// recording for everybody (the server keeps each phrase once). Between 40 and 60 m, where the navigator
+// speaks, it is always "50".
+function spokenDist(m) {
+  if (m >= 975) {
+    const k = (m / 1000).toFixed(1).replace('.0', ''), n = k.replace('.', LANG === 'en' ? '.' : ',');
+    if (k === '1') return { ro: 'un kilometru', en: 'one kilometre', ru: 'один километр' }[LANG] || '1 km';
+    return { ro: `${n} kilometri`, en: `${n} kilometres`, ru: `${n} километра` }[LANG] || `${n} km`;
+  }
+  const n = m >= 40 && m < 60 ? 50 : m > 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10);
+  return { ro: `${n} ${n % 100 === 0 || n % 100 >= 20 ? 'de ' : ''}metri`, en: `${n} metres`, ru: `${n} метров` }[LANG] || `${n} m`;
+}
+// the switch itself: a filled button with a speaker when the voice is on, an outlined crossed speaker when it is off
+const voiceLabel = () => t(voice.on ? 'm.voiceOn' : 'm.voiceOff');
+const voiceBtn = () => canSpeak()
+  ? `<button type="button" class="round voice" data-act="voice" aria-pressed="${voice.on}" aria-label="${esc(voiceLabel())}" title="${esc(voiceLabel())}">${voice.on ? I.sound() : I.soundOff()}</button>` : '';
 const seen = new Set();
 // the lighting network: on by default on the start screen, off under a route unless asked for in the legend
 const prefs = { net: true, netRoute: false, livenet: false };
@@ -1298,7 +1374,7 @@ ACT.pickFast = () => pick('fastest');
 ACT.pickLit = () => pick('better_lit');
 ACT.recalc = () => { if (plan && screen === 'results') reveal(true); else if (loopMode || (A && B)) compute(); };
 ACT.details = () => go('details');
-ACT.start = () => startNav();
+ACT.start = () => { if (voice.on) unlockAudio(); startNav(); };
 ACT.backResults = () => go(sel === 'transit' ? 'transit' : 'results');
 
 function resultsTop() {
@@ -1338,7 +1414,7 @@ function renderResults() {
   const chip = v.kind === 'show' ? plusChip() : '';
   $('screen').innerHTML = resultsTop() + chip +
     `<section class="sheet" aria-label="${esc(t('m.variants'))}">${head}${transitNote}${cards}${life}` +
-    `<div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>` +
+    `<div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>${voiceBtn()}` +
     `<button type="button" class="secondary" data-act="details" style="width: 112px">${esc(t('m.details'))}</button></div></section>`;
   if (chip) placePlusChip();
 }
@@ -1541,7 +1617,7 @@ function renderDetails() {
       <p class="small">${esc(t('m.lifeSummary', { n: sg.places_unknown_hours, p: pct(sg.main_share) }))}</p>
       <details><summary>${I.chev(12, 'chev')}${esc(t('m.sources', { n: 2 }))}</summary><p class="sec" style="margin-top: 4px">${esc(t('m.lifeSources', { feed: plan.transit && plan.transit.feed ? plan.transit.feed : (summary ? summary.as_of : '') }))}</p></details>
     </section>` : ''}
-    <div class="actions" style="padding-top: 4px"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button></div>
+    <div class="actions" style="padding-top: 4px"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>${voiceBtn()}</div>
   </section>`;
   routeLayer.clearLayers(); markLayer.clearLayers();
   drawMain(r, kind);
@@ -1618,7 +1694,7 @@ function renderTransit() {
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
     ${historyBox(rd)}${steps}${last}
     <p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p>
-    <div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button></div>
+    <div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button>${voiceBtn()}</div>
   </section>`;
   drawTransit();
   fit(L.latLngBounds(pts(w1).concat(pts(w2), ll(rd.coords).map(c => L.latLng(c)))).pad(0.05));
@@ -1825,7 +1901,7 @@ function startNav() {
   if (BzNav.trivial(path)) { toast(t('m.alreadyThere'), 5000); return; }
   // the demo walk only on request (?sim=1); a GPS error never replaces the real position by a simulated one
   const sim = /[?&]sim=1/.test(location.search);
-  nav = { r, kind, toStop, path, progress: 0, off: 0, onRoute: true, watch: null, sim, simT: null, gps: null, voice: false, spoken: -1, dismissed: new Set(), heading: null, last: null, acc: null };
+  nav = { r, kind, toStop, path, progress: 0, off: 0, onRoute: true, watch: null, sim, simT: null, gps: null, spoken: -1, warmed: -1, announced: false, darkSaid: null, lead: '', dismissed: new Set(), heading: null, last: null, acc: null };
   go('nav');
   if (native()) native().nav(true);
   if (sim) startSim();
@@ -1876,6 +1952,7 @@ function onPos(pos) {
   nav.fixes = (nav.fixes || 0) + 1;
   nav.progress = st.progress;
   nav.off = st.off;
+  if (nav.onRoute && !st.onRoute && voice.on && canSpeak()) speak(t('m.offRoute', { m: '' }).split(':')[0] + '.');   // said once, when it happens
   nav.onRoute = st.onRoute;
   showMe(p.lat, p.lng, nav.heading);
   map.setView(p, Math.max(map.getZoom(), 17), { animate: true });
@@ -1883,6 +1960,7 @@ function onPos(pos) {
     const toStop = nav.toStop;
     stopNav();
     toast(t(toStop ? 'm.atStopNow' : 'm.arrived'), 5000);
+    if (voice.on && canSpeak()) speak(t(toStop ? 'm.atStopNow' : 'm.arrived'));
     go(toStop ? 'stop' : 'results');
     return;
   }
@@ -1894,7 +1972,25 @@ window.bzCompass = deg => {
   nav.heading = deg;
   showMe(myPos.lat, myPos.lng, deg);
 };
-ACT.navVoice = el => { if (!nav) return; nav.voice = !nav.voice; el.setAttribute('aria-pressed', String(nav.voice)); el.setAttribute('aria-label', t(nav.voice ? 'm.voiceOn' : 'm.voiceOff')); };
+// Voice on / off, from the navigator or next to "start": every copy of the switch on the screen follows, the
+// choice is kept for the next time, and the change is both shown and, when switched on, said in the voice itself.
+ACT.voice = () => {
+  voice.on = !voice.on;
+  try { localStorage.setItem(VOICE_KEY, voice.on ? '1' : '0'); } catch (e) { /* storage blocked: for this visit only */ }
+  for (const b of document.querySelectorAll('[data-act="voice"]')) {
+    b.setAttribute('aria-pressed', String(voice.on));
+    b.setAttribute('aria-label', voiceLabel());
+    b.title = voiceLabel();
+    b.innerHTML = voice.on ? I.sound() : I.soundOff();
+  }
+  toast(voiceLabel() + (voice.on && voice.cloud.has(LANG) ? ' · ElevenLabs' : ''), 2500);
+  if (!voice.on) { hush(); if (nav && screen === 'nav') updateNav(); return; }
+  unlockAudio();
+  if (nav && screen === 'nav') {   // in the navigator the confirmation leads straight into where to go next
+    nav.announced = false; nav.spoken = -1; nav.lead = voiceLabel() + '. ';
+    updateNav();
+  } else speak(voiceLabel() + '.');
+};
 ACT.navCenter = () => { if (myPos) map.setView(myPos, 17); };
 ACT.navStop = () => { const back = nav && nav.toStop ? 'transit' : 'results'; stopNav(); go(back); };
 ACT.detour = () => { if (!nav) return; sel = 'better_lit'; stopNav(); startNav(); };
@@ -1905,7 +2001,7 @@ function renderNav() {
   $('screen').innerHTML = `
   <section class="manoeuvre" aria-label="${esc(t('m.nextMove'))}"><div class="main"><span id="nav-icon"></span><div role="status" aria-live="polite" style="display: flex; flex-direction: column; gap: 4px; min-width: 0"><span class="dist" id="nav-dist"></span><span id="nav-text" style="font-size: 17px; font-weight: 600; line-height: 1.3"></span></div></div><div class="then" id="nav-then"></div></section>
   <div class="side" style="bottom: 300px">
-    <button type="button" class="round" data-act="navVoice" aria-pressed="false" aria-label="${esc(t('m.voiceOff'))}">${I.sound()}</button>
+    ${voiceBtn()}
     <button type="button" class="round" data-act="navCenter" aria-label="${esc(t('m.centerMe'))}">${I.locate()}</button>
   </div>
   <section class="sheet" style="gap: 12px">
@@ -1935,12 +2031,25 @@ function updateNav() {
   const say = x => t((x.street ? 'm.turn.' : 'm.turnBare.') + x.type, { street: x.street });
   $('nav-text').textContent = say(man);
   $('nav-then').innerHTML = after ? `${(I[after.type] || I.straight)(16)}<span>${esc(t('m.then', { what: say(after) }))}</span>` : `<span>${esc(t('m.lastStretch'))}</span>`;
-  if (nav.voice && canSpeak() && left < 60 && nav.spoken !== nextI) {
-    nav.spoken = nextI;
-    speak(`${round(left)}. ${say(man)}`);
+  if (voice.on && canSpeak()) {
+    const phrase = d => `${spokenDist(d)}. ${say(man)}.`;
+    if ((left < 60 && nav.spoken !== nextI) || !nav.announced) {   // near the manoeuvre; and once at the start, wherever it is
+      if (left < 60) nav.spoken = nextI;
+      nav.announced = true;
+      speak(nav.lead + phrase(left));
+      nav.lead = '';
+    } else if (left < 400 && nav.warmed !== nextI) {
+      nav.warmed = nextI;
+      warm(phrase(50));   // the recording is ready before the 60 m mark
+    }
   }
   // the next stretch reported as dark within 500 m: warn, offer the better-lit route if there is one
   const runs = runsOf(nav.r), dark = runs.find(x => x.status === 'dark_reported' && x.to > pr && x.from - pr < 500 && !nav.dismissed.has(Math.round(x.from)));
+  // said once per dark stretch, and never over a direction that has just been spoken or is about to be
+  if (dark && voice.on && canSpeak() && nav.darkSaid !== Math.round(dark.from) && dark.from - pr > 30 && left > 80 && Date.now() - voice.at > 6000) {
+    nav.darkSaid = Math.round(dark.from);
+    speak(t('m.darkAhead', { d: spokenDist(dark.from - pr), m: Math.round(dark.len) }).replace(/(\d+) (?:m|м)(?=[\s,.:;]|$)/, (_, n) => spokenDist(+n)) + '.');
+  }
   const canDetour = !nav.toStop && nav.kind === 'fastest' && plan.verdict.kind !== 'same';
   $('nav-warn').innerHTML = nav.gps
     ? `<section class="warnbox" role="status"><span style="font-size: 15px; font-weight: 600">${esc(t(nav.gps === 1 ? 'm.gpsDenied' : 'm.gpsWait'))}</span></section>`
@@ -1954,7 +2063,9 @@ function updateNav() {
   $('nav-eta').textContent = `${minN(minLeft)} min · ${arr}`;
   $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : plan.loop ? t('m.loopStart') : labels.B, route: routeTitle(nav.kind).toLowerCase() });
   $('nav-bar').innerHTML = statusBar(nav.r, 8, 5, pr);
-  $('nav-foot').innerHTML = `${esc(t('m.lightLeft'))} · <span class="mono" style="font-size: 11px">${nav.sim ? esc(t('m.simTag')) : 'GPS ±' + Math.round(nav.acc || 0) + ' m'}</span> · ${esc(t('m.locStays'))}`;
+  $('nav-foot').innerHTML = `${esc(t('m.lightLeft'))} · <span class="mono" style="font-size: 11px">${nav.sim ? esc(t('m.simTag')) : 'GPS ±' + Math.round(nav.acc || 0) + ' m'}</span> · ${esc(t('m.locStays'))}` +
+    // said plainly: with the ElevenLabs voice the words of each direction (a street name) leave the phone, the position does not
+    (voice.on && voice.cloud.has(LANG) ? ` · ${esc(t('m.voiceNote'))}` : '');
   // the walked part: along the route up to the progress point, never a straight line to where the phone is
   if (!path.pp) { path.pp = path.P.map(q => q.p); path.pd = path.P.map(q => q.d); }
   nav.done.setLatLngs(pr > 0 ? cutC(path.pp, path.pd, pr) : []);

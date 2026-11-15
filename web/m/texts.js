@@ -95,7 +95,7 @@ Object.assign(I18N.ro, { m: {
   ahead: 'Atenție înainte', darkAhead: 'Peste {d}: {m} m semnalat ca neiluminat', darkSource: 'Sesizări din ultimele luni',
   detour: 'Ocolește · +{min} min', keepGoing: 'Continui',
   leftToStop: '{d} până la {place}', leftToDest: '{d} până la {place} · {route}',
-  lightLeft: 'Lumina pe drumul rămas', simTag: 'SIMULARE', locStays: 'locația rămâne pe telefon',
+  lightLeft: 'Lumina pe drumul rămas', simTag: 'SIMULARE', locStays: 'locația rămâne pe telefon', voiceNote: 'voce ElevenLabs: primește doar textul indicației',
   wheelchair: 'Accesibil pentru scaun rulant',
 } });
 
@@ -193,7 +193,7 @@ Object.assign(I18N.en, { m: {
   ahead: 'Ahead', darkAhead: 'In {d}: {m} m reported as unlit', darkSource: 'Sesizări from the last months',
   detour: 'Go around · +{min} min', keepGoing: 'Keep going',
   leftToStop: '{d} to {place}', leftToDest: '{d} to {place} · {route}',
-  lightLeft: 'Light on the way left', simTag: 'SIMULATION', locStays: 'the location stays on the phone',
+  lightLeft: 'Light on the way left', simTag: 'SIMULATION', locStays: 'the location stays on the phone', voiceNote: 'ElevenLabs voice: gets only the text of the direction',
   wheelchair: 'Wheelchair accessible',
 } });
 
@@ -291,6 +291,6 @@ Object.assign(I18N.ru, { m: {
   ahead: 'Впереди', darkAhead: 'Через {d}: {m} м, где сообщали о темноте', darkSource: 'Sesizări за последние месяцы',
   detour: 'Обойти · +{min} мин', keepGoing: 'Продолжить',
   leftToStop: '{d} до {place}', leftToDest: '{d} до {place} · {route}',
-  lightLeft: 'Свет на оставшемся пути', simTag: 'СИМУЛЯЦИЯ', locStays: 'местоположение остаётся в телефоне',
+  lightLeft: 'Свет на оставшемся пути', simTag: 'СИМУЛЯЦИЯ', locStays: 'местоположение остаётся в телефоне', voiceNote: 'голос ElevenLabs: получает только текст подсказки',
   wheelchair: 'Доступно для коляски',
 } });
