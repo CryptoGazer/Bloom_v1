@@ -106,6 +106,21 @@ class AskPlaces:
             return self.get(alias)
         return self.get(self.names.get(key))
 
+    def mentioned(self, words):
+        """Public names/aliases actually present in the request, in order, without overlapping names."""
+        text, hits = alias_key(words), []
+        for phrase, pid in {**self.names, **self.aliases}.items():
+            if len(phrase) < 4 and not any(c.isdigit() for c in phrase):
+                continue
+            for match in re.finditer(r'(?<!\w)' + re.escape(phrase) + r'(?!\w)', text):
+                hits.append((match.start(), match.end(), phrase, pid))
+        chosen = []
+        for hit in sorted(hits, key=lambda h: (h[0], -(h[1] - h[0]))):
+            if chosen and hit[0] < chosen[-1][1]:
+                continue
+            chosen.append(hit)
+        return [{"query": phrase, "name": self.get(pid)["name"], "id": pid} for _, _, phrase, pid in chosen]
+
     def suggest(self, query, category="", limit=5):
         """Approximate names and category fallbacks are suggestions that require confirmation."""
         category = category or category_of(query)

@@ -32,6 +32,12 @@ const cases = [
   { id: 'off-topic', lang: 'en', text: 'Write bubble sort for a circular array', expect: 'off_topic', body: { kind: 'off_topic', heard: '' } },
 ];
 if (!live) cases.push(
+  { id: 'three-explicit-points', lang: 'ru', text: 'Круг через три площади', expectedPoints: [victory, liberty, botanic],
+    body: { ...form, points: [victory, liberty, botanic], point_issues: [] } },
+  { id: 'clarify-intermediate-point', lang: 'ru', text: 'Круг с неизвестной второй точкой', choose: liberty.name, expectedPoints: [victory, liberty, botanic],
+    body: { ...form, kind: 'clarify', points: [victory, null, botanic], point_issues: [{ index: 1, query: 'неизвестная площадь', candidates: [liberty, c12] }] } },
+  { id: 'manual-intermediate-point', lang: 'ru', text: 'Круг с поиском второй точки', pointManual: liberty.name, expectedPoints: [victory, liberty, botanic],
+    body: { ...form, kind: 'clarify', points: [victory, null, botanic], point_issues: [{ index: 1, query: 'неизвестная площадь', candidates: [] }] } },
   { id: 'named-start-and-time', lang: 'ru', text: 'От C12 по кругу вокруг центра в 23:30', body: { ...form, from: c12, at: '2026-11-16T23:30', radius_m: 200 } },
   { id: 'confirm-centre', lang: 'ru', text: 'Прогулка вокруг площади', choose: botanic.name,
     body: { ...form, kind: 'clarify', to: null, which: 'to', missing: [], ambiguity: ['to'], candidates: { from: [], to: [liberty, botanic] } } },
@@ -43,6 +49,11 @@ if (!live) cases.push(
   { id: 'transit-loop', lang: 'ru', text: 'Прогулка по кругу на трамвае', expect: 'unsupported', body: { kind: 'unsupported', reason: 'loop_transit', heard: '' } },
   { id: 'no-space-for-loop', lang: 'ru', text: 'Круг на границе карты', expect: 'no_loop_area', body: form },
 );
+if (process.argv.includes('--reported')) cases.splice(0, cases.length,
+  { id: 'generic-circle', lang: 'ru', text: 'Создай общий круговой маршрут для прогулки по Тимишоаре', body: form },
+  { id: 'circle-around-centre', lang: 'ru', text: 'Сделай круговой маршрут вокруг центра', body: form },
+  { id: 'circle-through-three', lang: 'ru', text: 'Сделай круговой маршрут через Piața Victoriei, Piața Unirii и Parcul Botanic с возвращением к первой точке',
+    expectedPoints: [victory, place('Piața Unirii'), botanic], body: { ...form, points: [victory, place('Piața Unirii'), botanic] } });
 
 async function checkPaint(page, mobile, isLoop) {
   await page.waitForFunction(({ mobile, isLoop }) => {
@@ -65,7 +76,7 @@ async function run(browser, c, mobile, replay, audio) {
   await page.route('**/*', async request => {
     const url = new URL(request.request().url());
     if (url.origin !== origin) return request.abort();
-    if (url.pathname === '/api/health') return request.fulfill({ json: { ok: true, ask: true, ask_version: 3 } });
+    if (url.pathname === '/api/health') return request.fulfill({ json: { ok: true, ask: true, ask_version: 4 } });
     if (url.pathname === '/api/ask') {
       askCalls++;
       if (replay) return request.fulfill({ status: replay.status, json: replay.body });
@@ -106,6 +117,11 @@ async function run(browser, c, mobile, replay, audio) {
     } else {
       assert.ok(['route', 'loop', 'clarify', 'not_found', 'unclear'].includes(body.kind), JSON.stringify(body));
       if (c.choose) await page.locator('#ask-choices button').filter({ hasText: c.choose }).click();
+      else if (c.pointManual) {
+        await page.locator(mobile ? '[data-act="askFindPoint"]' : '#ask-choices button').first().click();
+        await page.locator('#to').fill(c.pointManual);
+        await page.locator(mobile ? '#s-list li' : '#to-list [role="option"]').filter({ hasText: c.pointManual }).first().click();
+      }
       else if (c.manual) {
         if (mobile) await page.locator('[data-act="askFind"][data-which="B"]').click();
         await page.locator('#to').fill(c.manual);
@@ -125,8 +141,16 @@ async function run(browser, c, mobile, replay, audio) {
         const planBody = await page.evaluate(() => plan);
         assert.equal(routeRequests.at(-1).pathname, isLoop ? '/api/loop' : '/api/route');
         if (isLoop) {
-          assert.ok(planBody.generated);
-          assert.ok(planBody.points.length >= 4 && planBody.points.length <= 10);
+          if (c.expectedPoints) {
+            assert.equal(planBody.points.length, c.expectedPoints.length);
+            c.expectedPoints.forEach((p, i) => {
+              assert.ok(Math.abs(planBody.points[i].lat - p.lat) < 1e-5);
+              assert.ok(Math.abs(planBody.points[i].lon - p.lon) < 1e-5);
+            });
+          } else {
+            assert.ok(planBody.generated);
+            assert.ok(planBody.points.length >= 4 && planBody.points.length <= 10);
+          }
           for (const r of Object.values(planBody.routes)) {
             assert.ok(r.length_m > 0 && r.minutes > 0);
             const coords = r.geometry.features.flatMap(f => f.geometry.coordinates);

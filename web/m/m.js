@@ -23,6 +23,7 @@ const getJSON = (url, opts) => fetch(url, opts).then(async r => {
   if (!r.ok) {
     const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status);
     e.detail = typeof body.detail === 'object' && !Array.isArray(body.detail) ? body.detail : {};
+    if (r.status === 404 && url.startsWith('/api/loop') && !e.detail.code) e.detail = { code: 'loop_api_missing' };
     e.status = r.status;
     throw e;
   }
@@ -446,6 +447,7 @@ const ASK_MSG = {
   offtopic: [() => I.pin(), 'ask.offTopic'], unclear: [() => I.question(), 'ask.unclear'], ratelimit: [() => I.clock(18), 'm.askTooMany'],
   unavailable: [() => I.cloudOff(), 'm.askDown'], micdenied: [() => I.micOff(18), 'm.askMicOff'], silence: [() => I.wave(), 'ask.silent'],
   looptransit: [() => I.question(), 'ask.loopTransit'],
+  looplimit: [() => I.question(), 'ask.loopTooMany'],
 };
 const askExamples = () => { const x = t('m.askEx'); return Array.isArray(x) ? x : []; };
 const askWaitText = () => t(ask.elapsed >= 8 ? 'm.askWaitLong' : 'ask.thinking');
@@ -483,6 +485,14 @@ function askEntry() {
 }
 function askCard() {
   const r = ask.res;
+  if (r.kind === 'clarify_points') {
+    const response = r.response;
+    const issues = response.point_issues.map(issue => `<p>${esc(t('ask.loopPick', { n: issue.index + 1 }))}</p>` +
+      (issue.candidates || []).map((p, i) => `<button type="button" data-act="askPointChoice" data-index="${issue.index}" data-i="${i}">${esc(p.name)}</button>`).join('') +
+      `<button type="button" data-act="askFindPoint" data-index="${issue.index}">${esc(t('ask.loopPick', { n: issue.index + 1 }))}</button>`).join('');
+    return `<section class="ask-card miss"><span>${esc(BzAsk.loopLabel(response))}</span><div id="ask-choices" class="ask-choices">${issues}</div>
+      <button type="button" class="edit-link" data-act="askEdit">${esc(t('m.askEdit'))}</button></section>`;
+  }
   if (r.kind === 'clarify') {
     const response = r.response;
     const choices = ['from', 'to'].map(side => {
@@ -501,7 +511,7 @@ function askCard() {
   return `<section class="ask-card" aria-label="${esc(t('m.askGot'))}">
     <div class="top-row"><span class="sec" style="display: flex; align-items: center; gap: 8px">${I.check()}${esc(t('m.askGot'))}</span></div>
     <button type="button" class="edit-link" data-act="askEdit" style="position: absolute; right: 4px; top: 0">${esc(t('m.askEdit'))}</button>
-    <span class="h-route">${r.kind === 'loop' ? esc(t('ask.loopUnderstood', { center: r.center })) : `${esc(r.a)} → ${esc(r.b)}`}</span>
+    <span class="h-route">${r.kind === 'loop' ? esc(r.title || t('ask.loopUnderstood', { center: r.center })) : `${esc(r.a)} → ${esc(r.b)}`}</span>
     ${r.kind === 'loop' ? `<span class="small">${esc(t('ask.loopApprox'))}</span>` : ''}
     <span class="sec">${esc(askMeta())}</span>
     ${r.heard ? `<span class="small" style="color: var(--bz-ink-2)">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
@@ -588,6 +598,20 @@ ACT.askChoose = el => {
   if (!place) return;
   askSelect(side, place);
 };
+function askSelectPoint(index, place) {
+  askApply(BzAsk.pickLoopPoint(ask.res.response, index, place));
+}
+ACT.askPointChoice = el => {
+  const issue = ask.res.response.point_issues.find(p => p.index === +el.dataset.index);
+  if (issue && issue.candidates[+el.dataset.i]) askSelectPoint(issue.index, issue.candidates[+el.dataset.i]);
+};
+ACT.askFindPoint = el => {
+  ask.pointIndex = +el.dataset.index;
+  const issue = ask.res.response.point_issues.find(p => p.index === ask.pointIndex);
+  openSearch('B');
+  $('to').value = issue.query || issue.name || '';
+  $('to').select(); sQuery();
+};
 function askSelect(side, place) {
   const r = ask.res.response;
   const next = { ...r, [side]: place, missing: (r.missing || []).filter(s => s !== side),
@@ -667,7 +691,7 @@ function askApply(r) {
   ask.heard = heard;
   if (r.kind === 'off_topic' || r.kind === 'unsupported') {
     if (heard) ask.text = heard;                          // the transcript goes into the box, to be corrected
-    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : 'looptransit';
+    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : r.reason === 'loop_points_limit' ? 'looplimit' : 'looptransit';
     renderHome();
     askSay(t(ASK_MSG[ask.msg][1]));
     return;
@@ -676,16 +700,23 @@ function askApply(r) {
   loopMode = false; loopRequest = null; loopPts.length = 0;
   ask.res = null;
   ask.view = 'form'; ask.phase = 'done';
+  if (r.point_issues && r.point_issues.length) {
+    clearPoint('A'); clearPoint('B');
+    ask.res = { kind: 'clarify_points', response: r, heard };
+    ask.pointIndex = r.point_issues[0].index;
+    renderHome(); askSay(t('ask.loopPick', { n: ask.pointIndex + 1 }));
+    return;
+  }
   if (r.kind === 'loop') {
     mode = r.mode || 'walk';
     if (r.at) at = r.at;
     clearPoint('A'); clearPoint('B');
     loopMode = true; pickMode = null;
-    ask.res = { kind: 'loop', center: r.to ? r.to.name : t('myLocation'), heard };
+    ask.res = { kind: 'loop', center: r.to ? r.to.name : t('myLocation'), title: BzAsk.loopLabel(r), heard };
     const req = ++routeReq;
     calcReq = req;
     renderHome();
-    askSay(t('ask.loopUnderstood', { center: ask.res.center }));
+    askSay(ask.res.title);
     BzAsk.loopParams(r).then(params => {
       if (req !== routeReq) return;
       loopRequest = params;
@@ -885,6 +916,9 @@ function sRender(q = '') {
 }
 function sPick(r) {
   if (!r) return;
+  if (ask.res && ask.res.kind === 'clarify_points' && r.kind !== 'gps') {
+    go('home', false); askSelectPoint(ask.pointIndex, r); return;
+  }
   if (ask.res && ask.res.kind === 'clarify' && ask.res.response.loop) {
     if (r.kind === 'gps') { locate(true); return; }
     go('home', false);
@@ -969,7 +1003,7 @@ function computeLoop(stay = false) {
       calcReq = -1;
       const d = err.detail || {};
       const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
-      const text = d.code === 'no_loop_area' ? t('ask.loopUnavailable') : d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
+      const text = d.code === 'loop_api_missing' ? t('ask.loopApiMissing') : d.code === 'no_loop_area' ? t('ask.loopUnavailable') : d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
         : d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       go('home');
       toast(text);
@@ -1259,7 +1293,7 @@ function resultsTop() {
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
 }
 const isLoop = () => (plan ? !!plan.loop : loopMode);
-const tripTitle = () => (isLoop() ? ask.res && ask.res.kind === 'loop' ? t('ask.loopUnderstood', { center: ask.res.center })
+const tripTitle = () => (isLoop() ? ask.res && ask.res.kind === 'loop' ? ask.res.title || t('ask.loopUnderstood', { center: ask.res.center })
   : loopTitle(plan ? plan.points.length : loopPts.length) : `${labels.A} → ${labels.B}`);
 function routeSub() {
   const when = plan ? (at ? t('m.leaveAt', { time: leaveHM() }) : t('m.leaveNow', { time: leaveHM() })) : '';

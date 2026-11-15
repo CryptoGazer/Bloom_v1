@@ -80,7 +80,7 @@ def test_only_checked_values_are_taken_from_the_model():
     form = clean({"intent": "hack", "mode": "car", "time": "25:99", "from": "   ", "to": "x" * 200, "from_here": "yes", "heard": "a" * 500, "extra": 1})
     assert form == {"intent": "unclear", "from": None, "to": "x" * 80, "from_here": False, "mode": None, "time": None, "heard": "a" * 500,
                     "from_id": None, "to_id": None, "from_query": None, "to_query": None,
-                    "missing": [], "ambiguity": [], "from_candidates": [], "to_candidates": [], "radius_m": None}
+                    "missing": [], "ambiguity": [], "from_candidates": [], "to_candidates": [], "radius_m": None, "waypoints": []}
     assert clean({"intent": "route", "time": "7:05"})["time"] == "07:05"
     assert clean({"intent": "route", "time": "2026-11-15T0:10"})["time"] == "2026-11-15T00:10"
     assert clean({"intent": "route", "time": "2026-02-30T12:00"})["time"] is None

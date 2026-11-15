@@ -28,6 +28,7 @@ from backend.liveliness import LIVELY, Signs
 from backend.loops import DEFAULT_RADIUS_M, MAX_RADIUS_M, MIN_RADIUS_M, around
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
+from backend.web_assets import WebAssets
 
 LOCAL_TZ = ZoneInfo("Europe/Bucharest")
 
@@ -135,6 +136,14 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(GZipMiddleware, minimum_size=1000)  # a map window is ~250 KB of JSON, ~40 KB compressed
+    web = WebAssets(directory=ROOT / 'web', html=True)
+
+    @app.middleware('http')
+    async def api_cache(request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
+        return response
 
     def network():
         if state["net"] is None:
@@ -149,7 +158,8 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
     def health():
         net = state["net"]
         return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None,
-                "ask": state["asker"] is not None, "ask_version": ASK_VERSION,
+                "ask": state["asker"] is not None, "ask_version": ASK_VERSION, "ui_version": web.version(),
+                "features": {"loop": True, "gemini_loop": True, "gemini_loop_waypoints": True},
                 "history": state["history"] is not None and state["history"].ready}
 
     @app.post("/api/ask")
@@ -333,7 +343,7 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
     # "/" must be mounted last: it catches every path the API routes above did not.
     for url, folder in (("/demo", ROOT / "demo"), ("/data/out", ROOT / "data/out"), ("/", ROOT / "web")):
         if folder.is_dir():
-            app.mount(url, StaticFiles(directory=folder, html=True), name=url.strip("/").replace("/", "-") or "web")
+            app.mount(url, web if url == '/' else StaticFiles(directory=folder, html=True), name=url.strip("/").replace("/", "-") or "web")
     return app
 
 

@@ -26,7 +26,9 @@ const pct = x => Math.round(100 * x) + '%';
 const say = html => { $('hint').innerHTML = html; };
 const getJSON = url => fetch(url).then(async r => {
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status); e.detail = body.detail; e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status);
+    e.detail = r.status === 404 && url.startsWith('/api/loop') && (!body.detail || !body.detail.code) ? { code: 'loop_api_missing' } : body.detail;
+    e.status = r.status; throw e; }
   return body;
 });
 const debounce = (fn, ms) => { let tm; return (...a) => { clearTimeout(tm); tm = setTimeout(() => fn(...a), ms); }; };
@@ -367,6 +369,8 @@ function compute() {
       let text;
       if (d.code === 'no_loop_area') {
         text = t('ask.loopUnavailable');
+      } else if (d.code === 'loop_api_missing') {
+        text = t('ask.loopApiMissing');
       } else if (d.code === 'outside_coverage') {
         const near = d.nearest_m != null ? t('nearest', { d: fmtM(d.nearest_m) }) : '';
         text = t(travel === 'bike' ? 'outsideBike' : 'outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near });

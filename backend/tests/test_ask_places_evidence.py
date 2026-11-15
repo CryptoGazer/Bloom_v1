@@ -139,7 +139,7 @@ def test_http_contract_keeps_both_endpoints_and_reports_backend_version(tmp_path
     form = {**FORM, "from": "Spitalul Clinic de Urgență Pius Brînzeu", "heard": "От больницы Пьячерата до Ботанического парка"}
     app = create_app(tmp_path / 'segments.geojson.gz', gemini=Gemini("test", "single", transport=FakeTransport(form)))
     with TestClient(app) as client:
-        assert client.get('/api/health').json()['ask_version'] == 3
+        assert client.get('/api/health').json()['ask_version'] == 4
         result = client.post('/api/ask', json={'audio': WAV, 'mime': 'audio/wav', 'lang': 'ru'}).json()
     assert result['kind'] == 'clarify' and result['to']['name'] == 'Parcul Botanic'
     assert result['ambiguity'] == ['from'] and result['candidates']['from']

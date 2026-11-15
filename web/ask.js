@@ -22,6 +22,8 @@ Object.assign(I18N.ro, { ask: {
   loopUnderstood: 'Circuit în jurul „{center}”', loopApprox: 'Dimensiunea este aproximativă; traseul urmează străzile accesibile.',
   loopTransit: 'Circuitele sunt disponibile pe jos sau cu bicicleta. Alegeți unul dintre aceste moduri.',
   loopUnavailable: 'Nu am putut găsi un circuit rezonabil în jurul acestui loc în zona hărții. Alegeți alt loc sau un circuit mai mic.',
+  loopThrough: 'Circuit: {points}', loopPick: 'Alegeți punctul {n} al circuitului.', loopTooMany: 'Un circuit poate avea cel mult 10 puncte.',
+  loopApiMissing: 'Serverul nu are încă API-ul pentru circuite. Verificați versiunea backend.',
   notFound: 'Nu am găsit „{name}” în zona hărții. Alegeți locul în câmpul „{box}”.',
   tooMany: 'Prea multe cereri. Încercați peste un minut sau folosiți câmpurile de mai jos.',
   down: 'Asistentul nu este disponibil acum. Câmpurile „De unde” și „Unde” de mai jos funcționează fără el.',
@@ -42,6 +44,8 @@ Object.assign(I18N.en, { ask: {
   loopUnderstood: 'Circuit around “{center}”', loopApprox: 'The size is approximate; the route follows accessible streets.',
   loopTransit: 'Circuits support walking and cycling. Choose one of these modes.',
   loopUnavailable: 'No reasonable circuit around this place fits the mapped area. Choose another place or a smaller circuit.',
+  loopThrough: 'Circuit: {points}', loopPick: 'Choose point {n} of the circuit.', loopTooMany: 'A circuit supports at most 10 points.',
+  loopApiMissing: 'This server does not have the circuit API yet. Check the backend version.',
   notFound: 'I could not find “{name}” inside the map area. Pick the place in the “{box}” box.',
   tooMany: 'Too many requests. Try again in a minute or use the boxes below.',
   down: 'The assistant is not available right now. The From and To boxes below work without it.',
@@ -62,6 +66,8 @@ Object.assign(I18N.ru, { ask: {
   loopUnderstood: 'Круговая прогулка вокруг «{center}»', loopApprox: 'Размер приблизительный; путь проходит по доступным улицам.',
   loopTransit: 'Круговые прогулки доступны пешком и на велосипеде. Выберите один из этих способов.',
   loopUnavailable: 'Вокруг этого места не удалось подобрать разумный круг в области карты. Выберите другое место или меньший размер прогулки.',
+  loopThrough: 'Круговая прогулка: {points}', loopPick: 'Уточните точку {n} кругового маршрута.', loopTooMany: 'Круговой маршрут поддерживает до 10 точек.',
+  loopApiMissing: 'На этом сервере ещё нет API круговых маршрутов. Нужно обновить запущенный бэкенд.',
   notFound: 'Не нашёл «{name}» в области карты. Выберите место в поле «{box}».',
   tooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля ниже.',
   down: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» ниже работают без него.',
@@ -154,6 +160,9 @@ const BzAsk = (() => {
 
   // Visitor coordinates are used only by our loop endpoint, never sent to Gemini.
   async function loopParams(r) {
+    if (r.points && r.points.length >= 2 && r.points.every(Boolean)) {
+      return new URLSearchParams({ points: r.points.map(p => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`).join(';') });
+    }
     let start = r.from;
     if (r.from_here && !start) {
       const pos = await new Promise((resolve, reject) => {
@@ -170,7 +179,13 @@ const BzAsk = (() => {
     return params;
   }
 
-  return { MAX_MS, canRecord, enabled, send, record, loopParams };
+  const loopLabel = r => r.points ? t('ask.loopThrough', { points: r.points.filter(Boolean).map(p => p.name).join(' → ') })
+    : t('ask.loopUnderstood', { center: r.to ? r.to.name : t('myLocation') });
+  const pickLoopPoint = (r, index, place) => {
+    const issues = r.point_issues.filter(p => p.index !== index);
+    return { ...r, points: r.points.map((p, i) => i === index ? place : p), point_issues: issues, kind: issues.length ? 'clarify' : 'loop' };
+  };
+  return { MAX_MS, canRecord, enabled, send, record, loopParams, loopLabel, pickLoopPoint };
 })();
 
 // ---------- the block of the desktop page ----------
@@ -227,12 +242,34 @@ const BzAsk = (() => {
     choices.hidden = true;
     const heard = r.heard ? t('ask.heard', { text: r.heard }) + ' ' : '';
     if (r.kind === 'off_topic') { show(heard + t('ask.offTopic'), 'warn'); return; }
-    if (r.kind === 'unsupported') { show(heard + t('ask.loopTransit'), 'warn'); return; }
+    if (r.kind === 'unsupported') { show(heard + t(r.reason === 'loop_points_limit' ? 'ask.loopTooMany' : 'ask.loopTransit'), 'warn'); return; }
     clearAskRoute(); // an incomplete new request must not keep displaying the previous route
+    if (r.point_issues && r.point_issues.length) {
+      clearPoint('A'); clearPoint('B');
+      const manual = issue => {
+        askPointChoice = (_, place) => { apply(BzAsk.pickLoopPoint(r, issue.index, place)); return true; };
+        $('to').value = issue.query || issue.name || '';
+        $('to').focus();
+      };
+      show(heard + t('ask.loopPick', { n: r.point_issues[0].index + 1 }), 'warn');
+      for (const issue of r.point_issues) {
+        const label = document.createElement('p');
+        label.textContent = t('ask.loopPick', { n: issue.index + 1 }); choices.append(label);
+        for (const place of issue.candidates || []) {
+          const button = document.createElement('button'); button.type = 'button'; button.textContent = place.name;
+          button.onclick = () => apply(BzAsk.pickLoopPoint(r, issue.index, place)); choices.append(button);
+        }
+        const search = document.createElement('button'); search.type = 'button'; search.textContent = t('ask.loopPick', { n: issue.index + 1 });
+        search.onclick = () => manual(issue); choices.append(search);
+      }
+      choices.hidden = false;
+      askPointChoice = (_, place) => { apply(BzAsk.pickLoopPoint(r, r.point_issues[0].index, place)); return true; };
+      return;
+    }
     if (r.kind === 'loop') {
       setTravel(r.mode || 'walk');
       if (r.at) setDeparture(r.at);
-      show(heard + t('ask.loopUnderstood', { center: r.to ? r.to.name : t('myLocation') }) + '. ' + t('ask.loopApprox'));
+      show(heard + BzAsk.loopLabel(r) + '. ' + t('ask.loopApprox'));
       startAskLoop(r);
       return;
     }

@@ -74,7 +74,7 @@ def test_unknown_loop_centre_keeps_loop_intent_and_offers_only_verified_candidat
 
 def test_fake_loop_centre_id_cannot_create_a_route():
     asker, _ = build({**FORM, "to_id": "p_invented"})
-    assert asker.ask(text="Обойди центр")["kind"] != "loop"
+    assert asker.ask(text="Круг вокруг неизвестного здания")["kind"] != "loop"
 
 
 def test_function_search_cannot_erase_the_loop_or_its_radius():
@@ -87,7 +87,7 @@ def test_function_search_cannot_erase_the_loop_or_its_radius():
             return tool_answer(function("search_places", {"query": "Piața Libertății", "side": "to"}))
         return tool_answer(function("submit_route", {"intent": "route", "to": "Piața Libertății"}))
     asker, _ = build(reply)
-    r = asker.ask(text="Замкнутая прогулка по центру")
+    r = asker.ask(text="Замкнутая прогулка вокруг большой площади")
     assert r["kind"] == "loop" and r["radius_m"] == 700 and count[0] == 2
 
 
@@ -101,6 +101,40 @@ def test_transit_loop_is_explicitly_unsupported_and_off_topic_stays_filtered():
     assert asker.ask(text="круг на трамвае") == {"kind": "unsupported", "reason": "loop_transit", "heard": ""}
     asker, _ = build({**FORM, "intent": "off_topic"})
     assert asker.ask(text="напиши пузырьковую сортировку") == {"kind": "off_topic", "heard": ""}
+
+
+@pytest.mark.parametrize('intent', ['route', 'unclear', 'loop'])
+def test_explicit_loop_cannot_collapse_to_two_random_endpoints(intent):
+    asker, _ = build({**FORM, 'intent': intent, 'from': 'Căminul C12', 'to': 'Piața Victoriei'})
+    r = asker.ask(text='Создай общий круговой маршрут для прогулки по Тимишоаре')
+    assert r['kind'] == 'loop' and r['from'] is None and r['to']['name'] == 'Piața Libertății'
+
+
+@pytest.mark.parametrize('intent', ['route', 'unclear', 'loop'])
+def test_three_named_places_are_preserved_in_order_even_if_model_drops_them(intent):
+    asker, _ = build({**FORM, 'intent': intent, 'from': 'Căminul C12', 'to': 'Piața Victoriei'})
+    r = asker.ask(text='Сделай круговой маршрут через Piața Victoriei, Piața Unirii и Piața Libertății')
+    assert r['kind'] == 'loop' and [p['name'] for p in r['points']] == ['Piața Victoriei', 'Piața Unirii', 'Piața Libertății']
+
+
+def test_one_unknown_intermediate_point_does_not_drop_known_points():
+    asker, _ = build({**FORM, 'waypoints': [
+        {'query': 'Piața Victoriei', 'name': 'Piața Victoriei'},
+        {'query': 'Несуществующее место', 'name': 'Несуществующее место'},
+        {'query': 'Piața Unirii', 'name': 'Piața Unirii'}]})
+    r = asker.ask(text='Круговой маршрут через Piața Victoriei, Несуществующее место и Piața Unirii')
+    assert r['kind'] == 'clarify' and r['points'][0]['name'] == 'Piața Victoriei' and r['points'][2]['name'] == 'Piața Unirii'
+    assert r['points'][1] is None and r['point_issues'][0]['index'] == 1
+
+
+def test_invented_intermediate_point_and_excessive_lists_are_not_silently_routed():
+    asker, _ = build({**FORM, 'waypoints': [{'query': 'Piața Victoriei', 'name': 'Piața Victoriei'}, {'query': 'Piața Unirii', 'name': 'Piața Unirii'}]})
+    r = asker.ask(text='Круговой маршрут через Piața Victoriei и другое неизвестное место')
+    assert r['kind'] == 'clarify' and r['points'][1] is None
+    asker, _ = build({**FORM, 'waypoints': [{'query': 'Piața Victoriei', 'name': 'Piața Victoriei'}] * 11})
+    # Explicitly distinct requested entries must be rejected, not truncated into a different loop.
+    asker.gemini.transport.form['waypoints'][-1] = {'query': 'Căminul C12', 'name': 'Căminul C12'}
+    assert asker.ask(text='Круговой маршрут: Piața Victoriei, Căminul C12')['reason'] == 'loop_points_limit'
 
 
 @pytest.fixture(scope="module")
