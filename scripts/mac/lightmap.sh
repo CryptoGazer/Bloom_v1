@@ -6,7 +6,7 @@
 #   ./scripts/mac/lightmap.sh dryrun [data dir]   whole-city rule dry run -> data/out/dryrun.txt
 #   ./scripts/mac/lightmap.sh fallback            stand-in inputs from repo files (if unihack-data is missing)
 #   ./scripts/mac/lightmap.sh serve               http://localhost:8000 (pages need http, not file://)
-#   ./scripts/mac/lightmap.sh city   [data dir]   AREA (university district + centre, config/area.geojson): lighting status -> data/out/city/
+#   ./scripts/mac/lightmap.sh city   [data dir]   active expanded area (config/area-expanded.geojson) -> data/out/city-expanded/
 #   ./scripts/mac/lightmap.sh api                 backend on http://localhost:8001 (API + the demo pages)
 #   ./scripts/mac/lightmap.sh test                backend tests
 # Another area: LIGHTMAP_BBOX="south,west,north,east" ./scripts/mac/lightmap.sh draft
@@ -91,15 +91,15 @@ case "$cmd" in
   city)
     need_venv
     need_files "$data" mapillary_street_lights.geojson sesizari_iluminat.geojson
-    "$PY" -I "$ROOT/backend/build_city.py" --data "$data"
-    "$PY" -I "$ROOT/backend/build_places.py" --data "$data"   # search index for the address boxes
-    "$PY" -I "$ROOT/backend/build_transit.py" --data "$data"  # timetable of the area: today + 2 days (rebuild on the demo day)
+    "$PY" -I "$ROOT/backend/build_city.py" --data "$data" --area config/area-expanded.geojson --out "$OUT/city-expanded"
+    "$PY" -I "$ROOT/scripts/prepare_expansion.py" --data "$data" places  # separate, area-aware search cache
+    "$PY" -I "$ROOT/backend/build_transit.py" --data "$data" --area config/area-expanded.geojson --out data/out/city-expanded/transit.json.gz
     echo "Дальше: $0 api"
     ;;
 
   api)
     need_venv
-    if [[ ! -f "$OUT/city/segments.geojson.gz" ]]; then
+    if [[ ! -f "${LIGHTMAP_SEGMENTS:-$OUT/city-expanded/segments.geojson.gz}" ]]; then
       echo "Нет данных по области карты. Сначала: $0 city" >&2
       exit 1
     fi

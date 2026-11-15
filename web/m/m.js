@@ -12,6 +12,7 @@ const dec = x => String(x).replace('.', t('decimal'));
 const km = m => dec((m / 1000).toFixed(2)) + ' km';
 const dist = m => (m >= 1000 ? km(m) : Math.round(m) + ' m');
 const minN = m => Math.max(1, Math.round(m));
+const speedMps = travel => plan?.settings?.[travel + '_mps'] ?? (travel === 'bike' ? 4.2 : 4.3 / 3.6);
 const pct = x => Math.round(100 * x) + '%';
 const clamp = x => (x < 0 ? 0 : x > 1 ? 1 : x);
 const easeDraw = x => -(Math.cos(Math.PI * x) - 1) / 2;
@@ -1337,7 +1338,7 @@ function metaText() {
   const g = summary.groups.streets_and_sidewalks, src = summary.sources;
   return t('meta', { km: dec(g.km), lit: dec(g.lit_confirmed), likely: dec(g.lit_likely), dark: dec(g.dark_reported), unknown: dec(g.unknown), asof: summary.as_of,
     osm: (summary.network.fetched_at || '').slice(0, 10), mly: (src.mapillary.last_seen_range || []).join('…'), ses: (src.sesizari.created_range || []).join('…'),
-    walk: dec((3.6 * 1.35).toFixed(1)), bike: dec((3.6 * 4.2).toFixed(0)) });
+    walk: dec((3.6 * speedMps('walk')).toFixed(1)), bike: dec((3.6 * speedMps('bike')).toFixed(0)) });
 }
 
 // ---------- details ----------
@@ -1680,7 +1681,7 @@ function onGpsError(err) {
 function startSim() {
   if (!nav) return;
   nav.sim = true;
-  const speed = (mode === 'bike' && !nav.toStop ? 4.2 : 1.35) * 6;   // six times faster than walking, for a demo
+  const speed = speedMps(mode === 'bike' && !nav.toStop ? 'bike' : 'walk') * 6;   // six times normal speed, for a demo
   let d = nav.progress;
   clearInterval(nav.simT);
   nav.simT = setInterval(() => {
@@ -1783,7 +1784,7 @@ function updateNav() {
     : dark ? `<section class="warnbox dark" aria-label="${esc(t('m.ahead'))}"><div style="display: flex; align-items: flex-start; gap: 12px">${I.diamond(22)}<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600; line-height: 1.35">${esc(t('m.darkAhead', { d: round(Math.max(0, dark.from - pr)), m: Math.round(dark.len) }))}</span><span class="sec" style="display: flex; align-items: center; gap: 8px">${sample('dark_reported', 30, 3.5)}${esc(t('m.darkSource'))}</span></div></div>` +
       `<div style="display: flex; gap: 8px">${canDetour ? `<button type="button" class="primary" data-act="detour" style="height: 44px; font-size: 15px">${esc(t('m.detour', { min: Math.max(1, extraMin()) }))}</button>` : ''}<button type="button" class="secondary sm" data-act="keep" data-d="${Math.round(dark.from)}">${esc(t('m.keepGoing'))}</button></div></section>`
       : '';
-  const remain = path.total - pr, speed = mode === 'bike' && !nav.toStop ? 4.2 : 1.35, minLeft = remain / speed / 60;
+  const remain = path.total - pr, speed = speedMps(mode === 'bike' && !nav.toStop ? 'bike' : 'walk'), minLeft = remain / speed / 60;
   const now = new Date(), arr = fmtHM(now.getHours() * 60 + now.getMinutes() + minLeft);
   $('nav-eta').textContent = `${minN(minLeft)} min · ${arr}`;
   $('nav-left').textContent = t(nav.toStop ? 'm.leftToStop' : 'm.leftToDest', { d: dist(remain), place: nav.toStop ? ride().from.name : plan.loop ? t('m.loopStart') : labels.B, route: routeTitle(nav.kind).toLowerCase() });

@@ -68,7 +68,7 @@ def test_bike_avoids_a_pavement_without_a_bike_sign_and_rides_faster():
 def test_pushing_the_bike_counts_at_walking_speed():
     net = net_of(seg("push", 1, 2, [(0, 0), (100, 0)], "lit_confirmed", "Pasaj", hw="footway", bicycle="dismount"))
     route = net.plan(at(net, 0, 0), at(net, 100, 0), mode="bike")["routes"]["fastest"]
-    assert route["minutes"] == pytest.approx(100 / 1.35 / 60, abs=0.1)
+    assert route["minutes"] == pytest.approx(100 / (4.3 / 3.6) / 60, abs=0.1)
 
 
 def test_one_way_dead_ends_are_left_out_so_every_pair_has_a_route():

@@ -2,7 +2,7 @@
 
 run:  .venv/bin/uvicorn backend.app:app --port 8001      (or ./scripts/mac/lightmap.sh api)
 docs: http://localhost:8001/docs
-Data: data/out/city/segments.geojson.gz from backend/build_city.py; override with LIGHTMAP_SEGMENTS=<path>.
+Data: data/out/city-expanded/segments.geojson.gz from backend/build_city.py; override with LIGHTMAP_SEGMENTS=<path>.
 """
 import json
 import math
@@ -29,7 +29,7 @@ from backend.transit import TRANSIT, Timetable, Transit
 LOCAL_TZ = ZoneInfo("Europe/Bucharest")
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SEGMENTS = ROOT / "data/out/city/segments.geojson.gz"
+DEFAULT_SEGMENTS = ROOT / "data/out/city-expanded/segments.geojson.gz"
 SEGMENT_LIMIT_DEFAULT, SEGMENT_LIMIT_MAX = 4000, 20000
 
 INDEX_HTML = """<!doctype html><html lang="ru"><meta charset="utf-8"><title>Night route API</title>

@@ -22,7 +22,7 @@ UNKNOWN, DARK = STATUSES.index("unknown"), STATUSES.index("dark_reported")
 
 # Spec section 12. All numbers are settings; check them with real walkers.
 SETTINGS = {
-    "walk_mps": 1.35,                       # ~4.9 km/h
+    "walk_mps": 4.3 / 3.6,                  # 4.3 km/h (~1.19 m/s)
     "bike_mps": 4.2,                        # ~15 km/h in town; pushing the bike ("dismount") counts at walking speed
     "factor_better_lit": {"lit_confirmed": 1.0, "lit_likely": 1.2, "unknown": 1.6, "dark_reported": 3.0},
     "hide_if_extra_min": 5.0,               # the lit route is not worth showing if it is longer by more than this

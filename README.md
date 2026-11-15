@@ -24,7 +24,7 @@ python -m venv .venv
 .venv/bin/uvicorn backend.app:app --port 8001
 ```
 
-Open http://localhost:8001/m/ (phone layout, "bezna") or http://localhost:8001/ (the earlier desktop page). API docs: http://localhost:8001/docs. The built data for the area is in the repository (`data/out/city/`), so no download is needed to run it. Optional: `GEMINI_API_KEY` in `.env` turns on the plain-words box (see `.env.example`).
+Open http://localhost:8001/m/ (phone layout, "bezna") or http://localhost:8001/ (the earlier desktop page). API docs: http://localhost:8001/docs. The active coverage is 7.73 km²: the university campus, centre and selected northeastern neighbourhoods. Built data is in `data/out/city-expanded/`; no download is needed to run it. `LIGHTMAP_SEGMENTS` can select another dataset. Optional: `GEMINI_API_KEY` in `.env` turns on the plain-words box (see `.env.example`).
 
 Tests: `.venv/bin/python -m pytest backend/tests -q`.
 
@@ -34,8 +34,9 @@ Tests: `.venv/bin/python -m pytest backend/tests -q`.
 |---|---|
 | `backend/` | lighting status of every street segment, routing, timetable, live vehicles, place search, Gemini form filling; see `backend/README.md` |
 | `web/m/` | the phone layout; `web/` the desktop page; see `web/README.md` |
-| `config/area.geojson` | the covered area |
-| `data/out/city/` | built data the server reads |
+| `config/area-expanded.geojson` | active coverage boundary (7.73 km²) |
+| `data/out/city-expanded/` | active network, search index, summary and timetable |
+| `config/area.geojson`, `data/out/city/` | previous 4.71 km² area, kept for comparison |
 | `PLAN.md` | plan and status (in Russian) |
 | `docs/` | research notes, design brief, bug reports |
 

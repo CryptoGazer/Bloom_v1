@@ -613,7 +613,7 @@ getJSON('/api/summary')
     $('meta').textContent = t('meta', {
       km: dec(g.km), lit: dec(g.lit_confirmed), likely: dec(g.lit_likely), dark: dec(g.dark_reported), unknown: dec(g.unknown), asof: s.as_of,
       osm: (s.network.fetched_at || '').slice(0, 10), mly: (src.mapillary.last_seen_range || []).join('…'),
-      ses: (src.sesizari.created_range || []).join('…'), walk: dec((3.6 * 1.35).toFixed(1)), bike: dec((3.6 * 4.2).toFixed(0)),
+      ses: (src.sesizari.created_range || []).join('…'), walk: dec('4.3'), bike: dec((3.6 * 4.2).toFixed(0)),
     });
     if (window.ExtraLayers) {
       const ctl = L.control.layers(null, {}, { collapsed: window.innerWidth < 800, position: 'topright' }).addTo(map);

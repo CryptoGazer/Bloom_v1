@@ -1,0 +1,191 @@
+{
+ "as_of": "2026-11-15",
+ "area_km2": 7.731,
+ "area_sha256": "78ddb71e4fba7f3c88d3778dd8e575f7a8bf23b0813d6329b7b24692cc596861",
+ "quality_passes": true,
+ "routing_passes": true,
+ "api_checks": [
+  {
+   "url": "/api/health",
+   "http": 200
+  },
+  {
+   "url": "/api/summary",
+   "http": 200
+  },
+  {
+   "url": "/api/transit/live",
+   "http": 200
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Piata Traian",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_trip_soon"
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Badea Cartan",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Telegrafului",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Tipografilor",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "walk",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "bike",
+   "http": 200,
+   "transit_kind": null,
+   "transit_reason": null
+  },
+  {
+   "destination": "Matasarilor",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "none",
+   "transit_reason": "no_line"
+  },
+  {
+   "from": "45.7470,21.2395",
+   "to": "45.7548,21.2254",
+   "at": "2026-11-15T21:00",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "line": "16"
+  },
+  {
+   "from": "45.75937,21.22896",
+   "to": "45.76027,21.24061",
+   "at": "2026-11-15T12:03",
+   "mode": "transit",
+   "http": 200,
+   "transit_kind": "ok",
+   "line": "17"
+  }
+ ],
+ "street_stats_clipped_to_polygon": {
+  "street_km": 164.622,
+  "lit_confirmed": 61.63,
+  "lit_likely": 22.02,
+  "dark_reported": 1.74,
+  "unknown": 14.6
+ },
+ "added_street_stats": {
+  "street_km": 57.212,
+  "lit_confirmed": 57.5,
+  "lit_likely": 19.7,
+  "dark_reported": 3.4,
+  "unknown": 19.4
+ },
+ "grid_600m_cells_checked": 14,
+ "max_grid_unknown_pct": 35.26,
+ "max_grid_walking_unknown_pct": 48.75,
+ "red_comparison": {
+  "current": {
+   "all_dark_m": 5678,
+   "core_dark_m": 1334,
+   "direct_complaint_dark_m": 442
+  },
+  "expanded": {
+   "all_dark_m": 7501,
+   "core_dark_m": 2867,
+   "direct_complaint_dark_m": 1853
+  }
+ },
+ "files": {
+  "segments.geojson.gz": {
+   "bytes": 375831,
+   "sha256": "39408aa626a1695336b6da125b5c04ff6b8275815e3c395970e606c33ddad522"
+  },
+  "summary.json": {
+   "bytes": 13976,
+   "sha256": "ad3aaf9981e3b54c1189361ee930287ea73a0bc769271c158f3b417847cd2b3a"
+  },
+  "places.json.gz": {
+   "bytes": 71840,
+   "sha256": "10ae5e2655c73106b27532d056b710bd2fa70c55fd20e0c3e7c5a7c2a9af9efa"
+  },
+  "transit.json.gz": {
+   "bytes": 255935,
+   "sha256": "fafe74b0502d10291842ab4cb504bf173ea4e50a9fe5e6f84d330600537e96e2"
+  }
+ }
+}

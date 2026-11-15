@@ -1,0 +1,745 @@
+{
+ "built_at": "2026-11-15T06:05:03",
+ "as_of": "2026-11-15",
+ "area": {
+  "type": "polygon",
+  "file": "config/area-expanded.geojson",
+  "name": "University district, centre and northeast neighbourhoods",
+  "description": "Quality-filtered northeast candidate: parts of Fabric, Tipografilor, Badea Cartan/Kogalniceanu, Telegrafului/Dorobanti and western Modern. Existing coverage preserved; low-evidence fringe excluded.",
+  "area_km2": 7.731,
+  "candidate": true,
+  "quality_refinement": "Exclude 600 m fringe cells with >=50% unknown or reported-dark street length (also check pedestrian paths where >=1 km is mapped); round inward corners, preserve old area. Source date 2026-11-15.",
+  "removed_fringe_cells": 6,
+  "initial_candidate_area_km2": 10.02,
+  "eastern_limit": 21.265
+ },
+ "area_geometry": {
+  "type": "Polygon",
+  "coordinates": [
+   [
+    [
+     21.243919855287974,
+     45.74049999999999
+    ],
+    [
+     21.2103,
+     45.74049999999999
+    ],
+    [
+     21.2102553855302,
+     45.75108427357704
+    ],
+    [
+     21.21059655601881,
+     45.751246832573386
+    ],
+    [
+     21.214910046204054,
+     45.75127157037824
+    ],
+    [
+     21.217967447530242,
+     45.75232655788028
+    ],
+    [
+     21.219504279583603,
+     45.753752205397994
+    ],
+    [
+     21.22074267738205,
+     45.75902991235598
+    ],
+    [
+     21.22182129050917,
+     45.76040715669883
+    ],
+    [
+     21.226169147114234,
+     45.762309377777676
+    ],
+    [
+     21.237684671502915,
+     45.763947894688236
+    ],
+    [
+     21.24345634794593,
+     45.76649256869907
+    ],
+    [
+     21.259204627390734,
+     45.76641770572395
+    ],
+    [
+     21.259204627390734,
+     45.771815444968375
+    ],
+    [
+     21.25801506434216,
+     45.77183309452547
+    ],
+    [
+     21.25783055619899,
+     45.77197752261219
+    ],
+    [
+     21.257874898812315,
+     45.772168782825034
+    ],
+    [
+     21.25997248435022,
+     45.77248729848894
+    ],
+    [
+     21.261517079326715,
+     45.77216218423445
+    ],
+    [
+     21.26489156628212,
+     45.77253530278387
+    ],
+    [
+     21.265,
+     45.7723546362696
+    ],
+    [
+     21.264975543153444,
+     45.76115804218009
+    ],
+    [
+     21.26467870866587,
+     45.76101919080137
+    ],
+    [
+     21.251495112699946,
+     45.76101841512326
+    ],
+    [
+     21.251495112505275,
+     45.75562170986625
+    ],
+    [
+     21.254078087103682,
+     45.75560940517689
+    ],
+    [
+     21.254319921084587,
+     45.755441196799026
+    ],
+    [
+     21.254359671584655,
+     45.75492751425868
+    ],
+    [
+     21.251287167323564,
+     45.75279995180368
+    ],
+    [
+     21.25110941055531,
+     45.75229924963243
+    ],
+    [
+     21.25116726128528,
+     45.75191752368958
+    ],
+    [
+     21.251844069935704,
+     45.75103171462813
+    ],
+    [
+     21.251740921717293,
+     45.75079167070899
+    ],
+    [
+     21.247035933026496,
+     45.74909113382118
+    ],
+    [
+     21.246092561325902,
+     45.74925002989913
+    ],
+    [
+     21.245203702311287,
+     45.749152284950085
+    ],
+    [
+     21.244287702011476,
+     45.74856660724762
+    ],
+    [
+     21.24406682387533,
+     45.74792850628961
+    ],
+    [
+     21.24406550842053,
+     45.74070973035631
+    ],
+    [
+     21.243919855287974,
+     45.74049999999999
+    ]
+   ]
+  ]
+ },
+ "bounds_wsen": [
+  21.210233,
+  45.740453,
+  21.265,
+  45.772591
+ ],
+ "params": {
+  "lamp_radius_m": 20.0,
+  "lamp_coverage_min": 0.5,
+  "sample_step_m": 10.0,
+  "complaint_radius_m": 30.0,
+  "complaint_cluster_m": 30.0,
+  "complaint_cluster_days": 14,
+  "open_complaint_fresh_days": 30,
+  "lamps_out_for_dark": 3,
+  "inherit_radius_m": 15.0,
+  "max_unknown_share": 33.33,
+  "min_lamp_recall": 0.5
+ },
+ "segments": 7502,
+ "network": {
+  "source": "OpenStreetMap via osmnx 2.1.1",
+  "fetched_at": "2026-11-15T03:53:14Z",
+  "licence": "ODbL, © OpenStreetMap contributors"
+ },
+ "sources": {
+  "osm_lit": {
+   "connected": true,
+   "segments_with_tag": 1628
+  },
+  "mapillary": {
+   "connected": true,
+   "file": "mapillary_street_lights.geojson",
+   "lamps_in_area": 6358,
+   "last_seen_range": [
+    "2014-07-20",
+    "2026-10-04"
+   ],
+   "download_window_wsen": [
+    21.2093,
+    45.7395,
+    21.266,
+    45.7736
+   ],
+   "streets_sidewalks_outside_window_pct": 0.2
+  },
+  "sesizari": {
+   "connected": true,
+   "file": "sesizari_iluminat.geojson",
+   "complaints_in_area": 593,
+   "events": 526,
+   "events_unattached": 226,
+   "event_kinds": {
+    "fixed": 379,
+    "open_area_outage": 55,
+    "open_lamp_out": 44,
+    "open_other": 35,
+    "declined": 13
+   },
+   "dark_segments": {
+    "lit_no": 108,
+    "by_complaints": 21,
+    "inherited": 15
+   },
+   "created_range": [
+    "2025-11-14",
+    "2026-11-13"
+   ]
+  }
+ },
+ "groups": {
+  "streets": {
+   "km": 104.9,
+   "n": 2107,
+   "lit_confirmed": 55.6,
+   "lit_likely": 22.3,
+   "dark_reported": 1.6,
+   "unknown": 20.5
+  },
+  "sidewalks": {
+   "km": 71.0,
+   "n": 1916,
+   "lit_confirmed": 69.1,
+   "lit_likely": 21.3,
+   "dark_reported": 2.0,
+   "unknown": 7.6
+  },
+  "streets_and_sidewalks": {
+   "km": 176.0,
+   "n": 4023,
+   "lit_confirmed": 61.0,
+   "lit_likely": 21.9,
+   "dark_reported": 1.8,
+   "unknown": 15.3
+  },
+  "paths": {
+   "km": 80.7,
+   "n": 2446,
+   "lit_confirmed": 32.9,
+   "lit_likely": 17.7,
+   "dark_reported": 6.1,
+   "unknown": 43.3
+  },
+  "service": {
+   "km": 37.1,
+   "n": 1033,
+   "lit_confirmed": 18.2,
+   "lit_likely": 20.5,
+   "dark_reported": 0.4,
+   "unknown": 60.9
+  }
+ },
+ "known_share": 84.7,
+ "checks": {
+  "unknown_share_streets_sidewalks": 15.3,
+  "unknown_ok": true,
+  "lit_no_but_confirmed": 0,
+  "lamp_recall_on_lit_yes": 63.9,
+  "lamp_recall_ok": true
+ },
+ "zones": [
+  {
+   "km": 0.7,
+   "n": 12,
+   "lit_confirmed": 30.0,
+   "lit_likely": 70.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Antene",
+   "known": 100.0,
+   "inside": 0.005
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Aradului Est",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Aradului Vest",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 12.6,
+   "n": 259,
+   "lit_confirmed": 54.5,
+   "lit_likely": 14.3,
+   "dark_reported": 1.9,
+   "unknown": 29.3,
+   "name": "Badea Cârțan, Kogălniceanu",
+   "known": 70.7,
+   "inside": 0.741
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Blașcovici",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Braytim",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Bucovina",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 1,
+   "lit_confirmed": 0.0,
+   "lit_likely": 100.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Buziașului",
+   "known": 100.0,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Calea Martirilor",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Calea Șagului",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 50.5,
+   "n": 1392,
+   "lit_confirmed": 67.9,
+   "lit_likely": 21.4,
+   "dark_reported": 1.0,
+   "unknown": 9.7,
+   "name": "Cetate",
+   "known": 90.3,
+   "inside": 1.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Ciarda Roșie",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.3,
+   "n": 3,
+   "lit_confirmed": 100.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Circumvalațiunii, Dacia",
+   "known": 100.0,
+   "inside": 0.001
+  },
+  {
+   "km": 17.0,
+   "n": 431,
+   "lit_confirmed": 70.1,
+   "lit_likely": 17.2,
+   "dark_reported": 1.3,
+   "unknown": 11.4,
+   "name": "Complex Studențesc",
+   "known": 88.6,
+   "inside": 0.987
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Dâmbovița",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 13.3,
+   "n": 259,
+   "lit_confirmed": 31.2,
+   "lit_likely": 36.0,
+   "dark_reported": 0.0,
+   "unknown": 32.8,
+   "name": "Elisabetin",
+   "known": 67.2,
+   "inside": 0.298
+  },
+  {
+   "km": 13.6,
+   "n": 247,
+   "lit_confirmed": 52.0,
+   "lit_likely": 23.3,
+   "dark_reported": 3.8,
+   "unknown": 20.9,
+   "name": "Fabric",
+   "known": 79.1,
+   "inside": 0.766
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Fratelia",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Freidorf",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 2.8,
+   "n": 64,
+   "lit_confirmed": 33.8,
+   "lit_likely": 41.7,
+   "dark_reported": 7.3,
+   "unknown": 17.2,
+   "name": "Gara de Nord",
+   "known": 82.8,
+   "inside": 0.053
+  },
+  {
+   "km": 9.7,
+   "n": 216,
+   "lit_confirmed": 73.1,
+   "lit_likely": 26.8,
+   "dark_reported": 0.0,
+   "unknown": 0.1,
+   "name": "Iosefin",
+   "known": 99.9,
+   "inside": 0.296
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Kuncz",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Lipovei",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 1.2,
+   "n": 37,
+   "lit_confirmed": 93.7,
+   "lit_likely": 3.1,
+   "dark_reported": 0.0,
+   "unknown": 3.2,
+   "name": "Lunei, Câmpului, Baba Dochia",
+   "known": 96.8,
+   "inside": 0.003
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Mehala",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Metro 2",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Mircea cel Bătrân",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 6.3,
+   "n": 88,
+   "lit_confirmed": 46.2,
+   "lit_likely": 13.2,
+   "dark_reported": 8.0,
+   "unknown": 32.6,
+   "name": "Modern, Crișan, Ghiroda Nouă",
+   "known": 67.4,
+   "inside": 0.126
+  },
+  {
+   "km": 7.7,
+   "n": 110,
+   "lit_confirmed": 45.9,
+   "lit_likely": 36.2,
+   "dark_reported": 0.0,
+   "unknown": 17.9,
+   "name": "Odobescu",
+   "known": 82.1,
+   "inside": 0.76
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Ovidiu Bâlea",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Plopi",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Polona, Parc Industrial",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Ronaț",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Soarelui",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 9.0,
+   "n": 244,
+   "lit_confirmed": 76.4,
+   "lit_likely": 11.8,
+   "dark_reported": 2.1,
+   "unknown": 9.8,
+   "name": "Stadion",
+   "known": 90.2,
+   "inside": 0.377
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Steaua",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 7.0,
+   "n": 136,
+   "lit_confirmed": 32.0,
+   "lit_likely": 35.2,
+   "dark_reported": 10.7,
+   "unknown": 22.1,
+   "name": "Telegrafului, Dorobanți",
+   "known": 77.9,
+   "inside": 0.61
+  },
+  {
+   "km": 9.7,
+   "n": 186,
+   "lit_confirmed": 56.8,
+   "lit_likely": 16.9,
+   "dark_reported": 0.0,
+   "unknown": 26.3,
+   "name": "Tipografilor",
+   "known": 73.7,
+   "inside": 1.0
+  },
+  {
+   "km": 0.0,
+   "n": 0,
+   "lit_confirmed": 0.0,
+   "lit_likely": 0.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "Torontalului",
+   "known": null,
+   "inside": 0.0
+  },
+  {
+   "km": 0.4,
+   "n": 2,
+   "lit_confirmed": 49.0,
+   "lit_likely": 51.0,
+   "dark_reported": 0.0,
+   "unknown": 0.0,
+   "name": "UMT",
+   "known": 100.0,
+   "inside": 0.0
+  }
+ ]
+}
