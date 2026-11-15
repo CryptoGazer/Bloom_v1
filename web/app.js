@@ -76,6 +76,36 @@ function renderStatic() {
 }
 renderStatic();
 
+// The desktop planner reads the selected route summary; the phone navigator reads each manoeuvre.
+const voice = BzVoice.create(LANG);
+function renderVoice() {
+  $('voice-toggle').textContent = t(voice.on ? 'voice.on' : 'voice.off');
+  $('voice-toggle').setAttribute('aria-pressed', String(voice.on));
+  $('voice-note').textContent = t('voice.note');
+}
+function speakRoute() {
+  if (!voice.on || !plan) return;
+  if (selected === 'transit' && plan.transit && plan.transit.kind === 'ok') {
+    voice.speak(t('voice.transit', { minutes: Math.round(plan.transit.minutes), time: plan.transit.leave_at }));
+    return;
+  }
+  const r = plan.routes[selected];
+  if (!r) return;
+  voice.speak(t('voice.route', {
+    mode: t(travel === 'bike' ? 'travelBike' : 'travelWalk'), distance: voice.spokenDist(r.length_m),
+    minutes: Math.max(1, Math.round(r.minutes)), lit: Math.round(100 * r.by_status_m.lit_confirmed / Math.max(1, r.length_m)),
+  }));
+}
+$('voice-toggle').addEventListener('click', () => {
+  voice.on = !voice.on;
+  try { localStorage.setItem(BzVoice.STORAGE_KEY, voice.on ? '1' : '0'); } catch (_) { /* optional storage */ }
+  renderVoice();
+  if (!voice.on) { voice.hush(); return; }
+  voice.unlockAudio();
+  if (plan) speakRoute(); else voice.speak(t('voice.on'));
+});
+renderVoice();
+
 // ---------- map ----------
 const map = L.map('map', { preferCanvas: true, renderer: L.canvas({ tolerance: 6 }) }).setView([45.7500, 21.2270], 14);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, className: 'gray-tiles',
@@ -209,6 +239,7 @@ function clearPoint(which) {
 
 // Shared with the mobile Gemini controller: discard stale results without resetting known points.
 function clearAskRoute() {
+  voice.hush();
   ++routeReq;
   loopRequest = null; askPointChoice = null;
   if (markers.B) markers.B.setOpacity(1);
@@ -321,6 +352,7 @@ function startAskLoop(r) {
 }
 
 function compute() {
+  voice.hush();
   if (loopRequest && travel === 'transit') {
     setTravel(plan && plan.loop ? plan.mode : 'walk');
     say(`<span class="error">${esc(t('ask.loopTransit'))}</span>`);
@@ -534,6 +566,7 @@ function renderCards() {
   const box = $('live-box');
   if (box) box.addEventListener('click', e => { if (e.target.id === 'live-recalc') compute(); });
   updateLiveBox();
+  speakRoute();
 }
 
 // ---------- live public transport (backend/live.py through /api/transit/live) ----------

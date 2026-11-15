@@ -49,7 +49,7 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
         if (url.pathname === '/api/route') requests.push(url);
         return intercepted.continue();
       });
-      await page.goto(base + (mobile ? '/m/' : '/') + '?lang=ru');
+      await page.goto(base + (mobile ? '/m/' : '/') + '?lang=en');
       const open = () => ui.open(page, mobile);
       const submit = async value => {
         await open();
@@ -132,7 +132,7 @@ const route = { kind: 'route', from: c12, to: botanic, from_here: false, mode: '
       await ui.settled(page, mobile);
       await planned();
       if (mobile) await page.evaluate(() => go('home', false));
-      assert.ok((await ui.note(page, mobile)).includes('Услышал:'));
+      assert.ok((await ui.note(page, mobile)).includes('Heard:'));
       assert.equal(audioCalls, 1);
 
       // A slow, successful backend retry must survive the former mobile 25-second deadline.
