@@ -223,22 +223,51 @@ function fit(bounds, maxZoom = 17) {
   map.fitBounds(bounds, { paddingTopLeft: [28, top + 16], paddingBottomRight: [28, bottom + 16], maxZoom, animate: false });
 }
 
-// ---------- the area and the faint lighting network (start screen) ----------
-let netReq = 0;
-function refreshNet() {
-  if (!summary || !netOn() || screen === 'search' || map.getZoom() < 13) { netReq++; netLayer.clearLayers(); return; }
-  const b = map.getBounds().pad(0.15), req = ++netReq;
-  getJSON(`/api/segments?bbox=${b.getWest().toFixed(5)},${b.getSouth().toFixed(5)},${b.getEast().toFixed(5)},${b.getNorth().toFixed(5)}&limit=8000`)
+// ---------- the area and the faint lighting network ----------
+// The network of the whole area is loaded once (about 240 KB) and kept: moving the map asks the server nothing and
+// redraws nothing by hand. Only an area with more segments than one answer holds is loaded view by view, as before.
+const NET_MIN_ZOOM = 12, NET_VIEW_MIN_ZOOM = 13, NET_LIMIT = 8000;
+let netState = 'none';                        // none | loading | ready | views (too big for one answer)
+let netReq = 0, netDim = false;
+const netOpacity = k => ST[k].netOp * (netDim ? 0.6 : 1);
+function drawNet(features) {
+  netLayer.clearLayers();
+  netDim = screen !== 'home';
+  for (const k of ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported']) {
+    const s = ST[k], lines = features.filter(f => f.properties.status === k).map(f => ll(f.geometry.coordinates));
+    if (lines.length) L.polyline(lines, { renderer: netR, status: k, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: netOpacity(k), dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
+  }
+}
+function loadNet(west, south, east, north, whole) {
+  const req = ++netReq;
+  if (whole) netState = 'loading';
+  getJSON(`/api/segments?bbox=${west.toFixed(5)},${south.toFixed(5)},${east.toFixed(5)},${north.toFixed(5)}&limit=${NET_LIMIT}`)
     .then(d => {
-      if (req !== netReq) return;
-      netLayer.clearLayers();
-      if (d.truncated) return;
-      for (const k of ['unknown', 'lit_likely', 'lit_confirmed', 'dark_reported']) {
-        const s = ST[k], lines = d.features.filter(f => f.properties.status === k).map(f => ll(f.geometry.coordinates));
-        if (lines.length) L.polyline(lines, { renderer: netR, color: s.netC || s.c, weight: k === 'unknown' ? 3 : k === 'dark_reported' ? 2.5 : 2, opacity: s.netOp * (screen === 'home' ? 1 : 0.6), dashArray: s.net, lineCap: s.cap, interactive: false }).addTo(netLayer);
-      }
+      if (whole) {
+        netState = d.truncated ? 'views' : 'ready';
+        if (!d.truncated) drawNet(d.features);
+        refreshNet();                           // the screen or the zoom may have changed meanwhile
+      } else if (req === netReq) drawNet(d.truncated ? [] : d.features);
     })
-    .catch(() => {});
+    .catch(() => { if (whole) netState = 'none'; });   // tried again at the next move of the map
+}
+function refreshNet() {
+  const minZoom = netState === 'views' ? NET_VIEW_MIN_ZOOM : NET_MIN_ZOOM;
+  if (!summary || !netOn() || screen === 'search' || map.getZoom() < minZoom) {
+    netReq++;
+    if (map.hasLayer(netLayer)) map.removeLayer(netLayer);
+    return;
+  }
+  if (!map.hasLayer(netLayer)) map.addLayer(netLayer);
+  if (netState === 'ready') {
+    if (netDim !== (screen !== 'home')) { netDim = !netDim; netLayer.eachLayer(l => l.setStyle({ opacity: netOpacity(l.options.status) })); }
+  } else if (netState === 'none') {
+    const [w, so, e, n] = summary.bounds_wsen;
+    loadNet(w, so, e, n, true);
+  } else if (netState === 'views') {
+    const v = map.getBounds().pad(0.15);
+    loadNet(v.getWest(), v.getSouth(), v.getEast(), v.getNorth(), false);
+  }
 }
 
 // ---------- points ----------
