@@ -41,7 +41,7 @@
 
 ```bash
 TIGER_HISTORY=off .venv/bin/uvicorn backend.app:app --host 127.0.0.1 --port 8019
-# Во втором терминале, с Playwright в NODE_PATH:
+# In a second terminal, with Playwright on NODE_PATH:
 node scripts/testing/check_gemini_niche_15.cjs
 ```
 

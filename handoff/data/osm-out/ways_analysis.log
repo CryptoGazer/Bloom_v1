@@ -91,7 +91,7 @@ allnet WAY lengths m (clipped): n 1366 p10 5.9 p50 35.6 p75 82.8 p90 147.7 p99 3
 | allnet | 7265 | 520.17 | 75.00 | 2.87 | 442.30 | -0.00 | 15.0% | 57.9% |
 
 ## T1e 250 m grid
-grid cells 266 ( 19 x 14 ) with streets: 264 -> saved C:/Users/Timur/AppData/Local/Temp/claude/50203f85cc2bb294/f38f5737-e8f0-41ee-9a1b-f8fc47f8cf66/scratchpad/osm/out\grid250_streets_lit.csv
+grid cells 266 ( 19 x 14 ) with streets: 264 -> saved [temporary research directory]/osm/out\grid250_streets_lit.csv
 grid total street km 181.42 (generous clipped streets km 181.42)
 cells with centre in extended and >20 m of street: 55 | share >=90% tagged: 4 | 50-90%: 19 | 10-50%: 18 | <10%: 14
 same over the generous bbox: cells 261 | >=90%: 6 | 50-90%: 30 | 10-50%: 73 | <10%: 152

@@ -22,7 +22,7 @@ curl "http://localhost:8001/api/route?from=45.74315,21.21053&to=45.75057,21.2120
 # HTTP 404 {"detail":{"code":"no_route","message":"no bike route between these points"}}
 
 curl "http://localhost:8001/api/route?from=45.74315,21.21053&to=45.75057,21.21208&mode=walk"
-# HTTP 200: 17,6 мин, 1 428 м
+# HTTP 200: 17.6 min, 1,428 m
 ```
 
 На странице: http://localhost:8001/?lang=ru#a=45.74315,21.21053&b=45.75057,21.21208&m=bike
@@ -60,7 +60,7 @@ for _ in range(600):
     if A and B:
         both += 1
         fail += net.plan(A, B, mode="bike") is None
-print(f"{fail} of {both} pairs without a bike route")   # сейчас: 67 of 476; после исправления: 0
+print(f"{fail} of {both} pairs without a bike route")   # before: 67 of 476; after the fix: 0
 EOF
 ```
 
@@ -110,7 +110,7 @@ if mode == "bike":
     main = largest_scc(adj)
     routable = [ok and self.a[i] in main and self.b[i] in main for i, ok in enumerate(routable)]
     adj = [[(v, s) for v, s in nbrs if routable[s]] for nbrs in adj]
-    # snap_idx и snap_tree строить уже по новому routable
+    # Build snap_idx and snap_tree from the updated routable mask.
 ```
 
 Для пешехода ничего не меняется: его граф ненаправленный, слабая и сильная связность совпадают.

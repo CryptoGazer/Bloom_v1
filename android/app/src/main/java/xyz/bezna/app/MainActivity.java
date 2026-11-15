@@ -68,15 +68,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         s.setMediaPlaybackRequiresUserGesture(false);
         web.setWebViewClient(new Client());
         web.setWebChromeClient(new Chrome());
-        // Google's engine speaks Romanian and Russian; some phones' own engines list every language but speak only
+        // Google's engine supports Romanian and English; some phones' own engines list every language but speak only
         // English (vivo's com.vivo.aiservice). Google's if it is installed, the phone's default otherwise.
         final String engine = installed(GOOGLE_TTS) ? GOOGLE_TTS : null;
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
             if (!ttsReady) return;
-            StringBuilder voices = new StringBuilder();
-            try { for (android.speech.tts.Voice v : tts.getVoices()) voices.append(v.getLocale().toLanguageTag()).append(v.isNetworkConnectionRequired() ? "(net) " : " "); } catch (Exception e) { voices.append(e); }
-            Log.i(TAG, "speech engine " + engine + " (null: the default " + tts.getDefaultEngine() + "), voices: " + voices.length());
+            Log.i(TAG, "speech engine " + engine + " (null: the default " + tts.getDefaultEngine() + ")");
         }, engine);
         sensors = (SensorManager) getSystemService(SENSOR_SERVICE);
         web.addJavascriptInterface(new Bridge(), "BeznaNative");
@@ -157,7 +155,13 @@ public class MainActivity extends Activity implements SensorEventListener {
         public void speak(final String text, final String lang) {
             runOnUiThread(() -> {
                 if (!ttsReady) { Log.w(TAG, "speak: no speech engine"); return; }
-                int language = tts.setLanguage(Locale.forLanguageTag(lang));
+                Locale locale = Locale.forLanguageTag(lang);
+                if (!locale.getLanguage().equals("en") && !locale.getLanguage().equals("ro")) return;
+                int language = tts.setLanguage(locale);
+                if (language < TextToSpeech.LANG_AVAILABLE) {
+                    Log.w(TAG, "speak: missing voice data for " + lang);
+                    return; // Do not read Romanian using the previously selected English voice.
+                }
                 int queued = tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "bezna");
                 Log.i(TAG, "speak " + lang + ": language " + language + ", queued " + queued + ", voice " + tts.getVoice());
             });

@@ -602,7 +602,7 @@ BzAsk.enabled()           // Promise<boolean>, /api/health
 BzAsk.canRecord()         // boolean
 BzAsk.send(payload, near) // Promise<{ok, body?, code?}>, /api/ask
 BzAsk.record(done)        // Promise<{stop()} | null>; done({wav} | {silent} | {error, denied?})
-BzAsk.loopParams(reply)   // Promise<URLSearchParams>; центр/радиус/старт, при необходимости геолокация
+BzAsk.loopParams(reply)   // Promise<URLSearchParams>; center/radius/start, with geolocation if needed
 ```
 
 На `/m/` подключать `../ask.js` до `m.js`. Движок не зависит от формы адресов. Форма ниже относится только к десктопному обработчику, который запускается при наличии `#ask`. Он дополнительно ожидает:

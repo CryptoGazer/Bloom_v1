@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,7 @@ from backend.live import LIVE, Live, Vehicles, epoch, fetch_city
 from backend.liveliness import LIVELY, Signs
 from backend.loops import DEFAULT_RADIUS_M, MAX_RADIUS_M, MIN_RADIUS_M, around
 from backend.routing import MODES, SETTINGS, Network
+from backend.speak import SPEAK, SpeakError, Speaker
 from backend.transit import TRANSIT, Timetable, Transit
 from backend.web_assets import APINoStore, WebAssets
 
@@ -101,17 +102,19 @@ class AskIn(BaseModel):
                                                       "picked next to it. Stays on this server, never goes to Gemini")
 
 
-def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
+def create_app(segments_path=None, gemini=None, live_fetch=None, history=None, speaker=None):
     """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment.
     live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city.
     history: a backend.history.History (tests pass one with a fake loader); by default read from Tiger Data in the
-    background if TIGER_READ_URL or TIGER_DATABASE_URL is set."""
+    background if TIGER_READ_URL or TIGER_DATABASE_URL is set.
+    speaker: a backend.speak.Speaker (tests pass one with a fake provider); by default built from ELEVENLABS_API_KEY
+    and the ELEVENLABS_VOICE_ID_* variables."""
     load_env(ROOT / ".env")
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
 
-    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None, "history": history}
+    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None, "history": history, "speaker": speaker}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -128,6 +131,8 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
         if state["net"] is not None and state["places"] is not None:
             state["signs"] = Signs(state["net"], [item["e"] for item in state["places"].items],
                                    state["transit"].tt if state["transit"] else None)
+        if state["speaker"] is None:
+            state["speaker"] = Speaker.from_env(ROOT / "data/cache/speak")   # None without a key or a voice
         if state["history"] is None and state["transit"] is not None:
             state["history"] = History.from_env()
             if state["history"] is not None:
@@ -154,7 +159,9 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
         return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None,
                 "ask": state["asker"] is not None, "ask_version": ASK_VERSION, "ui_version": web.version(),
                 "features": {"loop": True, "gemini_loop": True, "gemini_loop_waypoints": True},
-                "history": state["history"] is not None and state["history"].ready}
+                "history": state["history"] is not None and state["history"].ready,
+                # interface languages that have an ElevenLabs voice; the page speaks the others with the phone's own voice
+                "speak": state["speaker"].languages() if state["speaker"] is not None else []}
 
     @app.post("/api/ask")
     def ask(body: AskIn, request: Request):
@@ -175,6 +182,26 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
             if e.status >= 500:
                 print(f"ask: {e.code}: {e}", flush=True)  # the reason stays in the server log, not in the answer
             raise HTTPException(e.status, detail={"code": e.code, "message": e.code if e.status >= 500 else str(e)})
+
+    @app.get("/api/speak")
+    def speak(request: Request,
+              text: str = Query(max_length=2 * SPEAK["text_chars"], description="a short phrase of the navigator, e.g. '50 de metri. La dreapta pe Strada Cluj.'"),
+              lang: str = Query("ro", max_length=5, description="interface language: ro or en; each has its own voice")):
+        """The phrase read aloud by the ElevenLabs voice of that language, as MP3. Each phrase is generated once and then
+        served from a cache. Only the phrase goes to ElevenLabs: no coordinates and nothing about who asked. Errors
+        (no voice for the language, over the limits, the service down) are meant to be answered by the phone's own voice."""
+        if lang not in SPEAK["languages"]:
+            raise HTTPException(422, detail={"code": "bad_lang", "message": "lang must be ro or en"})
+        if state["speaker"] is None:
+            raise HTTPException(503, detail={"code": "voice_not_configured", "message": "ELEVENLABS_API_KEY or a voice id is not set"})
+        client = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "-")
+        try:
+            audio = state["speaker"].clip(text, lang, client)
+        except SpeakError as e:
+            if e.status >= 500:
+                print(f"speak: {e.code}: {e}", flush=True)  # the reason stays in the server log, not in the answer
+            raise HTTPException(e.status, detail={"code": e.code, "message": e.code if e.status >= 500 else str(e)})
+        return Response(audio, media_type="audio/mpeg")
 
     @app.get("/api/summary")
     def summary():

@@ -7,7 +7,7 @@ export const meta = {
   ],
 }
 
-const SCRATCH = 'C:/Users/Timur/AppData/Local/Temp/claude/50203f85cc2bb294/f38f5737-e8f0-41ee-9a1b-f8fc47f8cf66/scratchpad'
+const SCRATCH = 'C:/Users/Timur/AppData/Local/Temp/bezna-research'
 
 const rules = (workdir) => `WORKING RULES (strict)
 - WORKDIR = ${workdir} . Work only inside WORKDIR. Do NOT create, modify or delete anything under c:/Users/Timur/F1/Unihack (the project repo must stay empty until a design is approved).

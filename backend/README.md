@@ -14,10 +14,10 @@
 ## Запуск
 
 ```bash
-./scripts/mac/lightmap.sh setup   # один раз: окружение и зависимости (backend/requirements.txt)
-./scripts/mac/lightmap.sh city    # сборка области → data/out/city/  (около 2 минут в первый раз, дальше секунды)
-./scripts/mac/lightmap.sh api     # сервер на http://localhost:8001
-./scripts/mac/lightmap.sh test    # тесты
+./scripts/mac/lightmap.sh setup   # one-time environment and dependency setup (backend/requirements.txt)
+./scripts/mac/lightmap.sh city    # build active coverage -> data/out/city-northwest/
+./scripts/mac/lightmap.sh api     # server at http://localhost:8001
+./scripts/mac/lightmap.sh test    # tests
 ```
 
 Сборку нужно повторять, только если изменились данные или правила: готовые файлы `data/out/city/` уже лежат в проекте. Папка называется `city` по истории, внутри — область, а не весь город. Другой порт: `PORT=9000 ./scripts/mac/lightmap.sh api`.
@@ -39,10 +39,10 @@ Gemini не строит маршрут и не пишет ответ польз
 ### Live-транспорт: CSV и Tiger Data
 
 ```bash
-./scripts/transit/logger.sh start 6       # до следующего 04:05 Europe/Bucharest
+./scripts/transit/logger.sh start 6       # automatic stop at 04:05 Europe/Bucharest
 ./scripts/transit/logger.sh status
 ./scripts/transit/logger.sh log
-./scripts/transit/logger.sh sync-tiger    # безопасно повторять: догрузка всего CSV
+./scripts/transit/logger.sh sync-tiger    # idempotent import of the complete CSV spool
 ./scripts/transit/logger.sh stop
 ```
 

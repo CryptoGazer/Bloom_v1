@@ -62,6 +62,10 @@ input::placeholder { color: var(--bz-ink-3); }
 .round { width: var(--bz-hit); height: var(--bz-hit); flex: none; border-radius: 999px; border: 1px solid var(--bz-line); background: var(--bz-panel);
          display: flex; align-items: center; justify-content: center; padding: 0; text-decoration: none; }
 .round[aria-pressed="true"], .round[aria-expanded="true"] { border-color: var(--bz-ink); }
+/* voice on / off (m.js, ACT.voice): on is a filled light button with a speaker, off an outlined crossed speaker */
+.round.voice[aria-pressed="true"] { background: var(--bz-ink); color: var(--bz-on-light); border-color: var(--bz-ink); }
+.actions .round.voice { width: 52px; height: 52px; border-radius: var(--bz-r-card); border-color: var(--bz-edge); background: var(--bz-raised); }
+.actions .round.voice[aria-pressed="true"] { background: var(--bz-ink); border-color: var(--bz-ink); }
 .pill { height: var(--bz-hit); padding: 0 14px; border-radius: 999px; border: 1px solid var(--bz-line); background: var(--bz-panel);
         font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
 .pill[aria-expanded="true"] { border-color: var(--bz-ink); }
@@ -263,7 +267,7 @@ details[open] .chev { transform: rotate(90deg); }
 .warnbox { padding: 12px; border-radius: var(--bz-r-card); background: var(--bz-bg); border: 1px dashed var(--bz-ink-2); display: flex; flex-direction: column; gap: 10px; }
 .warnbox.dark { border-color: #FF5A4F; }
 
-/* ask in your own words (Gemini): design "Запрос своими словами" */
+/* Ask in your own words (Gemini). */
 .ask-entry { display: flex; flex-direction: column; gap: 6px; }
 .ask-open { flex: 1; min-width: 0; height: 48px; padding: 0 14px; border-radius: var(--bz-r-ctl); border: 1px solid var(--bz-edge); background: var(--bz-raised);
             display: flex; align-items: center; gap: 10px; text-align: left; font-size: 15px; font-weight: 500; }
@@ -385,6 +389,7 @@ details[open] .chev { transform: rotate(90deg); }
 <script src="texts.js"></script>
 <script src="../hist.js"></script>
 <script src="nav.js"></script>
+<script src="../voice.js"></script>
 <script src="m.js"></script>
 </body>
 </html>

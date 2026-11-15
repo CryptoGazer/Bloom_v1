@@ -125,10 +125,10 @@
 **Mac / Linux:**
 
 ```bash
-./scripts/mac/lightmap.sh setup   # один раз: .venv и зависимости из backend/requirements.txt
-./scripts/mac/lightmap.sh api     # сервер на http://localhost:8001
-./scripts/mac/lightmap.sh test    # тесты бэкенда
-./scripts/mac/lightmap.sh city    # пересобрать освещённость города (нужен unihack-data/, ~1,5 мин)
+./scripts/mac/lightmap.sh setup   # one-time setup: .venv and backend/requirements.txt
+./scripts/mac/lightmap.sh api     # server at http://localhost:8001
+./scripts/mac/lightmap.sh test    # backend tests
+./scripts/mac/lightmap.sh city    # rebuild active coverage (requires unihack-data/)
 ```
 
 **Windows (Git Bash):** скрипт рассчитан на Mac, поэтому команды напрямую:
@@ -138,7 +138,7 @@ py -3.12 -m venv .venv
 .venv/Scripts/python -m pip install -r backend/requirements.txt
 .venv/Scripts/python -m uvicorn backend.app:app --port 8001
 .venv/Scripts/python -m pytest backend/tests -q
-.venv/Scripts/python -I backend/build_city.py      # пересборка города
+.venv/Scripts/python -I backend/build_city.py      # rebuild the network
 ```
 
 Адреса после запуска:

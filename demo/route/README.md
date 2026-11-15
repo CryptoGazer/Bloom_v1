@@ -11,8 +11,8 @@
 
 ```bash
 cd ~/Desktop/PABLO/Hackathons/UniHack26/Bloom_v1
-python3 demo/route/extract_segments.py     # один раз и после каждой пересборки карты
-./scripts/mac/lightmap.sh serve            # локальный сервер на порту 8000
+python3 demo/route/extract_segments.py     # once and after each map rebuild
+./scripts/mac/lightmap.sh serve            # local server on port 8000
 ```
 
 Открыть http://localhost:8000/demo/route/

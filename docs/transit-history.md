@@ -2,10 +2,11 @@
 
 Добавлено 15.11.2026. Сайт теперь знает не только расписание и живые машины, но и то, как линия ходила на самом деле в недавний день.
 
-- На карточке «пешком + транспорт» появилась строка: «Трамвай 8: вчера в это время шёл на ~3 мин раньше расписания. Будьте на остановке за 4 мин до отправления».
-- Появилась страница `/night.html` «Как ходил транспорт вечером»: все линии за один вечер, для мэрии и жюри.
+- Под живой карточкой рейса появилась фраза: «Вчера в это время трамвай 8 шёл на ~3 мин раньше расписания. Будьте на остановке за 4 мин».
+- По нажатию на «откуда это?» раскрываются число рейсов, время, дата и источник.
+- Блок есть в десктопе и в версии для телефона. Он появляется только для линии из построенного маршрута; отдельной страницы нет.
 
-Если Tiger недоступен или не настроен, строки и страницы нет, а всё остальное работает как раньше.
+Если Tiger недоступен или не настроен, блока нет, а всё остальное работает как раньше.
 
 ## Как это устроено
 
@@ -20,12 +21,29 @@ API города ─ раз в 10 с ─► scripts/transit/logger.py (служ�
                                │ сервер читает её в фоне раз в 15 минут и держит в памяти
                                ▼
                  backend/history.py ─► /api/route: поле history в шаге поездки
-                                   └─► /api/transit/night: отчёт за вечер
                                ▼
-                 web/app.js (строка на карточке), web/night.html (страница)
+                 web/hist.js (готовая фраза) ─► web/app.js и web/m/m.js (блок под живой карточкой рейса)
 ```
 
 Маршрут никогда не ждёт базу: сервер отвечает из памяти.
+
+## Ответ API и мобильная версия
+
+В `/api/route?mode=transit` у шага поездки (`type: "ride"`) есть поле `history`. Если подходящих наблюдений нет, оно равно `null`. Пример поля в ответе:
+
+```json
+{
+  "history": {
+    "day": "2026-11-14", "when": "yesterday", "from": "22:30", "to": "01:00",
+    "trips": 4, "median_min": -2.6, "early_min": -3.5, "late_min": -1.1,
+    "pattern": "early", "be_early_min": 4, "wait_up_to_min": null, "last_seen": "23:59"
+  }
+}
+```
+
+Общая функция `historyParts(ride)` из `web/hist.js` возвращает `{ sentence, advice, source }` или `null`. В мобильной версии `historyBox(rd)` добавляет блок в `renderTransit()` сразу под живой карточкой рейса; `web/m/index.html` подключает модуль и стили `.hist`. История не меняет расчёт маршрута или время выхода.
+
+`/api/health` показывает `"history": true`, когда история загружена из базы. На экране живые данные остаются выше истории; источник, дата и число рейсов доступны по нажатию.
 
 ## Что именно показываем
 
@@ -46,7 +64,7 @@ API города ─ раз в 10 с ─► scripts/transit/logger.py (служ�
 - **Это наблюдение, а не прогноз.** Рядом со строкой всегда указаны день, число рейсов и источник.
 - **Задержка — оценка самого города** (поле `delaySec` из их API), а не наше измерение. Значения вне −10…+30 мин отбрасываются, как в `backend/live.py`.
 - **«Последний раз видели в 23:59» не значит, что последний рейс ушёл в 23:59.** Машина могла просто перестать отвечать.
-- **Меньше 3 рейсов — молчим.** На странице такие линии показаны серым, без вывода и без совета.
+- **Меньше 3 рейсов — молчим.**
 - **Сейчас в базе один вечер** (14.11, с 21:09 до 00:08). Поэтому для дневных поездок строки пока нет. Со сборщиком на сервере дни добавляются сами.
 
 ## Файлы
@@ -57,11 +75,11 @@ API города ─ раз в 10 с ─► scripts/transit/logger.py (служ�
 | `scripts/transit/tiger_store.py` | запись сборщика в Tiger; теперь работает и с логином «только запись» |
 | `deploy/bezna-logger.service` | служба сборщика на сервере |
 | `backend/history.py` | читает сводку в фоне, отвечает из памяти; все пороги в `HISTORY` |
-| `backend/app.py` | поле `history` в `/api/route`, флаг `history` в `/api/health`, `GET /api/transit/night` |
+| `backend/app.py` | поле `history` в `/api/route`, флаг `history` в `/api/health` |
 | `backend/tests/test_history.py` | тесты без базы: подставной загрузчик |
-| `web/app.js`, `web/i18n.js` (`hist.*`), `web/index.html` (`.hist`) | строка на карточке и ссылка на страницу |
-| `web/night.html`, `web/night.js` | страница вечера, тексты на RO / EN / RU внутри `night.js` |
-| `docs/transit-history.uk.md` | описание поля для мобильной версии |
+| `web/hist.js` | готовая фраза (`historyParts`), общая для обеих версий |
+| `web/app.js` (`historyBox`), `web/i18n.js` (`hist.*`), `web/index.html` (`.hist`) | блок в десктопе |
+| `web/m/m.js` (`historyBox`), `web/m/index.html` (`.hist`) | блок в версии для телефона |
 
 ## Как запустить
 
@@ -71,14 +89,14 @@ API города ─ раз в 10 с ─► scripts/transit/logger.py (служ�
 ./scripts/mac/lightmap.sh api
 ```
 
-Проверка: http://localhost:8001/api/health должен показать `"history": true`, страница — http://localhost:8001/night.html.
+Проверка: http://localhost:8001/api/health должен показать `"history": true`.
 
 Настройка Tiger (уже выполнена 15.11, повторный запуск безопасен):
 
 ```bash
-.venv/bin/python -I scripts/transit/tiger_setup.py views     # сводка, сжатие, удаление старого
-.venv/bin/python -I scripts/transit/tiger_setup.py status    # размеры, задачи, свежесть сводки
-.venv/bin/python -I scripts/transit/tiger_setup.py roles --env-out /путь/к/файлу   # новые пароли для сервера
+.venv/bin/python -I scripts/transit/tiger_setup.py views     # aggregation, compression and retention
+.venv/bin/python -I scripts/transit/tiger_setup.py status    # sizes, jobs and aggregate freshness
+.venv/bin/python -I scripts/transit/tiger_setup.py roles --env-out /path/to/credentials.env   # new server credentials
 ```
 
 Команда `roles` меняет пароли обоих логинов и пишет их адреса в файл, на экран не выводит. После неё адреса нужно заново положить в `.env` на сервере.
@@ -97,8 +115,8 @@ API города ─ раз в 10 с ─► scripts/transit/logger.py (служ�
 ## Сборщик на сервере
 
 ```bash
-systemctl status bezna-logger          # работает ли
-journalctl -u bezna-logger -n 20       # последние опросы; tiger=ok значит, что запись в базу прошла
+systemctl status bezna-logger          # service status
+journalctl -u bezna-logger -n 20       # recent polls; tiger=ok confirms a successful database write
 ```
 
 Сборщик сам останавливается в 04:05 (конец суток транспорта), и systemd запускает его снова через 10 секунд. CSV на сервере (`data/transit/`) остаётся запасной копией: если Tiger был недоступен, недостающее догружает `./scripts/transit/logger.sh sync-tiger`.
@@ -111,5 +129,5 @@ journalctl -u bezna-logger -n 20       # последние опросы; tiger=
 
 - Выключить на сайте: `TIGER_HISTORY=off` в `.env` и перезапуск.
 - Остановить сборщик: `systemctl disable --now bezna-logger`.
-- Удалить из кода: `backend/history.py`, `web/night.html`, `web/night.js`, блок `hist` в `web/i18n.js`, функцию `historyNote` в `web/app.js` и строки с `history` в `backend/app.py`.
+- Удалить из кода: `backend/history.py`, `web/hist.js`, блок `hist` в `web/i18n.js`, функции `historyBox` в `web/app.js` и `web/m/m.js` и строки с `history` в `backend/app.py`.
 - Удалить сводку из Tiger: `DROP MATERIALIZED VIEW transit_line_15m;`.

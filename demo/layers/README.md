@@ -17,8 +17,8 @@
 ## Как собрать и открыть
 
 ```bash
-./scripts/mac/lightmap.sh draft    # карта освещённости + эти слои + данные демо маршрута
-./scripts/mac/lightmap.sh layers   # только слои
+./scripts/mac/lightmap.sh draft    # lighting map, extra layers and route-demo data
+./scripts/mac/lightmap.sh layers   # extra layers only
 ./scripts/mac/lightmap.sh serve
 ```
 
