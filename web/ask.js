@@ -52,28 +52,7 @@ Object.assign(I18N.en, { ask: {
   micDenied: 'The microphone is not available ({msg}). Type your request.', silent: 'Nothing was heard. Try again, closer to the microphone.',
   privacy: 'Your text or voice recording is sent to Google Gemini to understand the request; we do not store it.',
 } });
-Object.assign(I18N.ru, { ask: {
-  label: 'Спросите своими словами', placeholder: 'Например: от Căminul C12 до Piața Victoriei на велосипеде',
-  go: 'Найти', mic: 'Сказать голосом', stop: 'Остановить запись',
-  listening: 'Слушаю… нажмите на микрофон ещё раз, когда закончите (не дольше 10 секунд).', thinking: 'Разбираю запрос…',
-  understood: 'Понял: {from} → {to}{extra}.', heard: 'Услышал: «{text}».',
-  offTopic: 'Я строю только маршруты по Тимишоаре. Напишите или скажите, откуда и куда вам нужно.',
-  unclear: 'Не понял, куда вам нужно. Например: «от Căminul C12 до Piața Victoriei».',
-  choose: 'Уточните точку «{box}»: выберите подходящее место.',
-  missing: 'Уточните точку «{box}» в поле ниже или переформулируйте запрос.',
-  choices: 'Возможные места',
-  loopCenter: 'Центр прогулки', loopStart: 'Начало и конец прогулки', loopPoint: 'Точка прогулки {n}',
-  loopUnderstood: 'Круговая прогулка вокруг «{center}»', loopApprox: 'Размер приблизительный; путь проходит по доступным улицам.',
-  loopTransit: 'Круговые прогулки доступны пешком и на велосипеде. Выберите один из этих способов.',
-  loopUnavailable: 'Вокруг этого места не удалось подобрать разумный круг в области карты. Выберите другое место или меньший размер прогулки.',
-  loopThrough: 'Круговая прогулка: {points}', loopPick: 'Уточните точку {n} кругового маршрута.', loopTooMany: 'Круговой маршрут поддерживает до 10 точек.',
-  loopApiMissing: 'На этом сервере ещё нет API круговых маршрутов. Нужно обновить запущенный бэкенд.',
-  notFound: 'Не нашёл «{name}» в области карты. Выберите место в поле «{box}».',
-  tooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля ниже.',
-  down: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» ниже работают без него.',
-  micDenied: 'Микрофон недоступен ({msg}). Напишите запрос текстом.', silent: 'Ничего не слышно. Попробуйте ещё раз, ближе к микрофону.',
-  privacy: 'Текст или запись голоса отправляется в Google Gemini, чтобы понять запрос; мы её не храним.',
-} });
+
 
 const BzAsk = (() => {
   const MAX_MS = 10000, RATE = 16000, SILENCE_PEAK = 0.02;

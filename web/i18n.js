@@ -1,9 +1,15 @@
 'use strict';
-/* Interface texts: Romanian first (city requirement), English for students and visitors, Russian for the team.
+/* Interface texts: Romanian first (city requirement), English for students and visitors.
    The word "safe" is never used: we only know about lighting. Romanian wording still needs a native speaker's check.
-   Language: ?lang=ro|en|ru in the URL, else the last choice (localStorage), else Romanian. */
+   Language: ?lang=ro|en in the URL, else the last choice (localStorage), else Romanian. */
 const I18N = {
   ro: {
+    voice: {
+      on: 'Rezumat vocal: pornit', off: 'Rezumat vocal: oprit',
+      note: 'ElevenLabs primește textul rezumatului traseului. Dacă vocea nu este disponibilă, se folosește vocea dispozitivului.',
+      route: '{mode}. {distance}. Aproximativ {minutes} minute. Iluminat confirmat pe {lit} la sută din traseu.',
+      transit: 'Pe jos și cu transportul public. Aproximativ {minutes} minute. Plecare la {time}.',
+    },
     htmlLang: 'ro', decimal: ',', m: 'm', km: 'km', min: 'min', letters: { A: 'A', B: 'B' },
     title: 'Traseu de noapte', subtitle: 'Timișoara', langLabel: 'Limba',
     travelLabel: 'Cum mergeți', travelWalk: 'Pe jos', travelBike: 'Cu bicicleta', travelTransit: 'Pe jos + transport',
@@ -144,6 +150,12 @@ const I18N = {
       'Date la {asof}: OpenStreetMap {osm}, stâlpi Mapillary (imagini {mly}), Sesizări ({ses}). Viteze: pe jos {walk} km/h, cu bicicleta {bike} km/h.',
   },
   en: {
+    voice: {
+      on: 'Spoken summary: on', off: 'Spoken summary: off',
+      note: 'ElevenLabs receives the route summary text. If unavailable, your device’s voice is used.',
+      route: '{mode}. {distance}. About {minutes} minutes. Confirmed lighting on {lit} percent of the route.',
+      transit: 'Walking and public transport. About {minutes} minutes. Leave at {time}.',
+    },
     htmlLang: 'en', decimal: '.', m: 'm', km: 'km', min: 'min', letters: { A: 'A', B: 'B' },
     title: 'Night route', subtitle: 'Timișoara', langLabel: 'Language',
     travelLabel: 'How you go', travelWalk: 'On foot', travelBike: 'By bike', travelTransit: 'Walk + transit',
@@ -282,148 +294,10 @@ const I18N = {
     meta: 'Streets and sidewalks in the area: {km} km; lit {lit}%, probably lit {likely}%, reported dark {dark}%, no data {unknown}%. ' +
       'Data as of {asof}: OpenStreetMap {osm}, Mapillary street lights (imagery {mly}), Sesizări complaints ({ses}). Speeds: on foot {walk} km/h, by bike {bike} km/h.',
   },
-  ru: {
-    htmlLang: 'ru', decimal: ',', m: 'м', km: 'км', min: 'мин', letters: { A: 'А', B: 'Б' },
-    title: 'Ночной маршрут', subtitle: 'Тимишоара', langLabel: 'Язык',
-    travelLabel: 'Как добираться', travelWalk: 'Пешком', travelBike: 'На велосипеде', travelTransit: 'Пешком + транспорт',
-    atLabel: 'Выход в', atHint: 'пусто = сейчас',
-    signsTitle: 'Признаки жизни по пути в {time}', signsOpen: 'Открыто рядом с маршрутом: {list}', signsAlways: 'круглосуточно',
-    signsNoneOpen: 'Открытых мест рядом с маршрутом не известно', signsUnknown: 'ещё {n} мест без часов работы в OSM',
-    signsStops: 'Остановки с рейсами в ±10 мин: {list}', signsMain: 'По главным улицам: {pct} пути',
-    signsNote: 'Это подсказки, а не гарантия: если их нет — значит нет данных, а не «пусто».',
-    transitTitle: 'Пешком + общественный транспорт',
-    rideRow: 'в транспорте: {min}', walkPartNote: 'Освещённость — для пеших участков; полоса показывает всю поездку по времени.',
-    legWalkTo: 'Пешком {min} ({dist}) до остановки {stop}; подтверждённо освещено {lit}',
-    legRide: '{type} {line} в сторону «{headsign}»: {from} {dep} → {to} {arr} ({stops} ост.)',
-    legWalkFrom: 'Пешком {min} ({dist}) от остановки {stop} до места; подтверждённо освещено {lit}',
-    rt: { tram: 'Трамвай', bus: 'Автобус', trolleybus: 'Троллейбус' },
-    leaveIn: 'Выходите через {min}, в {time}.',
-    lastDep: 'Последний рейс {line} от остановки {stop}: {time}.',
-    walkFaster: 'Пешком не дольше: транспорт времени не экономит.',
-    noStopNear: 'Нет остановки ближе {m} м к началу или концу пути.',
-    noLine: 'Прямой линии между этими местами нет.',
-    noTripSoon: 'Подходящих рейсов в ближайшие {min} минут нет.', noTimetable: 'Расписание на этот день не загружено.', tooClose: 'Вы рядом с местом назначения: идите пешком.',
-    lastWas: 'Последний: {line} от остановки {stop} в {time}.', lastMissed: 'Последний, {line} от остановки {stop} в {time}, уйдёт раньше, чем вы дойдёте до остановки.', nextIs: 'Следующий: {line} от остановки {stop} в {time}.',
-    walkInstead: 'Ниже — пешие маршруты.',
-    transitSource: 'Расписание: GTFS SMTT, версия {feed}.',
-    hist: {
-      today: 'Сегодня', yesterday: 'Вчера', onDate: '{date}',
-      line: '{when} в это время {line} шёл {how}.',
-      how: {
-        on_time: 'по расписанию (±1 мин)', early: 'на ~{n} мин раньше расписания', late: 'на ~{n} мин позже расписания',
-        uneven: 'неровно: от {a} мин раньше до {b} мин позже расписания',
-        on_time_but_early: 'обычно по расписанию, но бывало и на {a} мин раньше',
-        on_time_but_late: 'обычно по расписанию, но бывало и на {b} мин позже',
-      },
-      beEarly: 'Будьте на остановке за {n} мин.', mayWait: 'Может опоздать до {n} мин.',
-      more: 'откуда это?',
-      source: 'Рейсов: {trips}, с {from} до {to}, {date}. Задержки сообщает город, мы храним их в Tiger Data. Это наблюдение, а не обещание.',
-      lastSeen: 'В тот день линию последний раз видели в {time}.',
-    },
-    live: {
-      show: 'Транспорт в реальном времени на карте', on: 'В реальном времени', off: 'По расписанию',
-      loading: 'Ищем машину этого рейса…',
-      arrives: '{type} {line} будет на остановке {stop} через ~{min}, в {time}',
-      atStop: '{type} {line} сейчас на остановке {stop}',
-      late: 'опаздывает на {min} от расписания ({sched})', early: 'идёт на {min} раньше расписания ({sched}): будьте на остановке заранее',
-      onTime: 'по расписанию ({sched})',
-      stopsAway: 'остановок до вас: {n}', oneStop: 'следующая остановка — ваша',
-      previous: 'Машина этого рейса сейчас идёт рейсом на {headsign}; после него поедет к вам.',
-      previousMany: 'У машины этого рейса до него ещё рейсов: {n}; она на карте.',
-      estimate: 'Оценка: расписание + опоздание, которое машина сообщает сейчас, а не объявление перевозчика.',
-      noVehicle: 'По этому рейсу пока никакая машина не передаёт данные: показываем расписание.',
-      stale: 'Последняя позиция машины старая ({age}): показываем расписание.',
-      noForecast: 'Машина в пути, но правдоподобного опоздания не сообщает: показываем расписание.',
-      passed: 'Этот рейс уже проехал остановку {stop}.', recalc: 'Найти следующий рейс',
-      later: 'Машину отслеживаем за час до отправления.',
-      noData: 'Данные в реальном времени сейчас не отвечают: показываем расписание.',
-      tooLate: 'От точки A до остановки идти {walk}: если вы только выходите, на этот рейс, скорее всего, не успеть.',
-      leaveBy: 'Чтобы успеть, выходите из точки A до {time}.',
-      source: 'Позиции: Primăria Timișoara · ответ {age} назад · обновление раз в {every} с.',
-      sourceDown: 'Источник реального времени не отвечает; последний ответ {age} назад.',
-      vehAge: 'позиция машины: {age} назад',
-      ago: { s: '{n} с', min: '{n} мин' },
-      tip: '{type} {line} → {headsign} · позиция {age} назад', tipOld: ' (старая, не в реальном времени)',
-      tipLate: ' · опаздывает на {d}', tipEarly: ' · раньше на {d}', tipOnTime: ' · по расписанию', wheelchair: ' · доступ для коляски',
-      legend: 'Машина в реальном времени: номер на цвете линии, стрелка — направление; серая с пунктирной обводкой — старая позиция',
-    },
-    mapLabel: 'Карта: отрезки улиц, окрашенные по освещённости',
-    modesLabel: 'Клик по карте', modeRoute: 'ставит точки маршрута', modeInspect: 'объясняет цвет улицы',
-    fromLabel: 'Откуда', toLabel: 'Куда', fromPlaceholder: 'Откуда: адрес, место или остановка', toPlaceholder: 'Куда: адрес, место или остановка',
-    locate: 'Я здесь', locating: 'Определяю местоположение…', myLocation: 'Моё местоположение', pointOnMap: 'Точка на карте',
-    geoError: 'Местоположение недоступно ({msg}). Введите адрес или кликните по карте.',
-    swap: 'Поменять местами', noResults: 'В области карты ничего не найдено',
-    numberMissing: 'дома {n} нет на карте — покажем улицу', stopLines: 'остановка · линии {lines}',
-    kindLabel: { street: 'улица', addr: 'адрес', place: 'место', stop: 'остановка' },
-    cat: {
-      'amenity=university': 'университет', 'building=university': 'университет', 'building=dormitory': 'общежитие', 'amenity=college': 'колледж',
-      'amenity=restaurant': 'ресторан', 'amenity=cafe': 'кафе', 'amenity=bar': 'бар', 'amenity=pub': 'паб', 'amenity=fast_food': 'фастфуд',
-      'amenity=pharmacy': 'аптека', 'shop=supermarket': 'супермаркет', 'shop=convenience': 'магазин', 'leisure=park': 'парк',
-      'tourism=hotel': 'гостиница', 'amenity=place_of_worship': 'храм', 'amenity=bank': 'банк', 'amenity=hospital': 'больница',
-      'amenity=clinic': 'клиника', 'amenity=school': 'школа', 'amenity=library': 'библиотека', 'place=suburb': 'район',
-      'tourism=museum': 'музей', 'amenity=theatre': 'театр', 'amenity=cinema': 'кинотеатр',
-    },
-    loading: 'Загружаю данные…', reset: 'Сбросить', showNet: 'Показывать освещённость улиц', legendTitle: 'Обозначения',
-    status: { lit_confirmed: 'освещено', lit_likely: 'вероятно освещено', unknown: 'нет данных', dark_reported: 'сообщали, что темно' },
-    legend: {
-      lit_confirmed: 'освещено — тег OSM или фонари на съёмке Mapillary',
-      lit_likely: 'вероятно освещено — косвенные признаки или жалоба',
-      unknown: 'нет данных (не значит «темно»)',
-      dark_reported: 'сообщали, что темно (свежая жалоба или lit=no)',
-      second: 'второй маршрут; нажмите, чтобы переключить',
-    },
-    areaNote: 'Карта покрывает университетский район, центр (Cetate), Circumvalațiunii–Dacia, Mircea cel Bătrân и выбранные северо-восточные кварталы. Точная граница покрытия показана на карте.',
-    areaKnown: 'Известно: {x}% улиц и тротуаров',
-    kind: { street: 'улица', sidewalk: 'тротуар', crossing: 'переход', path: 'дорожка', service: 'проезд' },
-    noName: 'без названия', noEvidence: 'Свидетельств нет', sourcesCount: 'независимых источников: {n}', dataAsOf: 'Данные на {date}.',
-    ev: {
-      osm_yes: 'OpenStreetMap: отмечено «освещено» (lit=yes)', osm_no: 'OpenStreetMap: отмечено «не освещено» (lit=no)',
-      osm_mixed: 'OpenStreetMap: противоречивые отметки (lit=yes и lit=no)', ways: ' (путь {ways})',
-      lamps: 'Mapillary: фонарей в 20 м — {n}, ближайший в {near} м, покрыто {cov}% длины, сняты в {years}',
-      lampsBelow: ' — меньше половины, источник не засчитан',
-      complaint: 'Sesizări {nr}: {sub} — {state}, подана {created}', closedAt: ', закрыта {date}', age: ', {age} дн. назад',
-      distance: ', {d} м от отрезка',
-      state: { fixed: 'закрыта', open_area_outage: 'открыта: темно в районе', open_lamp_out: 'открыта: не горит лампа',
-        open_other: 'открыта: прочее', declined: 'отклонена, не засчитана' },
-      same_name: 'Косвенно: улица «{ref}» отмечена освещённой в другом месте',
-      near_lit_street: 'Косвенно: рядом улица со свидетельствами освещения',
-      partial_lamps: 'Косвенно: фонари есть только на части отрезка',
-      inherited_dark: 'Соседняя улица отмечена тёмной по жалобам',
-    },
-    segmentError: 'Не удалось загрузить отрезок: {msg}',
-    hintStart: 'Введите, откуда и куда, или кликните по карте: сначала <b>{A}</b>, затем <b>{B}</b>.',
-    hintB: 'Теперь куда — <b>{B}</b>: введите адрес или кликните по карте. Маркеры можно перетаскивать.',
-    computing: 'Считаю маршрут…',
-    afterRoute: 'Нажмите на карточку, чтобы показать маршрут; маркеры можно перетаскивать. Ссылка из адресной строки откроет тот же маршрут.',
-    newRoute: 'Клик по карте начнёт новый маршрут.',
-    inspect: 'Кликните по улице: покажу, из чего сложен её цвет.',
-    outside: 'Точка {p} вне области карты или слишком далеко от дорожек{near}. Передвиньте маркер.', nearest: ' (ближайшая в {d})',
-    outsideBike: 'Точка {p} слишком далеко от улиц, где можно ехать на велосипеде{near}. Передвиньте маркер или попробуйте пешком.',
-    err: {
-      no_route_walk: 'Пешком маршрут между этими точками не найден. Передвиньте одну из точек.',
-      no_route_bike: 'На велосипеде маршрут между этими точками не найден. Попробуйте пешком или передвиньте одну из точек.',
-      bad_point: 'Точка задана неверно. Выберите её из списка или кликните по карте.',
-      bad_time: 'Время выхода задано неверно (ЧЧ:ММ).',
-      no_timetable: 'Расписание транспорта не загружено на сервер.',
-      no_data: 'Данные карты не загружены на сервер.',
-      other: 'Маршрут не построен ({code}).',
-    },
-    serverDown: 'Сервер недоступен ({msg}). Запустите <code>./scripts/mac/lightmap.sh api</code> и откройте эту страницу с адреса сервера.',
-    point: 'Точка {p}',
-    sameTitle: 'Быстрый — он же самый освещённый', nearSameTitle: 'Быстрый — более освещённый почти не отличается',
-    litFreeTitle: 'Более освещённый и не дольше',
-    litTitle: 'Более освещённый', fastTitle: 'Быстрый',
-    extra: '+{min} мин ({share})',
-    tooLong: 'В продукте этот вариант скрыли бы: дольше на {extra}; порог {limit} мин или {limitShare}.',
-    extraOk: '{extra} к быстрому; подтверждённо освещено {lit} пути против {fast}.',
-    warn: 'Внимание: нет данных или сообщали о темноте на {bad} из {total} ({share})', warnRun: '; самый длинный участок «сообщали, что темно» — {run}',
-    via: 'Через: ', snapNote: 'От точки до ближайшей дорожки по прямой (не входит в расчёт): {list}.',
-    meta: 'Улицы и тротуары области: {km} км; освещено {lit}%, вероятно {likely}%, сообщали о темноте {dark}%, нет данных {unknown}%. ' +
-      'Данные на {asof}: OpenStreetMap {osm}, фонари Mapillary (снимки {mly}), жалобы Sesizări ({ses}). Скорость: пешком {walk} км/ч, на велосипеде {bike} км/ч.',
-  },
+
 };
 
-const LANGS = ['ro', 'en', 'ru'];
+const LANGS = ['ro', 'en'];
 
 function pickLang() {
   const fromUrl = new URLSearchParams(location.search).get('lang');
@@ -446,6 +320,7 @@ function t(path, vars) {
 }
 
 function switchLang(lang) {
+  if (!LANGS.includes(lang)) lang = 'ro';
   try { localStorage.setItem('lightmap.lang', lang); } catch (e) { /* storage blocked */ }
   const params = new URLSearchParams(location.search);
   params.set('lang', lang);

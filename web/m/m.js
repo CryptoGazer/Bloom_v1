@@ -154,85 +154,9 @@ let calcReq = -1;                             // routeReq of the route being cal
 const native = () => window.BeznaNative || null;
 
 // ---------- voice ----------
-// One switch for the whole app, remembered on the phone: with voice or without. With voice, the navigator speaks
-// through an ElevenLabs voice of the interface language (/api/speak, backend/speak.py) where the server has one.
-// Where it has none, and whenever that voice is late or fails, the phone's own voice says the phrase instead:
-// the system engine through the app (BeznaNative) or the browser's speechSynthesis.
-const VOICE_KEY = 'bezna.voice', VOICE_WAIT_MS = 2500;
-const voice = { on: false, cloud: new Set(), clips: new Map(), audio: null, seq: 0, at: 0 };
-try { voice.on = localStorage.getItem(VOICE_KEY) === '1'; } catch (e) { /* storage blocked: off until switched on */ }
-fetch('/api/health').then(r => r.json()).then(h => { voice.cloud = new Set(h.speak || []); }).catch(() => { /* the phone's own voice only */ });
-const canSpeak = () => !!(native() || window.speechSynthesis || voice.cloud.has(LANG));
-function speakSystem(text) {
-  const lang = { ro: 'ro-RO', en: 'en-GB', ru: 'ru-RU' }[LANG] || 'ro-RO';
-  if (native()) { native().speak(text, lang); return; }
-  if (!window.speechSynthesis) return;
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  speechSynthesis.speak(u);
-}
-// the recording of a phrase, fetched once per page: a promise of a blob URL
-function clip(text) {
-  const key = LANG + '|' + text;
-  let ready = voice.clips.get(key);
-  if (!ready) {
-    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 8000);
-    ready = fetch(`/api/speak?lang=${LANG}&text=${encodeURIComponent(text)}`, { signal: ctl.signal })
-      .then(r => { if (!r.ok) throw new Error('speak ' + r.status); return r.blob(); })
-      .then(blob => URL.createObjectURL(blob));
-    ready.then(() => clearTimeout(timer), () => { clearTimeout(timer); voice.clips.delete(key); });
-    voice.clips.set(key, ready);
-    if (voice.clips.size > 40) {
-      const [oldest, gone] = voice.clips.entries().next().value;
-      voice.clips.delete(oldest);
-      gone.then(url => URL.revokeObjectURL(url), () => {});
-    }
-  }
-  return ready;
-}
-// have a phrase's recording ready before it is needed
-const warm = text => { if (voice.cloud.has(LANG)) clip(text).catch(() => {}); };
-// Browsers let a page play sound only after a tap: the tap on the switch or on "start" opens the way for the
-// recordings that arrive later. The Android app does not need it and is not harmed by it.
-function unlockAudio() {
-  if (voice.audio) return;
-  voice.audio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
-  voice.audio.play().catch(() => {});
-}
-function silence() {
-  if (voice.audio) voice.audio.pause();
-  if (native()) native().stopSpeaking(); else if (window.speechSynthesis) speechSynthesis.cancel();
-}
-function speak(text) {
-  const seq = ++voice.seq;   // a newer phrase replaces an older one, also one whose recording is still on its way
-  voice.at = Date.now();
-  silence();
-  if (!voice.cloud.has(LANG)) { speakSystem(text); return; }
-  let said = false;
-  const own = () => { if (!said && seq === voice.seq) { said = true; speakSystem(text); } };
-  const late = setTimeout(own, VOICE_WAIT_MS);   // the recording is late: the phone's own voice says it
-  clip(text).then(url => {
-    clearTimeout(late);
-    if (said || seq !== voice.seq) return;
-    said = true;
-    const a = voice.audio || (voice.audio = new Audio());
-    a.src = url;
-    a.play().catch(() => { if (seq === voice.seq) speakSystem(text); });
-  }, () => { clearTimeout(late); own(); });
-}
-function hush() { voice.seq++; silence(); }
-// A distance as the voice says it: in words, and in coarse steps, so that "50 metres. Right onto X." is one
-// recording for everybody (the server keeps each phrase once). Between 40 and 60 m, where the navigator
-// speaks, it is always "50".
-function spokenDist(m) {
-  if (m >= 975) {
-    const k = (m / 1000).toFixed(1).replace('.0', ''), n = k.replace('.', LANG === 'en' ? '.' : ',');
-    if (k === '1') return { ro: 'un kilometru', en: 'one kilometre', ru: 'один километр' }[LANG] || '1 km';
-    return { ro: `${n} kilometri`, en: `${n} kilometres`, ru: `${n} километра` }[LANG] || `${n} km`;
-  }
-  const n = m >= 40 && m < 60 ? 50 : m > 100 ? Math.round(m / 50) * 50 : Math.max(10, Math.round(m / 10) * 10);
-  return { ro: `${n} ${n % 100 === 0 || n % 100 >= 20 ? 'de ' : ''}metri`, en: `${n} metres`, ru: `${n} метров` }[LANG] || `${n} m`;
-}
+// Shared player: ElevenLabs EN/RO, then the system voice if a clip is unavailable.
+const voice = BzVoice.create(LANG);
+const { canSpeak, speak, warm, hush, unlockAudio, spokenDist } = voice;
 // the switch itself: a filled button with a speaker when the voice is on, an outlined crossed speaker when it is off
 const voiceLabel = () => t(voice.on ? 'm.voiceOn' : 'm.voiceOff');
 const voiceBtn = () => canSpeak()
@@ -499,6 +423,7 @@ ACT.setLang = el => {
   // the page reloads in the new language: come back to the same screen, without replaying the animation
   try { sessionStorage.setItem('bz.back', JSON.stringify({ screen: screen === 'search' ? 'home' : screen, sel })); } catch (e) { /* storage blocked */ }
   saveHash();
+  hush();
   switchLang(code);
 };
 ACT.legend = () => { legendOpen = !legendOpen; renderOverlay(); };
@@ -1534,7 +1459,7 @@ function renderOverlay() {
   const lb = $('lang-btn');
   if (lb) lb.setAttribute('aria-expanded', String(langOpen));
   if (langOpen) {
-    const names = { ro: 'Română', en: 'English', ru: 'Русский' };
+    const names = { ro: 'Română', en: 'English' };
     $('overlay').innerHTML = `<div class="menu" role="menu" aria-label="${esc(t('langLabel'))}">` +
       LANGS.map(l => `<button type="button" role="menuitemradio" aria-checked="${l === LANG}" data-act="setLang" data-lang="${l}" lang="${l}"><span class="mono" style="width: 26px; font-size: 12px">${l.toUpperCase()}</span><span class="grow">${names[l]}</span>${l === LANG ? I.check() : ''}</button>`).join('') + '</div>';
     const first = $('overlay').querySelector('[aria-checked="true"]');
@@ -2005,7 +1930,7 @@ window.bzCompass = deg => {
 // choice is kept for the next time, and the change is both shown and, when switched on, said in the voice itself.
 ACT.voice = () => {
   voice.on = !voice.on;
-  try { localStorage.setItem(VOICE_KEY, voice.on ? '1' : '0'); } catch (e) { /* storage blocked: for this visit only */ }
+  try { localStorage.setItem(BzVoice.STORAGE_KEY, voice.on ? '1' : '0'); } catch (e) { /* storage blocked: for this visit only */ }
   for (const b of document.querySelectorAll('[data-act="voice"]')) {
     b.setAttribute('aria-pressed', String(voice.on));
     b.setAttribute('aria-label', voiceLabel());

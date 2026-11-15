@@ -1,7 +1,7 @@
 """Spoken directions: the navigator's short phrases read aloud by an ElevenLabs voice.
 
 GET /api/speak?text=…&lang=ro answers with MP3. The key stays on the server (ELEVENLABS_API_KEY). Each interface
-language has its own voice: ELEVENLABS_VOICE_ID_RO, ELEVENLABS_VOICE_ID_EN, ELEVENLABS_VOICE_ID_RU (Romanian also
+language has its own voice: ELEVENLABS_VOICE_ID_RO, ELEVENLABS_VOICE_ID_EN (Romanian also
 takes the older ELEVENLABS_VOICE_ID). A language without a voice is simply not offered, and the page then speaks
 with the phone's own voice, as it does when this service is slow, over its limits or down.
 
@@ -26,7 +26,7 @@ API_URL = "https://api.elevenlabs.io/v1/text-to-speech/{voice}?output_format={fo
 
 # All numbers are settings.
 SPEAK = {
-    "languages": ("ro", "en", "ru"),
+    "languages": ("ro", "en"),
     "text_chars": 200,              # a navigator phrase is under 100 characters; longer requests are refused
     "model": "eleven_flash_v2_5",   # the low-delay model; it takes language_code, so "50" is read in the right language
     "format": "mp3_44100_64",       # ~8 KB per second of speech; plays in every browser and in the Android WebView

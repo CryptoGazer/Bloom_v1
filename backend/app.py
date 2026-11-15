@@ -186,10 +186,12 @@ def create_app(segments_path=None, gemini=None, live_fetch=None, history=None, s
     @app.get("/api/speak")
     def speak(request: Request,
               text: str = Query(max_length=2 * SPEAK["text_chars"], description="a short phrase of the navigator, e.g. '50 de metri. La dreapta pe Strada Cluj.'"),
-              lang: str = Query("ro", max_length=5, description="interface language: ro, en or ru; each has its own voice")):
+              lang: str = Query("ro", max_length=5, description="interface language: ro or en; each has its own voice")):
         """The phrase read aloud by the ElevenLabs voice of that language, as MP3. Each phrase is generated once and then
         served from a cache. Only the phrase goes to ElevenLabs: no coordinates and nothing about who asked. Errors
         (no voice for the language, over the limits, the service down) are meant to be answered by the phone's own voice."""
+        if lang not in SPEAK["languages"]:
+            raise HTTPException(422, detail={"code": "bad_lang", "message": "lang must be ro or en"})
         if state["speaker"] is None:
             raise HTTPException(503, detail={"code": "voice_not_configured", "message": "ELEVENLABS_API_KEY or a voice id is not set"})
         client = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "-")

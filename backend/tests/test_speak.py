@@ -43,12 +43,14 @@ def test_each_language_speaks_with_its_own_voice():
 
 def test_a_language_without_a_voice_and_bad_requests_are_refused_before_any_call():
     s, provider = speaker()
-    for text, lang, code, status in [("Прямо", "ru", "no_voice", 404), ("Hello", "de", "bad_lang", 422), ("   ", "ro", "empty", 422),
+    for text, lang, code, status in [("Прямо", "ru", "bad_lang", 422), ("Hello", "de", "bad_lang", 422), ("   ", "ro", "empty", 422),
                                      ("x" * (SPEAK["text_chars"] + 1), "ro", "too_long", 422)]:
         with pytest.raises(SpeakError) as e:
             s.clip(text, lang)
         assert (e.value.code, e.value.status) == (code, status)
     assert provider.said == []
+    with pytest.raises(SpeakError, match="no voice"):
+        Speaker(provider, {"ro": "voice-ro"}).clip("Hello", "en")
 
 
 def test_a_phrase_is_generated_once_then_comes_from_memory_and_from_disk(tmp_path):
@@ -112,6 +114,7 @@ def test_voices_come_from_the_environment_and_romanian_takes_the_old_variable():
     assert voices_from_env({"ELEVENLABS_VOICE_ID": "old", "ELEVENLABS_VOICE_ID_RO": " new ", "ELEVENLABS_VOICE_ID_EN": "eng", "ELEVENLABS_VOICE_ID_RU": ""}) == \
         {"ro": "new", "en": "eng"}
     assert voices_from_env({}) == {}
+    assert voices_from_env({"ELEVENLABS_VOICE_ID_RU": "must-not-be-used"}) == {}
 
 
 def test_no_key_or_no_voice_means_no_speaker(monkeypatch):
@@ -162,7 +165,7 @@ def test_api_speaks_mp3_and_health_lists_the_languages_with_a_voice(tmp_path):
         assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg" and r.content.startswith(MP3)
         client.get("/api/speak", params={"text": "50 de metri. La dreapta pe Strada Cluj.", "lang": "ro"})
         assert len(provider.said) == 1
-        assert client.get("/api/speak", params={"text": "Прямо", "lang": "ru"}).json()["detail"]["code"] == "no_voice"
+        assert client.get("/api/speak", params={"text": "Прямо", "lang": "ru"}).json()["detail"]["code"] == "bad_lang"
         assert client.get("/api/speak", params={"text": " ", "lang": "ro"}).status_code == 422
         assert client.get("/api/speak", params={"lang": "ro"}).status_code == 422
 
@@ -172,6 +175,7 @@ def test_api_without_a_key_says_so_and_a_provider_failure_does_not_leak_its_reas
         assert client.get("/api/health").json()["speak"] == []
         r = client.get("/api/speak", params={"text": "Înainte", "lang": "ro"})
         assert r.status_code == 503 and r.json()["detail"]["code"] == "voice_not_configured"
+        assert client.get("/api/speak", params={"text": "Прямо", "lang": "ru"}).status_code == 422
     s, _ = speaker(error=SpeakError("voice_busy", 503, "quota_exceeded for key sk_secret"))
     with TestClient(create_app(city(tmp_path), speaker=s)) as client:
         r = client.get("/api/speak", params={"text": "Înainte", "lang": "ro"})
