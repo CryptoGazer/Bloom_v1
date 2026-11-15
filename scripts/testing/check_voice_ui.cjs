@@ -60,6 +60,23 @@ function fixture(lang) {
       if (mobile) await page.locator('[data-act="lang"]').click();
       assert.equal(await page.locator('[data-lang="ru"]').count(), 0);
       if (mobile) await page.locator('[data-act="lang"]').click();
+      if (mobile) {
+        // Voice can be chosen before planning a route, on the exact home screen users first see.
+        const toggle = page.locator('.top [data-act="voice"]');
+        await toggle.waitFor({ state: 'visible' });
+        assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+        assert.equal(requests.length, 0, 'Default is silent');
+        await toggle.click();
+        await page.waitForFunction(() => voiceTest.played.length > 0);
+        assert.equal(await toggle.getAttribute('aria-pressed'), 'true');
+        await page.reload();
+        await page.waitForFunction(() => summary && voice);
+        assert.equal(await toggle.getAttribute('aria-pressed'), 'true', 'Remember the choice');
+        await toggle.click();
+        assert.equal(await toggle.getAttribute('aria-pressed'), 'false');
+        assert.equal(await page.evaluate(() => localStorage.getItem('bezna.voice')), '0');
+        assert.equal(await page.evaluate(() => voiceTest.played.length), 0, 'Reload and muting are silent');
+      }
       await page.evaluate(() => {
         setPoint('A', [45.749852, 21.240281], 'Căminul C12');
         setPoint('B', [45.753113, 21.2257], 'Piața Victoriei');
