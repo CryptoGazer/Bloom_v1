@@ -57,6 +57,15 @@ def parse_point(value, name):
     return lat, lon
 
 
+def point_json(lat, lon, snap):
+    """A requested point and where it lies on the network."""
+    return {"lat": lat, "lon": lon, "snapped": [snap.lat, snap.lon], "snap_m": round(snap.d, 1)}
+
+
+def settings_json():
+    return {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE}
+
+
 LATE_GRACE = dt.timedelta(hours=1)   # 'HH:MM' more than this before now means the next day: at 23:59, "00:05" is tonight
 
 
@@ -219,7 +228,6 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
         plan = net.plan(snapped["from"][2], snapped["to"][2], mode=net_mode)
         if plan is None:
             raise HTTPException(404, detail={"code": "no_route", "message": f"no {net_mode} route between these points"})
-        point = lambda lat, lon, s: {"lat": lat, "lon": lon, "snapped": [s.lat, s.lon], "snap_m": round(s.d, 1)}
         when = leaving_time(at)
         extra = {"at": when.strftime("%Y-%m-%d %H:%M")}
         if state["signs"] is not None:  # signs of life along each route at the leaving time (evidence, not a score)
@@ -232,8 +240,41 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
             for leg in extra["transit"].get("legs", []):
                 if leg["type"] == "ride":  # the scheduled departure as unix time: what /api/transit/live compares with
                     leg["dep_ts"] = round(epoch(leg["day"], leg["dep_s"], LOCAL_TZ))
-        return {"mode": mode, "from": point(*snapped["from"]), "to": point(*snapped["to"]), **plan, **extra,
-                "settings": {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE}, "data_as_of": net.meta.get("as_of")}
+        return {"mode": mode, "from": point_json(*snapped["from"]), "to": point_json(*snapped["to"]), **plan, **extra,
+                "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
+
+    @app.get("/api/loop")
+    def loop(points: str = Query(max_length=600, description="lat,lon;lat,lon;... in visiting order, 2 to 10 points; the loop comes back to the first"),
+             mode: str = Query("walk", description="'walk' or 'bike'"),
+             at: str = Query("", description="leaving time, as for /api/route")):
+        """A closed walk or ride through the points in their order and back to the first: the fastest and the
+        better-lit loop, judged like /api/route. Later legs avoid the streets the loop has already used."""
+        if mode not in MODES:
+            raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES)}"})
+        raw = [p for p in points.split(";") if p.strip()]
+        if not 2 <= len(raw) <= SETTINGS["loop_max_points"]:
+            raise HTTPException(422, detail={"code": "bad_points", "message": f"2 to {SETTINGS['loop_max_points']} points as lat,lon;lat,lon"})
+        net = network()
+        snapped = []
+        for i, value in enumerate(raw, 1):
+            lat, lon = parse_point(value, f"point {i}")
+            snap = net.snap(lat, lon, mode=mode)
+            if snap is None:
+                nearest = net.nearest_m(lat, lon, mode=mode)
+                raise HTTPException(422, detail={"code": "outside_coverage", "point": i,
+                                                 "nearest_m": None if nearest is None else round(nearest),
+                                                 "message": f"point {i} is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
+            snapped.append((lat, lon, snap))
+        plan = net.loop([snap for _, _, snap in snapped], mode=mode)
+        if plan is None:
+            raise HTTPException(404, detail={"code": "no_route", "message": f"no {mode} loop through these points"})
+        when = leaving_time(at)
+        if state["signs"] is not None:
+            for r in plan["routes"].values():
+                r["signs"] = state["signs"].along(r, when)
+        pts = [point_json(*p) for p in snapped]
+        return {"mode": mode, "loop": True, "points": pts, "from": pts[0], "to": pts[0], **plan, "at": when.strftime("%Y-%m-%d %H:%M"),
+                "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
 
     @app.get("/api/transit/live")
     def transit_live(route: str = Query("", max_length=40, description="only this line, GTFS route_id such as R_AB_16; empty = every line in the area"),
