@@ -1,9 +1,9 @@
 'use strict';
 /* bezna, phone layout of the design "Tihij svet" (claude.ai design canvas "Traseu de noapte — redesign").
    One Leaflet map under bottom sheets; screens: home, search, results, details, transit, stop (live arrival), nav.
-   Data: the same backend as the desktop page: /api/route, /api/geocode, /api/segments/{id}, /api/summary, /api/transit/live.
-   Texts: ../i18n.js (t, LANG, I18N) and texts.js (I18N.*.m). The Gemini box is ../ask.js, unchanged: it needs the
-   globals A, labels, setPoint, setTravel, setDeparture, pointsChanged, locate and $ that are defined here. */
+   Data: the same backend as the desktop page: /api/route, /api/loop, /api/geocode, /api/segments/{id}, /api/summary,
+   /api/transit/live, /api/ask (through BzAsk in ../ask.js; the block on the start sheet is drawn here).
+   Texts: ../i18n.js (t, LANG, I18N), ../ask.js (I18N.*.ask) and texts.js (I18N.*.m). */
 
 // ---------- helpers ----------
 const $ = id => document.getElementById(id);
@@ -50,6 +50,14 @@ const I = {
   close: () => SV('<path d="M6 6l12 12M18 6 6 18"/>', 14, 2.2),
   loop: () => SV('<path d="M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7z"/><circle cx="12" cy="17" r="2.2" fill="currentColor" stroke="none"/>', 20),
   undo: () => SV('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', 18),
+  chat: () => SV('<path d="M4 5h16v11H10l-6 4z"/><path d="M8 9h8M8 12h5"/>', 18),
+  mic: (s = 20) => SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', s),
+  micOff: (s = 22) => SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M3 3l18 18"/>', s),
+  arrowR: () => SV('<path d="M5 12h13M13 6l6 6-6 6"/>', 16, 2.2),
+  searchX: () => SV('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8.7 8.7l4.6 4.6M13.3 8.7l-4.6 4.6"/>', 18),
+  question: () => SV('<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/>', 18),
+  cloudOff: () => SV('<path d="M8 18H7a4 4 0 0 1-.8-7.9A6 6 0 0 1 17.4 9"/><path d="M19.2 11.6A3.5 3.5 0 0 1 17 18h-3"/><path d="M3 3l18 18"/>', 18),
+  wave: () => SV('<path d="M3 12h18"/><path d="M7 10v4M12 11v2M17 10v4"/>', 18),
   walk: (s = 18) => SV('<circle cx="13" cy="4" r="1.6"/><path d="M9 21l2-6 3 2v4M10 9l3-1 3 3 3 1M10 9l-2 5"/>', s),
   bike: (s = 18) => SV('<circle cx="5.5" cy="17" r="3.5"/><circle cx="18.5" cy="17" r="3.5"/><path d="M5.5 17 9 9h6l3.5 8M9 9 8 6H6M12 17l3-8"/>', s),
   bus: (s = 18) => SV('<rect x="5" y="4" width="14" height="13" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/>', s),
@@ -137,6 +145,7 @@ let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back f
 let loopMode = false;                         // the start screen collects the points of a loop walk
 const loopPts = [];                           // L.LatLng in visiting order; the loop comes back to the first
 const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the server
+let calcReq = -1;                             // routeReq of the route being calculated; another value: none
 const seen = new Set();
 // the lighting network: on by default on the start screen, off under a route unless asked for in the legend
 const prefs = { net: true, netRoute: false, livenet: false };
@@ -254,14 +263,14 @@ function showMe(lat, lon, heading) {
   meLayer.clearLayers();
   L.marker(myPos, { icon: MK.me(heading), keyboard: false, interactive: false }).addTo(meLayer);
 }
-function locate(thenCompute = true) {
+function locate(thenCompute = true, stay = false) {
   if (!navigator.geolocation) { toast(t('m.noGeo')); openSearch('A'); return; }
   toast(t('locating'), 4000);
   navigator.geolocation.getCurrentPosition(pos => {
     hideToast();
     showMe(pos.coords.latitude, pos.coords.longitude);
     setPoint('A', [pos.coords.latitude, pos.coords.longitude], t('myLocation'));
-    if (thenCompute && B) compute(); else if (screen === 'home') map.setView(A, Math.max(map.getZoom(), 16));
+    if (thenCompute && B) compute(stay); else if (screen === 'home') map.setView(A, Math.max(map.getZoom(), 16));
   }, err => {
     toast(t('geoError', { msg: err.message }));
     openSearch('A');
@@ -334,7 +343,8 @@ document.addEventListener('click', e => {
 }, true);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && $('tp')) closeTimePicker(false);
-  else if (e.key === 'Escape' && (langOpen || legendOpen || tip || aboutOpen)) closeOverlays();
+  else if (e.key === 'Escape' && (langOpen || legendOpen || tip)) closeOverlays();
+  else if (e.key === 'Escape' && screen === 'home' && !loopMode && ask.view === 'ask') ACT.askBack();
 });
 
 ACT.home = () => { stopLive(); go('home'); };
@@ -349,12 +359,12 @@ ACT.setLang = el => {
   switchLang(code);
 };
 ACT.legend = () => { legendOpen = !legendOpen; renderOverlay(); };
-ACT.about = () => { openAbout(); };
 ACT.closeOverlay = () => closeOverlays();
 ACT.searchA = () => openSearch('A');
 ACT.searchB = () => openSearch('B');
-ACT.locate = () => locate(true);
+ACT.locate = () => { askManual(); locate(true); };
 ACT.swap = () => {
+  askManual();
   const old = { A, B, la: labels.A, lb: labels.B };
   A = old.B; B = old.A; labels.A = old.lb; labels.B = old.la;
   drawAB();
@@ -371,6 +381,8 @@ ACT.tpCancel = () => closeTimePicker(false);
 
 // ---------- loop walk: points tapped on the map, in that order and back to the first ----------
 function setLoop(on) {
+  askCancel();
+  ask.view = 'form';
   loopMode = on;
   loopPts.length = 0;
   pickMode = null;
@@ -401,41 +413,278 @@ function loopSheet() {
   </section>`;
 }
 
+// ---------- ask in your own words (Gemini): the block of the start sheet, design "Запрос своими словами" ----------
+// The engine (availability, recording, WAV, /api/ask) is BzAsk in ../ask.js; this is only the sheet around it.
+// view: the start sheet shows the fields ('form') or the request ('ask'); phase: idle | rec | wait | msg | done
+const ask = { on: false, mic: false, view: 'form', phase: 'idle', text: '', via: 'text', heard: '', remain: 10, elapsed: 0, recDur: 0,
+  msg: null, res: null, req: 0, rec: null, tick: null, starting: false, discard: false };
+const ASK_MSG = {
+  offtopic: [() => I.pin(), 'ask.offTopic'], unclear: [() => I.question(), 'ask.unclear'], ratelimit: [() => I.clock(18), 'm.askTooMany'],
+  unavailable: [() => I.cloudOff(), 'm.askDown'], micdenied: [() => I.micOff(18), 'm.askMicOff'], silence: [() => I.wave(), 'ask.silent'],
+};
+const askExamples = () => { const x = t('m.askEx'); return Array.isArray(x) ? x : []; };
+const askWaitText = () => t(ask.elapsed >= 8 ? 'm.askWaitLong' : 'ask.thinking');
+const askMeta = () => `${t('m.mode.' + mode)} · ${t('m.leave').toLowerCase()} ${at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now')}`;
+// what a screen reader hears: one live region that stays in the page while the sheet is redrawn
+function askSay(text) {
+  const el = $('sr-live');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = text; }, 60);
+}
+function askRender(focus) {
+  renderHome();
+  const ta = focus && $('ask-ta');
+  if (ta) { ta.focus({ preventScroll: true }); ta.setSelectionRange(ta.value.length, ta.value.length); }
+}
+// a change of the fields by hand: the request no longer describes them
+function askManual() { if (ask.res) { ask.res = null; ask.phase = 'idle'; } }
+function askCancel() {
+  clearInterval(ask.tick);
+  ask.req++;
+  if (ask.starting) ask.discard = true;
+  if (ask.rec) { ask.discard = true; ask.rec.stop(); ask.rec = null; }
+}
+
+function askEntry() {
+  return `<div class="ask-entry">
+      <div style="display: flex; gap: 8px">
+        <button type="button" class="ask-open" data-act="askOpen">${I.chat()}<span>${esc(t('ask.label'))}</span></button>
+        ${ask.mic ? `<button type="button" class="ask-mic-sm" data-act="askMic" aria-label="${esc(t('ask.mic'))}">${I.mic(20)}</button>` : ''}
+      </div>
+      <p class="small">${esc(t('ask.privacy'))}</p>
+    </div>
+    <div class="or-line" aria-hidden="true">${esc(t('m.askOr'))}</div>`;
+}
+function askCard() {
+  const r = ask.res;
+  if (r.kind === 'notfound') {
+    const text = esc(t('ask.notFound', { name: '\u0001', box: t(r.which === 'A' ? 'fromLabel' : 'toLabel') })).replace('\u0001', `<strong style="font-weight: 600">${esc(r.missing)}</strong>`);
+    return `<section class="ask-card miss" aria-label="${esc(t('m.askMissTitle'))}">
+      <p class="ask-line">${I.searchX()}<span>${text}</span></p>
+      <button type="button" class="edit-link" data-act="askEdit" style="align-self: flex-end">${esc(t('m.askEdit'))}</button>
+    </section>`;
+  }
+  const busy = calcReq === routeReq;
+  return `<section class="ask-card" aria-label="${esc(t('m.askGot'))}">
+    <div class="top-row"><span class="sec" style="display: flex; align-items: center; gap: 8px">${I.check()}${esc(t('m.askGot'))}</span></div>
+    <button type="button" class="edit-link" data-act="askEdit" style="position: absolute; right: 4px; top: 0">${esc(t('m.askEdit'))}</button>
+    <span class="h-route">${esc(r.a)} → ${esc(r.b)}</span>
+    <span class="sec">${esc(askMeta())}</span>
+    ${r.heard ? `<span class="small" style="color: var(--bz-ink-2)">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
+    ${r.kind === 'here' ? `<span class="small ask-line" style="font-size: 12px; gap: 6px; color: var(--bz-ink-2)">${SV('<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 14, 2)}<span>${esc(t('m.askHere'))}</span></span>` : ''}
+    ${busy ? `<div class="calc"><span aria-hidden="true" style="display: flex; gap: 3px"><i class="blink"></i><i></i><i></i></span>${esc(t('m.askCalc'))}</div>` : ''}
+  </section>`;
+}
+function askSheet() {
+  const ph = ask.phase, rec = ph === 'rec', wait = ph === 'wait', msg = ph === 'msg' ? ask.msg : null;
+  const denied = msg === 'micdenied', voiceWait = wait && ask.via === 'voice', showTa = !rec && !voiceWait;
+  const sendOff = rec || wait || !ask.text.trim();
+  const segs = (n, on, now) => Array.from({ length: n }, (_, i) => `<i class="${i < on ? 'on' : i === now ? 'now' : ''}"></i>`).join('');
+  let box;
+  if (rec) {
+    box = `<div class="ask-rec"><div class="row"><span class="label" style="display: flex; align-items: center; gap: 8px; color: var(--bz-ink)"><span class="rec-dot pulse"></span>${esc(t('m.askListenTag'))}</span>` +
+      `<span class="ask-remain" id="ask-remain" aria-hidden="true">${ask.remain} s</span></div>` +
+      `<div class="segs" id="ask-rec-segs" aria-hidden="true" style="grid-template-columns: repeat(10, minmax(0, 1fr))">${segs(10, ask.remain, -1)}</div></div>`;
+  } else if (voiceWait) {
+    box = `<div class="ask-voice">${I.mic(18)}${esc(t('m.askVoice', { s: ask.recDur }))}</div>`;
+  } else {
+    box = `<textarea class="ask-ta" id="ask-ta" aria-labelledby="ask-title" maxlength="300" rows="3" enterkeyhint="search" placeholder="${esc(t('ask.placeholder'))}"${wait ? ' readonly' : ''}>${esc(ask.text)}</textarea>`;
+  }
+  const mic = !ask.mic ? '' : `<button type="button" class="ask-mic${denied ? ' off' : ''}" data-act="askMic" aria-pressed="${rec}" ` +
+    `aria-label="${esc(rec ? t('ask.stop') : denied ? t('m.askMicNa') : t('ask.mic'))}"${wait || denied ? ' disabled' : ''}>${rec ? I.stopSq() : denied ? I.micOff(22) : I.mic(22)}</button>`;
+  const msgBox = msg ? `<div class="ask-msg" id="ask-msg"><p class="ask-line">${ASK_MSG[msg][0]()}<span>${esc(t(ASK_MSG[msg][1]))}</span></p>` +
+    (msg === 'ratelimit' || msg === 'unavailable' ? `<button type="button" class="secondary sm" data-act="askFields">${esc(t('m.askFields'))}</button>` : '') + '</div>' : '';
+  const examples = ph === 'idle' || msg ? `<div class="ask-exs" id="ask-ex"${ph !== 'idle' || ask.text.trim() ? ' hidden' : ''}><span class="label">${esc(t('m.askExamples'))}</span>` +
+    `<div class="ask-ex">${askExamples().map((x, i) => `<button type="button" data-act="askEx" data-i="${i}">${esc(x)}</button>`).join('')}</div></div>` : '';
+  return `<section class="sheet" aria-labelledby="ask-title">
+    <div class="handle"></div>
+    <div class="ask-head"><button type="button" class="back" data-act="askBack" aria-label="${esc(t('m.askBack'))}">${I.back()}</button>
+      <h2 id="ask-title">${esc(t('ask.label'))}</h2>${showTa ? `<span class="ask-count" id="ask-count" aria-hidden="true">${ask.text.length}/300</span>` : ''}</div>
+    ${box}
+    <p class="small" style="margin-top: -4px">${esc(t('ask.privacy'))}</p>
+    <div class="ask-btns">${mic}<button type="button" class="ask-go" id="ask-go" data-act="askSend"${sendOff ? ' disabled' : ''}>${esc(t('ask.go'))}${I.arrowR()}</button></div>
+    ${rec ? `<p style="font-size: 14px; line-height: 1.45">${esc(t('ask.listening'))}</p>` : ''}
+    ${wait ? `<div style="display: flex; flex-direction: column; gap: 8px"><div class="segs" id="ask-wait-segs" aria-hidden="true" style="grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 2px">${segs(20, ask.elapsed, ask.elapsed)}</div>` +
+      `<div class="row" style="align-items: baseline; font-size: 14px; line-height: 1.45"><span id="ask-wait-text">${esc(askWaitText())}</span>` +
+      `<span class="mono" id="ask-wait-s" aria-hidden="true" style="font-size: 11px; white-space: nowrap; color: var(--bz-ink-2)">${esc(t('m.askWaitS', { s: ask.elapsed }))}</span></div></div>` : ''}
+    ${msgBox}${examples}
+  </section>`;
+}
+// the box is redrawn with the sheet: typing only updates the counter, the button and the examples
+function askBind(keep) {
+  const ta = $('ask-ta');
+  if (!ta) return;
+  ta.addEventListener('input', () => {
+    ask.text = ta.value.slice(0, 300);
+    const c = $('ask-count');
+    if (c) c.textContent = `${ask.text.length}/300`;
+    if (ask.phase === 'msg' && ask.msg !== 'micdenied') { ask.phase = 'idle'; ask.msg = null; const m = $('ask-msg'); if (m) m.remove(); }
+    const g = $('ask-go');
+    if (g) g.disabled = !ask.text.trim() || ask.phase === 'wait' || ask.phase === 'rec';
+    const ex = $('ask-ex');
+    if (ex) ex.hidden = !!ask.text.trim() || ask.phase !== 'idle';
+  });
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); askSendText(); } });
+  if (keep) { ta.focus({ preventScroll: true }); ta.setSelectionRange(keep[0], keep[1]); }
+}
+
+ACT.askOpen = () => { ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null; askRender(true); };
+ACT.askBack = () => { askCancel(); ask.view = 'form'; ask.phase = ask.res ? 'done' : 'idle'; ask.msg = null; renderHome(); };
+ACT.askSend = () => askSendText();
+ACT.askEx = el => { ask.text = askExamples()[+el.dataset.i] || ''; ask.phase = 'idle'; ask.msg = null; askRender(true); };
+ACT.askFields = () => { ask.view = 'form'; ask.phase = 'idle'; ask.msg = null; ask.res = null; renderHome(); };
+ACT.askEdit = () => {
+  routeReq++;                                           // a route still being calculated for this request is dropped
+  if (ask.via === 'voice' && ask.heard) ask.text = ask.heard;
+  ask.res = null; ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null;
+  askRender(true);
+};
+// the box that was not understood: the search for that point, with the name already typed in
+ACT.askFind = () => {
+  const r = ask.res, inp = $(r.which === 'A' ? 'from' : 'to');
+  openSearch(r.which);
+  inp.value = r.missing;
+  inp.select();
+  sQuery();
+};
+ACT.askMic = () => {
+  if (ask.phase === 'wait' || ask.starting) return;
+  if (ask.phase === 'rec') { if (ask.rec) ask.rec.stop(); return; }
+  askStartRec();
+};
+function askStartRec() {
+  ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null; ask.discard = false; ask.starting = true;
+  renderHome();
+  BzAsk.record(askRecorded).then(handle => {
+    ask.starting = false;
+    if (!handle) return;                                  // refused: askRecorded has said so
+    if (ask.discard) { handle.stop(); return; }
+    ask.rec = handle; ask.phase = 'rec'; ask.remain = 10;
+    renderHome();
+    askSay(t('ask.listening'));
+    clearInterval(ask.tick);
+    ask.tick = setInterval(() => {
+      ask.remain = Math.max(0, ask.remain - 1);
+      const r = $('ask-remain'), segs = $('ask-rec-segs');
+      if (r) r.textContent = ask.remain + ' s';
+      if (segs) [...segs.children].forEach((el, i) => { el.className = i < ask.remain ? 'on' : ''; });
+      if (!ask.remain && ask.rec) ask.rec.stop();
+    }, 1000);
+  });
+}
+function askRecorded(res) {
+  clearInterval(ask.tick);
+  ask.rec = null;
+  if (ask.discard) { ask.discard = false; return; }
+  if (res.wav) { ask.recDur = Math.max(1, 10 - ask.remain); askSend({ audio: res.wav, mime: 'audio/wav' }, 'voice'); return; }
+  ask.view = 'ask'; ask.phase = 'msg'; ask.msg = res.silent ? 'silence' : 'micdenied';
+  askRender(ask.msg === 'micdenied');
+  askSay(t(ASK_MSG[ask.msg][1]));
+}
+function askSendText() {
+  const text = ask.text.trim();
+  if (text && ask.phase !== 'wait' && ask.phase !== 'rec') askSend({ text }, 'text');
+}
+function askSend(payload, via) {
+  const id = ++ask.req;
+  ask.via = via; ask.view = 'ask'; ask.phase = 'wait'; ask.elapsed = 0; ask.msg = null;
+  renderHome();
+  askSay(t('ask.thinking'));
+  clearInterval(ask.tick);
+  ask.tick = setInterval(() => {
+    ask.elapsed = Math.min(20, ask.elapsed + 1);
+    const segs = $('ask-wait-segs'), s = $('ask-wait-s'), tx = $('ask-wait-text');
+    if (segs) [...segs.children].forEach((el, i) => { el.className = i < ask.elapsed ? 'on' : i === ask.elapsed ? 'now' : ''; });
+    if (s) s.textContent = t('m.askWaitS', { s: ask.elapsed });
+    if (tx) tx.textContent = askWaitText();
+    if (ask.elapsed === 8) askSay(t('m.askWaitLong'));
+  }, 1000);
+  // the server gives Gemini 20 s; a little more here, then the request counts as failed
+  const late = new Promise(res => setTimeout(() => res({ ok: false, code: 'timeout' }), 25000));
+  const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
+  Promise.race([BzAsk.send(payload, near), late]).then(res => {
+    if (id !== ask.req) return;
+    clearInterval(ask.tick);
+    if (res.ok) { askApply(res.body); return; }
+    ask.phase = 'msg'; ask.msg = res.code === 'too_many' ? 'ratelimit' : 'unavailable';
+    renderHome();
+    askSay(t(ASK_MSG[ask.msg][1]));
+  });
+}
+// the answer: only our own phrases; a route fills the fields and is calculated at once
+function askApply(r) {
+  const heard = ask.via === 'voice' ? String(r.heard || '').trim() : '';
+  ask.heard = heard;
+  if (r.kind !== 'route' && r.kind !== 'not_found') {
+    if (heard) ask.text = heard;                          // the transcript goes into the box, to be corrected
+    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : 'unclear';
+    renderHome();
+    askSay(t(ASK_MSG[ask.msg][1]));
+    return;
+  }
+  ask.view = 'form'; ask.phase = 'done';
+  if (r.kind === 'not_found') {
+    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+    ask.res = { kind: 'notfound', which: r.which === 'from' ? 'A' : 'B', missing: r.name || '', heard, tagA: !!r.from && r.which !== 'from', tagB: false };
+    renderHome();
+    askSay(t('ask.notFound', { name: ask.res.missing, box: t(ask.res.which === 'A' ? 'fromLabel' : 'toLabel') }));
+    return;
+  }
+  if (['walk', 'bike', 'transit'].includes(r.mode)) mode = r.mode;
+  if (r.at) at = r.at;
+  setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+  const keepStart = !r.from && A && !r.from_here;
+  if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+  const here = !r.from && !keepStart;
+  ask.res = { kind: here ? 'here' : 'route', a: r.from ? r.from.name : keepStart ? labels.A : t('myLocation'), b: r.to.name, heard, tagA: !keepStart, tagB: true };
+  renderHome();
+  askSay(`${t('m.askGot')}: ${ask.res.a} → ${ask.res.b} · ${askMeta()}`);
+  if (here) locate(true, true); else compute(true);
+}
+
 // ---------- start screen ----------
 SCREENS.home = renderHome;
 function renderHome() {
   if (screen !== 'home') return;
-  const aLabel = A ? labels.A : t('m.myLocation');
-  const timeLabel = at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now');
+  const ta = $('ask-ta'), keep = ta && document.activeElement === ta ? [ta.selectionStart, ta.selectionEnd] : null;
+  const asking = !loopMode && ask.on && ask.view === 'ask';
   $('screen').innerHTML = `
-  <div class="top" style="justify-content: space-between">
-    <div class="cov-chip"><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true" style="flex-shrink: 0"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg><span>${esc(t('m.coverage'))}</span></div>
+  <div class="top" style="justify-content: flex-end">
     <div style="display: flex; gap: 8px">
       <button type="button" class="round" data-act="loop" aria-pressed="${loopMode}" aria-label="${esc(t('m.loopBtn'))}">${I.loop()}</button>
       <button type="button" class="pill mono" data-act="lang" id="lang-btn" aria-haspopup="menu" aria-expanded="${langOpen}" aria-label="${esc(t('m.langBtn'))}" style="font-size: 12px; letter-spacing: .04em; padding: 0 12px; gap: 6px">${LANG.toUpperCase()}${I.down()}</button>
       <button type="button" class="round" data-act="legend" aria-expanded="${legendOpen}" aria-label="${esc(t('m.legendLayers'))}">${I.legend()}</button>
     </div>
   </div>
-  ${loopMode ? loopSheet() : `<section class="sheet" aria-labelledby="h-home">
+  ${loopMode ? loopSheet() : asking ? askSheet() : homeSheet()}`;
+  if (asking) askBind(keep);
+}
+function homeSheet() {
+  const aLabel = A ? labels.A : t('m.myLocation'), r = ask.res;
+  const tag = on => (on ? `<span class="from-ask">${esc(t('m.askFromReq'))}</span>` : '');
+  const miss = (which, pin, label) => `<button type="button" class="field miss" data-act="askFind" aria-label="${esc(t(label) + ': ' + t('m.askPickHere'))}">${pin}<span class="val">${esc(t('m.askPickHere'))}</span></button>`;
+  const aField = r && r.kind === 'notfound' && r.which === 'A' ? miss('A', '<span class="pin-a" aria-hidden="true">A</span>', 'fromLabel')
+    : `<div class="field"><span class="pin-a" aria-hidden="true">A</span>
+        <button type="button" class="fbtn" data-act="searchA" aria-label="${esc(t('fromLabel') + ': ' + aLabel)}">${esc(aLabel)}</button>${tag(r && r.tagA)}
+        <button type="button" class="icon-in" data-act="locate" aria-label="${esc(t('locate'))}" style="color: var(--bz-ink-2)">${I.locate()}</button></div>`;
+  const bField = r && r.kind === 'notfound' && r.which === 'B' ? miss('B', '<span class="pin-b" aria-hidden="true">B</span>', 'toLabel')
+    : `<button type="button" class="field" data-act="searchB" aria-label="${esc(t('toLabel') + (B ? ': ' + labels.B : ''))}"><span class="pin-b" aria-hidden="true">B</span>
+        <span class="${B ? 'val' : 'ph'}">${esc(B ? labels.B : t('toPlaceholder'))}</span>${tag(r && r.tagB)}</button>`;
+  return `<section class="sheet" aria-label="${esc(t('m.where'))}">
     <div class="handle"></div>
-    <div style="display: flex; flex-direction: column; gap: 4px"><h1 id="h-home" class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>
+    ${r ? askCard() : `<div style="display: flex; flex-direction: column; gap: 4px"><h1 class="h-title">${esc(t('m.where'))}</h1><p class="h-sub">${esc(t('m.whereSub'))}</p></div>${ask.on ? askEntry() : ''}`}
     <div class="fields">
-      <div class="fields-col">
-        <div class="field"><span class="pin-a" aria-hidden="true">A</span>
-          <button type="button" class="fbtn" data-act="searchA" aria-label="${esc(t('fromLabel') + ': ' + aLabel)}">${esc(aLabel)}</button>
-          <button type="button" class="icon-in" data-act="locate" aria-label="${esc(t('locate'))}" style="color: var(--bz-ink-2)">${I.locate()}</button></div>
-        <button type="button" class="field" data-act="searchB" aria-label="${esc(t('toLabel') + (B ? ': ' + labels.B : ''))}"><span class="pin-b" aria-hidden="true">B</span>
-          <span class="${B ? 'val' : 'ph'}">${esc(B ? labels.B : t('toPlaceholder'))}</span></button>
-      </div>
+      <div class="fields-col">${aField}${bField}</div>
       <button type="button" class="swap" data-act="swap" aria-label="${esc(t('swap'))}">${I.swap()}</button>
     </div>
-    ${modeSeg('')}
-    <div class="row">
-      <button type="button" class="chip-btn" data-act="time" aria-haspopup="dialog">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(timeLabel)}</strong></span>${I.down()}</button>
-      <button type="button" class="link-btn" data-act="about">${esc(t('m.aboutData'))}</button>
-    </div>
-    <p class="small" style="margin-top: auto">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
-  </section>`}`;
+    ${modeSeg('compact')}
+  </section>`;
+}
+// the leaving time matters for timetables: it is set where transit is shown
+function timeChip() {
+  const label = at ? (at.includes('T') ? at.slice(11, 16) : at) : t('m.now');
+  return `<button type="button" class="chip-btn" data-act="time" aria-haspopup="dialog" style="align-self: flex-start">${I.clock()}<span>${esc(t('m.leave'))}: <strong>${esc(label)}</strong></span>${I.down()}</button>`;
 }
 
 function modeSeg(cls, modes = ['walk', 'bike', 'transit']) {
@@ -445,7 +694,7 @@ function modeSeg(cls, modes = ['walk', 'bike', 'transit']) {
   return `<div class="seg ${cls}" role="group" aria-label="${esc(t('travelLabel'))}"${cols}>${modes.map(b).join('')}</div>`;
 }
 
-// ---------- search (built once: ../ask.js binds to its Gemini form) ----------
+// ---------- search (built once, with its listeners) ----------
 let sItems = [], sActive = 0, sReq = 0, sTimer = null, sFor = '', sPickWhenReady = false;   // sFor: the text the list was made for
 function buildSearch() {
   $('scr-search').innerHTML = `
@@ -453,11 +702,6 @@ function buildSearch() {
     <div class="s-title"><button type="button" class="back" id="s-back" aria-label="${esc(t('m.backMap'))}">${I.back()}</button><h1 id="s-h1"></h1></div>
     <label class="field"><span class="pin-a" aria-hidden="true">A</span><input id="from" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="${esc(t('fromLabel'))}" aria-controls="s-list" aria-autocomplete="list"><button type="button" class="icon-in" data-clear="from" aria-label="${esc(t('m.clear'))}"><span class="clear-x">${I.close()}</span></button></label>
     <label class="field"><span class="pin-b" aria-hidden="true">B</span><input id="to" type="text" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="${esc(t('toLabel'))}" aria-controls="s-list" aria-autocomplete="list"><button type="button" class="icon-in" data-clear="to" aria-label="${esc(t('m.clear'))}"><span class="clear-x">${I.close()}</span></button></label>
-    <form class="ask" id="ask" hidden>
-      <div class="ask-row"><input id="ask-text" type="text" maxlength="300" autocomplete="off" enterkeyhint="go"><button type="button" id="ask-mic" aria-pressed="false"></button><button type="submit" id="ask-go"></button></div>
-      <p id="ask-note" aria-live="polite" hidden></p>
-      <p class="small" id="ask-privacy"></p>
-    </form>
   </div>
   <div class="s-meta"><span class="label" id="s-count"></span><span class="mono small" id="s-from"></span></div>
   <ul class="s-list" id="s-list" role="listbox" aria-label="${esc(t('m.suggestions'))}"></ul>
@@ -553,6 +797,7 @@ function sRender(q = '') {
 }
 function sPick(r) {
   if (!r) return;
+  askManual();
   if (r.kind === 'gps') { go(B ? 'home' : 'search', false); locate(true); if (!B) openSearch('B'); return; }
   setPoint(searchFor, [r.lat, r.lon], r.name);
   $(searchFor === 'A' ? 'from' : 'to').value = r.name;
@@ -561,28 +806,31 @@ function sPick(r) {
 }
 
 // ---------- computing a route ----------
-function compute() {
+function compute(stay = false) {
   if (loopMode) { computeLoop(); return; }
   if (!B) { openSearch('B'); return; }
-  if (!A) { locate(true); return; }
+  if (!A) { locate(true, stay); return; }
   if (meters(A, B) < 20) { go('home'); toast(t('m.alreadyThere'), 5000); return; }
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
   saveHash();
   stopAnim(); stopLive();
   plan = null; part = null;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
-  go(mode === 'transit' ? 'transit' : 'results');
-  fit(L.latLngBounds([A, B]).pad(0.2));
+  calcReq = req;
+  if (stay) renderHome();
+  else { go(mode === 'transit' ? 'transit' : 'results'); fit(L.latLngBounds([A, B]).pad(0.2)); }
   getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${mode}${at ? '&at=' + encodeURIComponent(at) : ''}`)
     .then(d => {
       if (req !== routeReq) return;
+      calcReq = -1;
       plan = d; live = null;
-      if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', false); }
-      else { if (screen !== 'results') go('results', false); reveal(false); }
+      if (mode === 'transit' && d.transit && d.transit.kind === 'ok') { sel = 'transit'; go('transit', stay); }
+      else { if (screen !== 'results') go('results', stay); reveal(false); }
       restoreScreen();
     })
     .catch(err => {
       if (req !== routeReq) return;
+      calcReq = -1;
       const d = err.detail || {};
       let text;
       if (d.code === 'outside_coverage') {
@@ -592,7 +840,7 @@ function compute() {
         const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
         text = d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       }
-      go('home');
+      if (screen === 'home') renderHome(); else go('home');
       toast(text);
     });
 }
@@ -915,7 +1163,7 @@ function routeSub() {
 }
 function renderResults() {
   if (screen !== 'results') return;
-  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(tripTitle())}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact', isLoop() ? ['walk', 'bike'] : undefined)}`;
+  const head = `<div class="handle"></div><div style="display: flex; flex-direction: column; gap: 2px"><h1 class="h-route">${esc(tripTitle())}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact', isLoop() ? ['walk', 'bike'] : undefined)}${mode === 'transit' && !isLoop() ? timeChip() : ''}`;
   if (!plan) {
     $('screen').innerHTML = resultsTop() + `<section class="sheet" aria-busy="true">${head}<p class="loading">${esc(t('computing'))}</p></section>`;
     return;
@@ -1014,17 +1262,15 @@ function openTip(f, kind, latlng) {
   if (id) getJSON('/api/segments/' + encodeURIComponent(id)).then(d => { if (tip && tip.f === f) { tip.ev = d.properties.ev || []; renderOverlay(); } }).catch(() => { if (tip && tip.f === f) { tip.ev = []; renderOverlay(); } });
 }
 
-// ---------- overlays: legend, segment, about the data ----------
+// ---------- overlays: language, legend (with the covered area and the data), segment ----------
 function closeOverlays() {
   $('screen').inert = false; $('map').inert = false;
   langOpen = false;
-  legendOpen = false; tip = null; aboutOpen = false;
+  legendOpen = false; tip = null;
   markLayer.eachLayer(l => { if (l.options.ring) markLayer.removeLayer(l); });
   $('overlay').innerHTML = '';
   for (const b of document.querySelectorAll('#screen [data-act="legend"]')) b.setAttribute('aria-expanded', 'false');
 }
-let aboutOpen = false;
-function openAbout() { legendOpen = false; tip = null; aboutOpen = true; renderOverlay(); }
 function renderOverlay() {
   for (const b of document.querySelectorAll('#screen [data-act="legend"]')) b.setAttribute('aria-expanded', String(legendOpen));
   const close = `<button type="button" class="close" data-act="closeOverlay" aria-label="${esc(t('m.close'))}">${I.close()}</button>`;
@@ -1051,11 +1297,21 @@ function renderOverlay() {
         <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M5 6h18" stroke="#F2F2F2" stroke-width="9" stroke-linecap="round"/></svg>${esc(t('m.mkChosen'))}</span>
         <span><svg width="28" height="12" viewBox="0 0 28 12" aria-hidden="true"><path d="M4 6h20" stroke="#8A8A8A" stroke-width="5" stroke-linecap="round"/></svg>${esc(t('m.mkAlt'))}</span>
         <span><svg width="40" height="24" viewBox="-20 -12 40 24" aria-hidden="true"><rect x="-17" y="-10" width="34" height="20" rx="5" fill="#F2F2F2"/><text y="4" text-anchor="middle" font-family="Inter Tight, Inter, sans-serif" font-weight="600" font-size="12" fill="#0B0B0B">16</text></svg>${esc(t('m.mkVehicle'))}</span>
+        <span><svg width="22" height="6" viewBox="0 0 22 6" aria-hidden="true"><path d="M1 3h20" stroke="#A3A3A3" stroke-width="1" stroke-dasharray="2 4"/></svg>${esc(t('m.coverage'))}</span>
       </div>
       <span class="small">${esc(t('m.tapPart'))}</span>
       <div class="divider"></div>
       <label class="toggle"><span>${esc(t('showNet'))}</span><input type="checkbox" data-pref="net" ${netOn() ? 'checked' : ''}></label>
       <label class="toggle"><span>${esc(t('live.show'))}</span><input type="checkbox" data-pref="livenet" ${prefs.livenet ? 'checked' : ''}></label>
+      <div class="divider"></div>
+      <details><summary>${I.chev(12, 'chev')}<span>${esc(t('m.aboutData'))}</span></summary>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px">
+          <p class="sec">${esc(metaText())}</p>
+          <ul class="src">${ORDER.map(k => `<li>${esc(t('legend.' + k))}</li>`).join('')}</ul>
+          <p class="small">${esc(t('m.footer', { date: summary ? summary.as_of.split('-').reverse().join('.') : '…' }))}</p>
+          <p class="small">${esc(t('m.aboutNote'))}</p>
+        </div>
+      </details>
     </section>`;
     for (const c of $('overlay').querySelectorAll('input[data-pref]')) c.addEventListener('change', () => {
       if (c.dataset.pref === 'net') { if (screen === 'home') prefs.net = c.checked; else prefs.netRoute = c.checked; refreshNet(); }
@@ -1071,15 +1327,6 @@ function renderOverlay() {
       <span style="font-size: 13px">${esc([p.name || t('noName'), Math.round(p.len) + ' m', t(plan && plan.verdict.kind === 'same' && screen === 'results' ? 'm.onThis' : tip.kind === 'fastest' ? 'm.onFastest' : 'm.onLitter')].join(' · '))}</span>
       <ul class="src">${src}</ul>
       <span class="small">${esc(t('m.note.' + st) + (summary ? ' ' + t('dataAsOf', { date: summary.as_of }) : ''))}</span>
-    </section>`;
-    return;
-  }
-  if (aboutOpen) {
-    $('overlay').innerHTML = `<section class="panel" aria-label="${esc(t('m.aboutData'))}">${close}
-      <h2 style="font-size: 16px; font-weight: 600; padding-right: 36px">${esc(t('m.aboutData'))}</h2>
-      <p class="sec">${esc($('meta-text') ? '' : metaText())}</p>
-      <ul class="src">${ORDER.map(k => `<li>${esc(t('legend.' + k))}</li>`).join('')}</ul>
-      <p class="small">${esc(t('m.aboutNote'))}</p>
     </section>`;
     return;
   }
@@ -1183,7 +1430,7 @@ function renderTransit() {
   const top = `<div class="top"><button type="button" class="round" data-act="home" aria-label="${esc(t('m.back'))}">${I.back()}</button><span class="grow"></span>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
   if (!plan) {
-    $('screen').innerHTML = top + `<section class="sheet" aria-busy="true"><div class="handle"></div><div><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}<p class="loading">${esc(t('computing'))}</p></section>`;
+    $('screen').innerHTML = top + `<section class="sheet" aria-busy="true"><div class="handle"></div><div><h1 class="h-route">${esc(labels.A)} → ${esc(labels.B)}</h1><p class="sec">${esc(routeSub())}</p></div>${modeSeg('compact')}${timeChip()}<p class="loading">${esc(t('computing'))}</p></section>`;
     return;
   }
   const tr = plan.transit, [w1, rd, w2] = tr.legs, type = t('rt.' + rd.route_type);
@@ -1206,6 +1453,7 @@ function renderTransit() {
     <div style="display: flex; flex-direction: column; gap: 2px"><h1 id="h-tr" style="display: flex; align-items: baseline; gap: 10px; font-weight: 600"><span style="font-family: var(--bz-display); font-size: 28px; line-height: 1.1">${minN(tr.minutes + Math.max(0, tr.wait_min))} min</span><span style="font-size: 15px; color: var(--bz-ink-2); font-weight: 500">${esc(t('m.arrival'))} ${esc(tr.arrive_at)}</span></h1>
       <p class="sec">${esc(labels.A)} → ${esc(labels.B)}</p></div>
     ${modeSeg('compact')}
+    ${timeChip()}
     ${tl}
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
     ${steps}${last}
@@ -1675,16 +1923,17 @@ map.on('click', e => {
     const which = pickMode;
     pickMode = null;
     hideToast();
+    askManual();
     setPoint(which, e.latlng, t('m.pointOnMap'));
     if (A && B) compute(); else if (which === 'B') locate(true); else openSearch('B');
     return;
   }
   if (loopMode && screen === 'home') {
-    if (tip || legendOpen || aboutOpen) { closeOverlays(); return; }
+    if (tip || legendOpen) { closeOverlays(); return; }
     if (loopPts.length < LOOP_MAX) { loopPts.push(e.latlng); saveHash(); renderHome(); drawAB(); }
     return;
   }
-  if (tip || legendOpen || aboutOpen) closeOverlays();
+  if (tip || legendOpen) closeOverlays();
 });
 map.on('moveend', () => { clearTimeout(map._netT); map._netT = setTimeout(refreshNet, 200); });
 // the phone's height changes when the browser hides its address bar (100dvh), or the tab was laid out while hidden
@@ -1695,6 +1944,10 @@ if (window.ResizeObserver) new ResizeObserver(onResize).observe($('phone')); els
 document.documentElement.lang = t('htmlLang');
 $('map').setAttribute('aria-label', t('mapLabel'));
 buildSearch();
+if (typeof BzAsk !== 'undefined') {
+  ask.mic = BzAsk.canRecord();
+  BzAsk.enabled().then(on => { ask.on = on; renderHome(); });
+}
 history.replaceState({ screen: 'home' }, '');
 renderHome();
 getJSON('/api/summary').then(s => {
