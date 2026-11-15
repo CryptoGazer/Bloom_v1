@@ -20,7 +20,7 @@
 
 ## The navigator: what is in this plan and what comes after
 
-The navigator is the reason for an app at all. Today (Tasks 1–2): GPS by app permission, screen kept on, system voice, compass when standing, a demo walk by a long press on «Pornește».
+The navigator is the reason for an app at all. Today (Tasks 1–2): GPS by app permission, screen kept on, system voice, compass when standing. No demo walk in the app.
 
 After the hackathon, a separate plan (not part of this one): guidance with the screen off (a foreground service, `nav.js` logic in Kotlin), the next manoeuvre in the notification and on the lock screen, audio focus, automatic re-routing off the route, an offline map of the district, signing and Google Play.
 
@@ -294,7 +294,7 @@ Check the assets are inside: `unzip -l app/build/outputs/apk/debug/app-debug.apk
 ### Task 2: The navigator bridge
 
 **Files:**
-- Modify: `web/m/m.js` (voice, `BeznaNative.nav`, `window.bzCompass`, long press on «Pornește»)
+- Modify: `web/m/m.js` (voice, `BeznaNative.nav`, `window.bzCompass`)
 - Modify: `android/app/src/main/java/xyz/bezna/app/MainActivity.java` (class `Bridge`, TextToSpeech, rotation sensor, keep the screen on)
 
 **Interfaces:**
@@ -320,7 +320,7 @@ function speak(text) {
 function hush() { if (native()) native().stopSpeaking(); else if (window.speechSynthesis) speechSynthesis.cancel(); }
 ```
 
-`startNav`: signature `function startNav(demo = false)`; `const sim = demo || /[?&]sim=1/.test(location.search);`; after `go('nav');` add `if (native()) native().nav(true);`.
+`startNav`: after `go('nav');` add `if (native()) native().nav(true);`.
 
 `stopNav`: replace `if (window.speechSynthesis) speechSynthesis.cancel();` with `hush(); if (native()) native().nav(false);`.
 
@@ -346,21 +346,9 @@ window.bzCompass = deg => {
 };
 ```
 
-`ACT.start` and the long press (in the app only: a demo walk along the route, as `?sim=1`):
+No demo walk in the app (the user's decision of 15.11): `startNav` keeps its signature and `?sim=1` stays a browser-only switch.
 
-```js
-ACT.start = () => { if (!nav) startNav(); };
-let holdT = null;
-$('screen').addEventListener('pointerdown', e => {
-  if (!native() || !e.target.closest('[data-act="start"]')) return;
-  clearTimeout(holdT);
-  holdT = setTimeout(() => { if (!nav) startNav(true); }, 700);
-});
-for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('screen').addEventListener(ev, () => clearTimeout(holdT));
-$('screen').addEventListener('contextmenu', e => { if (native() && e.target.closest('[data-act="start"]')) e.preventDefault(); });
-```
-
-- [ ] **Step 2: Check the hooks in a desktop browser** (`http://localhost:8001/m/`, a new tab). In the console: `window.BeznaNative = { log: [], nav(on) { this.log.push('nav:' + on); }, speak(t, l) { this.log.push('speak:' + l + ':' + t); }, stopSpeaking() { this.log.push('stop'); } }`, set two points, `startNav(true)`, press the voice button, wait for a manoeuvre, `ACT.navStop` (or Back). Expected in `BeznaNative.log`: `nav:true`, a `speak:ro-RO:…` line, `stop`, `nav:false`. Without `BeznaNative` (reload) the navigator works as before. `node --check web/m/m.js`, `node --test web/m/nav.test.cjs` → 10 pass.
+- [ ] **Step 2: Check the hooks in a desktop browser** (`http://localhost:8001/m/`, a new tab). In the console: `window.BeznaNative = { log: [], nav(on) { this.log.push('nav:' + on); }, speak(t, l) { this.log.push('speak:' + l + ':' + t); }, stopSpeaking() { this.log.push('stop'); } }`, open the page with `?sim=1`, set two points, «Pornește», press the voice button, wait for a manoeuvre, `ACT.navStop` (or Back). Expected in `BeznaNative.log`: `nav:true`, a `speak:ro-RO:…` line, `stop`, `nav:false`. Without `BeznaNative` (reload) the navigator works as before. `node --check web/m/m.js`, `node --test web/m/nav.test.cjs` → 10 pass.
 
 - [ ] **Step 3: `MainActivity.java`, the bridge**
 
@@ -444,9 +432,9 @@ Lifecycle and the navigator state:
 
 - [ ] **Step 4: Build and install** — `./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk`. Expected: `BUILD SUCCESSFUL`, `Success`.
 
-- [ ] **Step 5: On the phone.** A route, a long press on «Pornește»: the demo walk starts, the screen does not dim for a minute, the voice button on: a phrase is spoken before a turn. A short press on «Pornește»: real GPS (permission asked once), standing still the direction cone follows the phone as it turns. Back leaves the navigator, the voice stops. `adb logcat -d | grep -i "chromium.*console"` shows no errors of the page.
+- [ ] **Step 5: On the phone.** A route, «Pornește»: real GPS (permission asked once), the screen does not dim for a minute; standing still the direction cone follows the phone as it turns; the voice button on: a phrase is spoken before a turn (walk towards one). Back leaves the navigator, the voice stops. `adb logcat -d | grep -i "chromium.*console"` shows no errors of the page.
 
-- [ ] **Step 6: Commit** — `git add web/m/m.js android && git commit -m "feat: the navigator in the app: system voice, the screen stays on, compass, a demo walk by a long press"`
+- [ ] **Step 6: Commit** — `git add web/m/m.js android && git commit -m "feat: the navigator in the app: system voice, the screen stays on, compass"`
 
 ### Task 3: Instructions, the whole check, merge
 
@@ -461,7 +449,7 @@ Lifecycle and the navigator state:
 
 Телефонная страница `web/m` в приложении: один экран с WebView. Файлы страницы лежат в APK (папка `web/` репозитория как есть), запросы `/api/*` идут на `https://bezna.xyz`. Дизайн: `docs/superpowers/specs/2026-11-15-android-app-design.md`.
 
-Что приложение даёт сверх браузера (режим навигатора): голос системным движком Android, экран не гаснет, компас, когда человек стоит, GPS по разрешению приложения. Долгое нажатие на «Pornește» — демонстрационная прогулка по маршруту.
+Что приложение даёт сверх браузера (режим навигатора): голос системным движком Android, экран не гаснет, компас, когда человек стоит, GPS по разрешению приложения.
 
 ## Сборка
 
@@ -480,6 +468,6 @@ Lifecycle and the navigator state:
 Ведение с выключенным экраном (сервис и логика `web/m/nav.js` на Kotlin), подсказка в уведомлении, пересчёт при уходе с маршрута, офлайн-карта района, публикация в Google Play.
 ```
 
-- [ ] **Step 2: The whole check.** `../.venv/Scripts/python -m pytest backend/tests -q -p no:warnings` → all pass; `node --test web/m/nav.test.cjs` → 10 pass. On the phone: start, a route A → B, a loop, a request in plain words by text, the navigator (demo and real GPS), voice, Back, a language switch.
+- [ ] **Step 2: The whole check.** `../.venv/Scripts/python -m pytest backend/tests -q -p no:warnings` → all pass; `node --test web/m/nav.test.cjs` → 10 pass. On the phone: start, a route A → B, a loop, a request in plain words by text, the navigator with real GPS, voice, Back, a language switch.
 
 - [ ] **Step 3: Commit, merge, push** — `git add android/README.md README.md && git commit -m "docs: how to build the Android app"`; `git checkout main && git merge --ff-only feat/android-app && git push origin main`.
