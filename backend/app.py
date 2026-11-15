@@ -8,6 +8,7 @@ import json
 import math
 import os
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -19,12 +20,15 @@ from pydantic import BaseModel, Field
 import datetime as dt
 from zoneinfo import ZoneInfo
 
-from backend.ask import LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
+from backend.ask import ASK_VERSION, LIMITS as ASK_LIMITS, AskError, Asker, Gemini, load_env
 from backend.geocode import Places
+from backend.history import HISTORY, History
 from backend.live import LIVE, Live, Vehicles, epoch, fetch_city
 from backend.liveliness import LIVELY, Signs
+from backend.loops import DEFAULT_RADIUS_M, MAX_RADIUS_M, MIN_RADIUS_M, around
 from backend.routing import MODES, SETTINGS, Network
 from backend.transit import TRANSIT, Timetable, Transit
+from backend.web_assets import APINoStore, WebAssets
 
 LOCAL_TZ = ZoneInfo("Europe/Bucharest")
 
@@ -64,7 +68,7 @@ def point_json(lat, lon, snap):
 
 
 def settings_json():
-    return {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE}
+    return {**SETTINGS, "transit": TRANSIT, "lively": LIVELY, "live": LIVE, "history": HISTORY}
 
 
 LATE_GRACE = dt.timedelta(hours=1)   # 'HH:MM' more than this before now means the next day: at 23:59, "00:05" is tonight
@@ -97,15 +101,17 @@ class AskIn(BaseModel):
                                                       "picked next to it. Stays on this server, never goes to Gemini")
 
 
-def create_app(segments_path=None, gemini=None, live_fetch=None):
+def create_app(segments_path=None, gemini=None, live_fetch=None, history=None):
     """gemini: a backend.ask.Gemini (tests pass a fake); by default built from GEMINI_API_KEY in .env or the environment.
-    live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city."""
+    live_fetch: what reads the city's live vehicles (tests pass a fake); by default backend.live.fetch_city.
+    history: a backend.history.History (tests pass one with a fake loader); by default read from Tiger Data in the
+    background if TIGER_READ_URL or TIGER_DATABASE_URL is set."""
     load_env(ROOT / ".env")
     segments_path = Path(segments_path or os.environ.get("LIGHTMAP_SEGMENTS") or DEFAULT_SEGMENTS)
     places_path = segments_path.parent / "places.json.gz"
     transit_path = segments_path.parent / "transit.json.gz"
 
-    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None}
+    state = {"net": None, "places": None, "transit": None, "asker": None, "signs": None, "live": None, "history": history}
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -122,10 +128,16 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
         if state["net"] is not None and state["places"] is not None:
             state["signs"] = Signs(state["net"], [item["e"] for item in state["places"].items],
                                    state["transit"].tt if state["transit"] else None)
+        if state["history"] is None and state["transit"] is not None:
+            state["history"] = History.from_env()
+            if state["history"] is not None:
+                state["history"].start()  # reads Tiger Data in the background; the server does not wait for it
         yield
 
     app = FastAPI(title="Night route: lighting map API", version="0.1.0", lifespan=lifespan)
     app.add_middleware(GZipMiddleware, minimum_size=1000)  # a map window is ~250 KB of JSON, ~40 KB compressed
+    app.add_middleware(APINoStore)
+    web = WebAssets(directory=ROOT / 'web', html=True)
 
     def network():
         if state["net"] is None:
@@ -140,13 +152,17 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
     def health():
         net = state["net"]
         return {"ok": net is not None, "segments": len(net.props) if net else 0, "data_as_of": net.meta.get("as_of") if net else None,
-                "ask": state["asker"] is not None}
+                "ask": state["asker"] is not None, "ask_version": ASK_VERSION, "ui_version": web.version(),
+                "features": {"loop": True, "gemini_loop": True, "gemini_loop_waypoints": True},
+                "history": state["history"] is not None and state["history"].ready}
 
     @app.post("/api/ask")
     def ask(body: AskIn, request: Request):
         """A route asked in plain words, typed or spoken (Romanian, English, Russian). Gemini only fills in a form
         (from, to, mode, time); the places are then found in our own index. Answers:
-        kind "route" (points to route between), "not_found" (a place is not in the map area), "unclear",
+        kind "route" (points to route between), "loop" (centre and target radius for /api/loop),
+        "unsupported" (a transit loop), "not_found" (a place is not in the map area), "unclear",
+        "clarify" (ambiguous places, with missing/ambiguity and verified candidates),
         or "off_topic" for anything that is not a route request: the assistant does not answer other questions.
         The text or recording is sent to Google and is not stored here; no coordinates are sent."""
         if state["asker"] is None:
@@ -241,40 +257,65 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
             for leg in extra["transit"].get("legs", []):
                 if leg["type"] == "ride":  # the scheduled departure as unix time: what /api/transit/live compares with
                     leg["dep_ts"] = round(epoch(leg["day"], leg["dep_s"], LOCAL_TZ))
+                    # Historical observations remain optional when Tiger Data is not configured.
+                    leg["history"] = state["history"].ride(leg) if state["history"] is not None else None
         return {"mode": mode, "from": point_json(*snapped["from"]), "to": point_json(*snapped["to"]), **plan, **extra,
                 "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
 
     @app.get("/api/loop")
-    def loop(points: str = Query(max_length=600, description="lat,lon;lat,lon;... in visiting order, 2 to 10 points; the loop comes back to the first"),
+    def loop(points: str = Query("", max_length=600, description="lat,lon;lat,lon;... in visiting order, 2 to 10 points; or use center"),
              mode: str = Query("walk", description="'walk' or 'bike'"),
-             at: str = Query("", description="leaving time, as for /api/route")):
+             at: str = Query("", description="leaving time, as for /api/route"),
+             center: str = Query("", max_length=80, description="lat,lon: automatically choose a circuit around this centre instead of supplying points"),
+             radius_m: float = Query(DEFAULT_RADIUS_M, ge=MIN_RADIUS_M, le=MAX_RADIUS_M, description="approximate circuit radius, may shrink near the edge of coverage"),
+             start: str = Query("", max_length=80, description="optional lat,lon start and finish for an automatic circuit")):
         """A closed walk or ride through the points in their order and back to the first: the fastest and the
         better-lit loop, judged like /api/route. Later legs avoid the streets the loop has already used."""
         if mode not in MODES:
             raise HTTPException(422, detail={"code": "mode_not_supported", "message": f"mode must be one of {', '.join(MODES)}"})
-        raw = [p for p in points.split(";") if p.strip()]
-        if not 2 <= len(raw) <= SETTINGS["loop_max_points"]:
-            raise HTTPException(422, detail={"code": "bad_points", "message": f"2 to {SETTINGS['loop_max_points']} points as lat,lon;lat,lon"})
+        if bool(points) == bool(center) or (start and not center):
+            raise HTTPException(422, detail={"code": "bad_points", "message": "supply either points or center (with optional start)"})
+        when = leaving_time(at)
         net = network()
-        snapped = []
-        for i, value in enumerate(raw, 1):
-            lat, lon = parse_point(value, f"point {i}")
-            snap = net.snap(lat, lon, mode=mode)
-            if snap is None:
-                nearest = net.nearest_m(lat, lon, mode=mode)
-                raise HTTPException(422, detail={"code": "outside_coverage", "point": i,
-                                                 "nearest_m": None if nearest is None else round(nearest),
-                                                 "message": f"point {i} is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
-            snapped.append((lat, lon, snap))
-        plan = net.loop([snap for _, _, snap in snapped], mode=mode)
+        generated = {}
+        if center:
+            coords = parse_point(center, "center")
+            start_coords = parse_point(start, "start") if start else None
+            for name, p in (("center", coords), ("start", start_coords)):
+                if p is not None and net.snap(*p, mode=mode) is None:
+                    raise HTTPException(422, detail={"code": "outside_coverage", "point": name,
+                                                     "message": f"{name} is outside the mapped {mode} network"})
+            selection = around(net, coords, radius_m, mode, net.snap(*start_coords, mode=mode) if start_coords else None)
+            if selection is None:
+                raise HTTPException(422, detail={"code": "no_loop_area", "message": "no reasonable circuit around this centre fits the mapped network"})
+            snaps, plan, actual_radius = selection
+            snapped = [(p.lat, p.lon, replace(p, d=0)) for p in snaps]
+            if start_coords:
+                snapped[0] = (*start_coords, snaps[0])
+            generated = {"generated": True, "center": {"lat": coords[0], "lon": coords[1]},
+                         "radius_m": actual_radius, "requested_radius_m": radius_m}
+        else:
+            raw = [p for p in points.split(";") if p.strip()]
+            if not 2 <= len(raw) <= SETTINGS["loop_max_points"]:
+                raise HTTPException(422, detail={"code": "bad_points", "message": f"2 to {SETTINGS['loop_max_points']} points as lat,lon;lat,lon"})
+            snapped = []
+            for i, value in enumerate(raw, 1):
+                lat, lon = parse_point(value, f"point {i}")
+                snap = net.snap(lat, lon, mode=mode)
+                if snap is None:
+                    nearest = net.nearest_m(lat, lon, mode=mode)
+                    raise HTTPException(422, detail={"code": "outside_coverage", "point": i,
+                                                     "nearest_m": None if nearest is None else round(nearest),
+                                                     "message": f"point {i} is farther than {SETTINGS['snap_max_m']:.0f} m from the mapped network"})
+                snapped.append((lat, lon, snap))
+            plan = net.loop([snap for _, _, snap in snapped], mode=mode)
         if plan is None:
             raise HTTPException(404, detail={"code": "no_route", "message": f"no {mode} loop through these points"})
-        when = leaving_time(at)
         if state["signs"] is not None:
             for r in plan["routes"].values():
                 r["signs"] = state["signs"].along(r, when)
         pts = [point_json(*p) for p in snapped]
-        return {"mode": mode, "loop": True, "points": pts, "from": pts[0], "to": pts[0], **plan, "at": when.strftime("%Y-%m-%d %H:%M"),
+        return {"mode": mode, "loop": True, "points": pts, "from": pts[0], "to": pts[0], **plan, **generated, "at": when.strftime("%Y-%m-%d %H:%M"),
                 "settings": settings_json(), "data_as_of": net.meta.get("as_of")}
 
     @app.get("/api/transit/live")
@@ -296,7 +337,7 @@ def create_app(segments_path=None, gemini=None, live_fetch=None):
     # "/" must be mounted last: it catches every path the API routes above did not.
     for url, folder in (("/demo", ROOT / "demo"), ("/data/out", ROOT / "data/out"), ("/", ROOT / "web")):
         if folder.is_dir():
-            app.mount(url, StaticFiles(directory=folder, html=True), name=url.strip("/").replace("/", "-") or "web")
+            app.mount(url, web if url == '/' else StaticFiles(directory=folder, html=True), name=url.strip("/").replace("/", "-") or "web")
     return app
 
 

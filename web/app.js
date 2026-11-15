@@ -26,7 +26,9 @@ const pct = x => Math.round(100 * x) + '%';
 const say = html => { $('hint').innerHTML = html; };
 const getJSON = url => fetch(url).then(async r => {
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) { const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status); e.detail = body.detail; e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status);
+    e.detail = r.status === 404 && url.startsWith('/api/loop') && (!body.detail || !body.detail.code) ? { code: 'loop_api_missing' } : body.detail;
+    e.status = r.status; throw e; }
   return body;
 });
 const debounce = (fn, ms) => { let tm; return (...a) => { clearTimeout(tm); tm = setTimeout(() => fn(...a), ms); }; };
@@ -87,8 +89,9 @@ const liveLayer = L.layerGroup().addTo(map);   // live vehicles: markers (DOM), 
 map.on('overlayadd', () => routeLayer.bringToFront());
 let live = null, liveTimer = null, liveReq = 0;   // the last /api/transit/live answer, the next poll, the request in flight
 
-let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0;
+let summary = null, A = null, B = null, plan = null, selected = 'better_lit', mode = 'route', segReq = 0, routeReq = 0;
 let travel = 'walk';  // 'walk' | 'bike' | 'transit': how the person goes; "mode" above is what a map click does
+let loopRequest = null, askPointChoice = null; // automatic/manual loop query; unresolved Gemini loop selection
 const markers = { A: null, B: null };
 const labels = { A: '', B: '' };
 const box = {
@@ -185,6 +188,8 @@ function setPoint(which, latlng, label) {
     markers[which] = L.marker(pt, { icon: letterIcon(which), draggable: true, keyboard: true, title: t('point', { p: LETTER[which] }) })
       .addTo(map)
       .on('dragend', ev => {
+        loopRequest = null;
+        if (markers.B) markers.B.setOpacity(1);
         if (which === 'A') A = ev.target.getLatLng(); else B = ev.target.getLatLng();
         labels[which] = t('pointOnMap');
         box[which].set(labels[which]);
@@ -202,6 +207,18 @@ function clearPoint(which) {
   box[which].clear();
 }
 
+// Shared with the mobile Gemini controller: discard stale results without resetting known points.
+function clearAskRoute() {
+  ++routeReq;
+  loopRequest = null; askPointChoice = null;
+  if (markers.B) markers.B.setOpacity(1);
+  plan = null;
+  liveTick();
+  routeLayer.clearLayers();
+  $('cards').replaceChildren();
+  history.replaceState(null, '', location.pathname + location.search);
+}
+
 // both points known: show them and compute; one point: show it and ask for the other
 function pointsChanged() {
   if (A && B) {
@@ -216,20 +233,34 @@ function pointsChanged() {
 
 // a suggestion was picked in the "from" (A) or "to" (B) box
 function choose(which, r) {
+  if (askPointChoice && askPointChoice(which, r)) return;
+  loopRequest = null;
+  if (markers.B) markers.B.setOpacity(1);
   setPoint(which, [r.lat, r.lon], r.name);
   pointsChanged();
 }
 
 function locate() {
+  const pick = askPointChoice;
+  const req = ++routeReq;
+  loopRequest = null;
+  if (markers.B) markers.B.setOpacity(1);
   if (!navigator.geolocation) { say(`<span class="error">${esc(t('geoError', { msg: 'navigator.geolocation' }))}</span>`); return; }
   say(esc(t('locating')));
   navigator.geolocation.getCurrentPosition(
-    pos => { setPoint('A', [pos.coords.latitude, pos.coords.longitude], t('myLocation')); pointsChanged(); },
+    pos => {
+      if (req !== routeReq) return;
+      const p = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: t('myLocation') };
+      if (pick && pick('A', p)) return;
+      setPoint('A', [p.lat, p.lon], p.name); pointsChanged();
+    },
     err => say(`<span class="error">${esc(t('geoError', { msg: err.message }))}</span>`),
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
 }
 
 function swap() {
+  loopRequest = null;
+  if (markers.B) markers.B.setOpacity(1);
   if (!A && !B) return;
   const old = { A, B, la: labels.A, lb: labels.B };
   clearPoint('A');
@@ -267,8 +298,7 @@ function onMapClick(e) {
 }
 
 function reset() {
-  plan = null;
-  liveTick();
+  clearAskRoute();
   clearPoint('A');
   clearPoint('B');
   routeLayer.clearLayers();
@@ -277,24 +307,59 @@ function reset() {
   say(t('hintStart', LETTER));
 }
 
+function startAskLoop(r) {
+  clearPoint('A'); clearPoint('B');
+  const req = ++routeReq;
+  say(esc(t('computing')));
+  BzAsk.loopParams(r).then(params => {
+    if (req !== routeReq) return;
+    loopRequest = params;
+    compute();
+  }).catch(err => {
+    if (req === routeReq) say(`<span class="error">${esc(t('geoError', { msg: err.message }))}</span>`);
+  });
+}
+
 function compute() {
+  if (loopRequest && travel === 'transit') {
+    setTravel(plan && plan.loop ? plan.mode : 'walk');
+    say(`<span class="error">${esc(t('ask.loopTransit'))}</span>`);
+    return;
+  }
+  const req = ++routeReq;
   const f = ll => `${ll.lat.toFixed(5)},${ll.lng.toFixed(5)}`;
   const at = departure();
-  const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
-  if (at) hash.set('at', at);
-  history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
+  const query = loopRequest ? new URLSearchParams(loopRequest) : new URLSearchParams({ from: f(A), to: f(B) });
+  query.set('mode', travel);
+  if (at) query.set('at', at);
+  const save = points => {
+    const hash = new URLSearchParams({ a: f(A), b: f(B), an: labels.A, bn: labels.B, m: travel });
+    if (at) hash.set('at', at);
+    if (points) hash.set('loop', points.map(p => `${p.lat},${p.lon}`).join(';'));
+    history.replaceState(null, '', `${location.search}#${hash.toString().replace(/%2C/g, ',').replace(/%3A/g, ':')}`);
+  };
+  if (!loopRequest) save();
   say(esc(t('computing')));
-  getJSON(`/api/route?from=${f(A)}&to=${f(B)}&mode=${travel}${at ? '&at=' + encodeURIComponent(at) : ''}`)
+  getJSON(`/api/${loopRequest ? 'loop' : 'route'}?${query}`)
     .then(d => {
+      if (req !== routeReq) return;
       plan = d;
+      if (d.loop) {
+        setPoint('A', [d.points[0].lat, d.points[0].lon], t('ask.loopStart'));
+        setPoint('B', [d.points[0].lat, d.points[0].lon], t('ask.loopStart'));
+        markers.B.setOpacity(0);
+        save(d.points);
+      }
       selected = d.transit && d.transit.kind === 'ok' ? 'transit' : d.verdict.kind === 'same' ? (d.verdict.pick || 'fastest') : 'better_lit';
       say(esc(t('afterRoute')));
       live = null;   // the old answer was about another trip
       drawRoute();
+      if (d.loop) map.fitBounds(routeLayer.getBounds().pad(0.2));
       renderCards();
       liveTick();
     })
     .catch(err => {
+      if (req !== routeReq) return;
       plan = null;
       liveTick();
       routeLayer.clearLayers();
@@ -302,7 +367,11 @@ function compute() {
       // texts come from i18n.js by error code; the server's English message is only a fallback detail
       const d = err.detail || {};
       let text;
-      if (d.code === 'outside_coverage') {
+      if (d.code === 'no_loop_area') {
+        text = t('ask.loopUnavailable');
+      } else if (d.code === 'loop_api_missing') {
+        text = t('ask.loopApiMissing');
+      } else if (d.code === 'outside_coverage') {
         const near = d.nearest_m != null ? t('nearest', { d: fmtM(d.nearest_m) }) : '';
         text = t(travel === 'bike' ? 'outsideBike' : 'outside', { p: LETTER[d.point === 'from' ? 'A' : 'B'], near });
       } else {
@@ -316,6 +385,11 @@ function compute() {
 function drawRoute() {
   routeLayer.clearLayers();
   if (!plan) return;
+  if (plan.loop) for (const [i, p] of plan.points.entries()) {
+    if (!i) continue;
+    L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'pin', html: `<span>${i + 1}</span>`, iconSize: [28, 28], iconAnchor: [14, 14] }),
+      interactive: false }).bindTooltip(esc(t('ask.loopPoint', { n: i + 1 }))).addTo(routeLayer);
+  }
   for (const [p, end] of [[A, plan.from], [B, plan.to]]) {
     if (end.snap_m > 3) L.polyline([[p.lat, p.lng], end.snapped], { color: '#111', weight: 2, dashArray: '2 5', interactive: false }).addTo(routeLayer);
   }
@@ -370,6 +444,15 @@ function signsBlock(sg) {
   items.push(t('signsMain', { pct: pct(sg.main_share) }));
   return `<div class="signs"><span class="signs-title">${esc(t('signsTitle', { time: (plan.at || '').slice(11, 16) }))}</span>` +
     `<ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul><p class="small">${esc(t('signsNote'))}</p></div>`;
+}
+
+// How this line ran around this hour on a recent day (hist.js): one sentence with the advice, where it comes from
+// behind a tap. A block of its own under the live box: the trip card is a button and cannot hold a disclosure.
+function historyBox() {
+  const h = historyParts(ride());
+  if (!h) return '';
+  return `<details class="hist"><summary>${esc(h.sentence)}${h.advice ? ` <b>${esc(h.advice)}</b>` : ''}` +
+    ` <span class="hist-more">${esc(t('hist.more'))}</span></summary><p>${esc(h.source)}</p></details>`;
 }
 
 // the "on foot + public transport" card: the trip, or why there is none (the walking cards follow)
@@ -443,7 +526,7 @@ function renderCards() {
       : `<p class="verdict ok">${esc(t('extraOk', { extra, lit: pct(litShare(lit)), fast: pct(litShare(fastest)) }))}</p>`;
     html = card('better_lit', lit, t('litTitle'), note) + card('fastest', fastest, t('fastTitle'));
   }
-  html = transitCard() + liveBox() + html;
+  html = transitCard() + liveBox() + historyBox() + html;
   const off = [['A', plan.from], ['B', plan.to]].filter(([, p]) => p.snap_m > 20).map(([n, p]) => `${LETTER[n]}: ${Math.round(p.snap_m)} ${t('m')}`);
   if (off.length) html += `<p class="small">${esc(t('snapNote', { list: off.join(', ') }))}</p>`;
   $('cards').innerHTML = html;
@@ -597,6 +680,7 @@ function readHash() {
   if (h.get('at')) setDeparture(h.get('at'));
   setPoint('A', a, h.get('an'));
   setPoint('B', b, h.get('bn'));
+  if (h.get('loop')) loopRequest = new URLSearchParams({ points: h.get('loop') });
   map.fitBounds(L.latLngBounds([A, B]).pad(0.3));
   compute();
   return true;

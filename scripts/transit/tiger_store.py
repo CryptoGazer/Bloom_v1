@@ -57,6 +57,9 @@ SCHEMA = (
     "SELECT create_hypertable('transit_polls', by_range('polled_at'), if_not_exists => TRUE)",
 )
 
+INSUFFICIENT_PRIVILEGE = "42501"  # SQLSTATE of "permission denied" / "must be owner"
+TABLES_EXIST = "SELECT to_regclass('transit_vehicle_fixes') IS NOT NULL AND to_regclass('transit_polls') IS NOT NULL"
+
 VEHICLE_INSERT = """
     INSERT INTO transit_vehicle_fixes (
         fix_at, polled_at, service_date, vehicle_id, mode, line, route_id, trip_id,
@@ -149,11 +152,22 @@ class TigerStore:
         if self._conn is not None:
             return self._conn
         self._conn = self._connect() if self._connect else self._default_connect()
-        with self._conn.transaction():
-            for statement in SCHEMA:
-                self._conn.execute(statement)
-        self._log("tiger: connected; schema is ready", flush=True)
+        try:
+            with self._conn.transaction():
+                for statement in SCHEMA:
+                    self._conn.execute(statement)
+            self._log("tiger: connected; schema is ready", flush=True)
+        except Exception as exc:
+            # The server's login may only insert (tiger_setup.py roles): it cannot run the statements above
+            # and does not need to once the owner has created the tables.
+            if getattr(exc, "sqlstate", None) != INSUFFICIENT_PRIVILEGE or not self._tables_exist():
+                raise
+            self._log("tiger: connected with an insert-only login; the tables are already there", flush=True)
         return self._conn
+
+    def _tables_exist(self):
+        row = self._conn.execute(TABLES_EXIST).fetchone()
+        return bool(row and row[0])
 
     def _write(self, vehicles, polls):
         conn = self._ensure_connection()

@@ -1,0 +1,25 @@
+# The transit logger as a service: every 10 s it asks the city where the vehicles are and appends the new
+# GPS fixes to data/transit/*.csv and to Tiger Data (scripts/transit/logger.py).
+#
+# Install on the server:
+#   sudo cp deploy/bezna-logger.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now bezna-logger
+# Look at it:  systemctl status bezna-logger    journalctl -u bezna-logger -n 20
+#
+# The logger stops by itself at 04:05 (the end of a service day); systemd starts it again 10 s later.
+# TIGER_DATABASE_URL is read from the project's .env. On the server it is the insert-only login made by
+# scripts/transit/tiger_setup.py roles, not the owner's password.
+[Unit]
+Description=bezna transit logger (city live vehicles -> CSV + Tiger Data)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=bloom
+WorkingDirectory=/home/bloom/Bloom_v1
+ExecStart=/home/bloom/Bloom_v1/.venv/bin/python -I scripts/transit/logger.py --dir /home/bloom/Bloom_v1/data/transit --interval 10 --no-caffeinate
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

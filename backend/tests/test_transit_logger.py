@@ -123,3 +123,35 @@ def test_tiger_failure_is_best_effort_and_retries_later():
     assert "database is down" in store.last_error
     assert store.write([VEHICLE], [POLL]) is False
     assert attempts == 1
+
+
+class Denied(Exception):
+    sqlstate = "42501"
+
+
+class InsertOnlyConnection(FakeConnection):
+    """A login that may insert but not create or alter: the first schema statement is refused."""
+
+    def __init__(self, tables_exist=True):
+        super().__init__()
+        self.tables_exist = tables_exist
+
+    def execute(self, statement):
+        if statement in SCHEMA:
+            raise Denied("permission denied for schema public")
+        self.schema.append(statement)
+        return type("Result", (), {"fetchone": lambda _self: (self.tables_exist,)})()
+
+
+def test_an_insert_only_login_writes_when_the_owner_has_made_the_tables():
+    connection = InsertOnlyConnection()
+    store = TigerStore("postgresql://example", connect=lambda: connection, log=lambda *_a, **_k: None)
+    assert store.write([VEHICLE], [POLL]) is True
+    assert len(connection.batches) == 2
+
+
+def test_an_insert_only_login_without_tables_is_an_error_not_a_silent_skip():
+    connection = InsertOnlyConnection(tables_exist=False)
+    store = TigerStore("postgresql://example", connect=lambda: connection, log=lambda *_a, **_k: None)
+    assert store.write([VEHICLE], [POLL]) is False
+    assert "permission denied" in store.last_error and connection.batches == []

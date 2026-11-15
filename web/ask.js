@@ -4,7 +4,7 @@
    are found in our own index; anything that is not a route request gets a short refusal (backend/ask.py).
    BzAsk below records the voice, converts it and sends the request, without touching any page: the phone page
    (web/m/m.js) draws its own block with it. The rest of this file is the block of the desktop page: it needs
-   i18n.js (I18N, t, LANG) and app.js (A, labels, setPoint, setTravel, pointsChanged, locate, $) and runs only
+   i18n.js (I18N, t, LANG) and app.js (A, labels, setPoint, clearPoint, clearAskRoute, setTravel, setDeparture, pointsChanged, locate, $) and runs only
    where a <form id="ask"> exists. The texts of this feature are here, not in i18n.js, so that removing the
    feature means removing this file and the <form id="ask"> block in index.html. */
 
@@ -15,6 +15,15 @@ Object.assign(I18N.ro, { ask: {
   understood: 'Am înțeles: {from} → {to}{extra}.', heard: 'Am auzit: „{text}”.',
   offTopic: 'Planific doar trasee în Timișoara. Scrieți sau spuneți de unde plecați și unde vreți să ajungeți.',
   unclear: 'Nu am înțeles unde vreți să ajungeți. De exemplu: „de la Căminul C12 la Piața Victoriei”.',
+  choose: 'Confirmați punctul „{box}”: alegeți locul potrivit.',
+  missing: 'Precizați punctul „{box}” în câmpul de mai jos sau reformulați cererea.',
+  choices: 'Locuri posibile',
+  loopCenter: 'Centrul plimbării', loopStart: 'Începutul și sfârșitul plimbării', loopPoint: 'Punctul {n} al plimbării',
+  loopUnderstood: 'Circuit în jurul „{center}”', loopApprox: 'Dimensiunea este aproximativă; traseul urmează străzile accesibile.',
+  loopTransit: 'Circuitele sunt disponibile pe jos sau cu bicicleta. Alegeți unul dintre aceste moduri.',
+  loopUnavailable: 'Nu am putut găsi un circuit rezonabil în jurul acestui loc în zona hărții. Alegeți alt loc sau un circuit mai mic.',
+  loopThrough: 'Circuit: {points}', loopPick: 'Alegeți punctul {n} al circuitului.', loopTooMany: 'Un circuit poate avea cel mult 10 puncte.',
+  loopApiMissing: 'Serverul nu are încă API-ul pentru circuite. Verificați versiunea backend.',
   notFound: 'Nu am găsit „{name}” în zona hărții. Alegeți locul în câmpul „{box}”.',
   tooMany: 'Prea multe cereri. Încercați peste un minut sau folosiți câmpurile de mai jos.',
   down: 'Asistentul nu este disponibil acum. Câmpurile „De unde” și „Unde” de mai jos funcționează fără el.',
@@ -28,6 +37,15 @@ Object.assign(I18N.en, { ask: {
   understood: 'Understood: {from} → {to}{extra}.', heard: 'Heard: “{text}”.',
   offTopic: 'I only plan routes in Timișoara. Type or say where you start and where you want to go.',
   unclear: 'I did not catch where you want to go. For example: “from Căminul C12 to Piața Victoriei”.',
+  choose: 'Confirm the “{box}” point: choose the intended place.',
+  missing: 'Specify the “{box}” point in the box below or rephrase your request.',
+  choices: 'Possible places',
+  loopCenter: 'Walk centre', loopStart: 'Walk start and finish', loopPoint: 'Walk point {n}',
+  loopUnderstood: 'Circuit around “{center}”', loopApprox: 'The size is approximate; the route follows accessible streets.',
+  loopTransit: 'Circuits support walking and cycling. Choose one of these modes.',
+  loopUnavailable: 'No reasonable circuit around this place fits the mapped area. Choose another place or a smaller circuit.',
+  loopThrough: 'Circuit: {points}', loopPick: 'Choose point {n} of the circuit.', loopTooMany: 'A circuit supports at most 10 points.',
+  loopApiMissing: 'This server does not have the circuit API yet. Check the backend version.',
   notFound: 'I could not find “{name}” inside the map area. Pick the place in the “{box}” box.',
   tooMany: 'Too many requests. Try again in a minute or use the boxes below.',
   down: 'The assistant is not available right now. The From and To boxes below work without it.',
@@ -41,6 +59,15 @@ Object.assign(I18N.ru, { ask: {
   understood: 'Понял: {from} → {to}{extra}.', heard: 'Услышал: «{text}».',
   offTopic: 'Я строю только маршруты по Тимишоаре. Напишите или скажите, откуда и куда вам нужно.',
   unclear: 'Не понял, куда вам нужно. Например: «от Căminul C12 до Piața Victoriei».',
+  choose: 'Уточните точку «{box}»: выберите подходящее место.',
+  missing: 'Уточните точку «{box}» в поле ниже или переформулируйте запрос.',
+  choices: 'Возможные места',
+  loopCenter: 'Центр прогулки', loopStart: 'Начало и конец прогулки', loopPoint: 'Точка прогулки {n}',
+  loopUnderstood: 'Круговая прогулка вокруг «{center}»', loopApprox: 'Размер приблизительный; путь проходит по доступным улицам.',
+  loopTransit: 'Круговые прогулки доступны пешком и на велосипеде. Выберите один из этих способов.',
+  loopUnavailable: 'Вокруг этого места не удалось подобрать разумный круг в области карты. Выберите другое место или меньший размер прогулки.',
+  loopThrough: 'Круговая прогулка: {points}', loopPick: 'Уточните точку {n} кругового маршрута.', loopTooMany: 'Круговой маршрут поддерживает до 10 точек.',
+  loopApiMissing: 'На этом сервере ещё нет API круговых маршрутов. Нужно обновить запущенный бэкенд.',
   notFound: 'Не нашёл «{name}» в области карты. Выберите место в поле «{box}».',
   tooMany: 'Слишком много запросов. Попробуйте через минуту или используйте поля ниже.',
   down: 'Помощник сейчас недоступен. Поля «Откуда» и «Куда» ниже работают без него.',
@@ -48,7 +75,6 @@ Object.assign(I18N.ru, { ask: {
   privacy: 'Текст или запись голоса отправляется в Google Gemini, чтобы понять запрос; мы её не храним.',
 } });
 
-// ---------- the engine: availability, recording, WAV, sending; no page ----------
 const BzAsk = (() => {
   const MAX_MS = 10000, RATE = 16000, SILENCE_PEAK = 0.02;
   // recording needs a secure page (https or localhost) and MediaRecorder
@@ -58,11 +84,17 @@ const BzAsk = (() => {
 
   // -> {ok: true, body: the answer} or {ok: false, code: 'too_many' | 'ai_busy' | ... | ''}
   // near: the current start point; it stays on our server ("the nearest pharmacy") and is not sent to Gemini
-  function send(payload, near) {
-    return fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, lang: LANG, near: near || '' }) })
-      .then(async r => ({ ok: r.ok, body: await r.json().catch(() => ({})) }))
-      .then(({ ok, body }) => (ok ? { ok: true, body } : { ok: false, code: (body.detail && body.detail.code) || '' }))
-      .catch(() => ({ ok: false, code: '' }));
+  async function send(payload, near) {
+    // A request may include two extraction attempts and three place-search rounds (20 s each).
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 110000);
+    try {
+      const response = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, lang: LANG, near: near || '' }), signal: controller.signal });
+      const body = await response.json().catch(() => ({}));
+      return response.ok ? { ok: true, body } : { ok: false, code: (body.detail && body.detail.code) || '' };
+    } catch (err) {
+      return { ok: false, code: err.name === 'AbortError' ? 'timeout' : '' };
+    } finally { clearTimeout(timer); }
   }
 
   // Starts recording for at most MAX_MS. Resolves to {stop()} once recording runs, or null if the microphone is refused.
@@ -126,7 +158,34 @@ const BzAsk = (() => {
     return btoa(binary);
   }
 
-  return { MAX_MS, canRecord, enabled, send, record };
+  // Visitor coordinates are used only by our loop endpoint, never sent to Gemini.
+  async function loopParams(r) {
+    if (r.points && r.points.length >= 2 && r.points.every(Boolean)) {
+      return new URLSearchParams({ points: r.points.map(p => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`).join(';') });
+    }
+    let start = r.from;
+    if (r.from_here && !start) {
+      const pos = await new Promise((resolve, reject) => {
+        if (!navigator.geolocation) { reject(new Error(t('geoError', { msg: 'navigator.geolocation' }))); return; }
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+      });
+      start = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    }
+    const center = r.to || start;
+    if (!center) throw new Error(t('ask.unclear'));
+    const point = p => `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+    const params = new URLSearchParams({ center: point(center), radius_m: r.radius_m || 400 });
+    if (start) params.set('start', point(start));
+    return params;
+  }
+
+  const loopLabel = r => r.points ? t('ask.loopThrough', { points: r.points.filter(Boolean).map(p => p.name).join(' → ') })
+    : t('ask.loopUnderstood', { center: r.to ? r.to.name : t('myLocation') });
+  const pickLoopPoint = (r, index, place) => {
+    const issues = r.point_issues.filter(p => p.index !== index);
+    return { ...r, points: r.points.map((p, i) => i === index ? place : p), point_issues: issues, kind: issues.length ? 'clarify' : 'loop' };
+  };
+  return { MAX_MS, canRecord, enabled, send, record, loopParams, loopLabel, pickLoopPoint };
 })();
 
 // ---------- the block of the desktop page ----------
@@ -134,6 +193,12 @@ const BzAsk = (() => {
   const form = document.getElementById('ask');
   if (!form) return;
   const input = $('ask-text'), mic = $('ask-mic'), go = $('ask-go'), note = $('ask-note');
+  const choices = $('ask-choices') || document.createElement('div');
+  if (!choices.id) { choices.id = 'ask-choices'; note.after(choices); }
+  choices.className = 'ask-choices';
+  choices.hidden = true;
+  choices.setAttribute('role', 'group');
+  choices.setAttribute('aria-label', t('ask.choices'));
   let busy = false, rec = null, starting = false;
 
   input.placeholder = t('ask.placeholder');
@@ -161,6 +226,8 @@ const BzAsk = (() => {
   function send(payload) {
     if (busy) return;
     busy = true;
+    choices.replaceChildren();
+    choices.hidden = true;
     go.disabled = mic.disabled = true;
     show(t('ask.thinking'));
     const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
@@ -170,20 +237,96 @@ const BzAsk = (() => {
   }
 
   function apply(r) {
+    askPointChoice = null;
+    choices.replaceChildren();
+    choices.hidden = true;
     const heard = r.heard ? t('ask.heard', { text: r.heard }) + ' ' : '';
     if (r.kind === 'off_topic') { show(heard + t('ask.offTopic'), 'warn'); return; }
-    if (r.kind === 'not_found') {
-      if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
-      const which = r.which === 'from' ? 'from' : 'to';
-      show(heard + t('ask.notFound', { name: r.name, box: t(which + 'Label') }), 'warn');
-      $(which).value = r.name;
-      $(which).focus(); // opens the suggestions for what was understood
+    if (r.kind === 'unsupported') { show(heard + t(r.reason === 'loop_points_limit' ? 'ask.loopTooMany' : 'ask.loopTransit'), 'warn'); return; }
+    clearAskRoute(); // an incomplete new request must not keep displaying the previous route
+    if (r.point_issues && r.point_issues.length) {
+      clearPoint('A'); clearPoint('B');
+      const manual = issue => {
+        askPointChoice = (_, place) => { apply(BzAsk.pickLoopPoint(r, issue.index, place)); return true; };
+        $('to').value = issue.query || issue.name || '';
+        $('to').focus();
+      };
+      show(heard + t('ask.loopPick', { n: r.point_issues[0].index + 1 }), 'warn');
+      for (const issue of r.point_issues) {
+        const label = document.createElement('p');
+        label.textContent = t('ask.loopPick', { n: issue.index + 1 }); choices.append(label);
+        for (const place of issue.candidates || []) {
+          const button = document.createElement('button'); button.type = 'button'; button.textContent = place.name;
+          button.onclick = () => apply(BzAsk.pickLoopPoint(r, issue.index, place)); choices.append(button);
+        }
+        const search = document.createElement('button'); search.type = 'button'; search.textContent = t('ask.loopPick', { n: issue.index + 1 });
+        search.onclick = () => manual(issue); choices.append(search);
+      }
+      choices.hidden = false;
+      askPointChoice = (_, place) => { apply(BzAsk.pickLoopPoint(r, r.point_issues[0].index, place)); return true; };
       return;
     }
-    if (r.kind !== 'route') { show(heard + t('ask.unclear'), 'warn'); return; }
+    if (r.kind === 'loop') {
+      setTravel(r.mode || 'walk');
+      if (r.at) setDeparture(r.at);
+      show(heard + BzAsk.loopLabel(r) + '. ' + t('ask.loopApprox'));
+      startAskLoop(r);
+      return;
+    }
+    if (r.kind !== 'route') {
+      for (const side of ['from', 'to']) {
+        if ((r.missing || []).includes(side) || (r.ambiguity || []).includes(side)) clearPoint(side === 'from' ? 'A' : 'B');
+      }
+      if (r.from_here && !r.from) clearPoint('A');
+      if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+      if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+      if (r.mode) setTravel(r.mode);
+      if (r.at) setDeparture(r.at);
+      const ambiguity = r.ambiguity || [], missing = r.missing || [];
+      const which = r.which === 'from' ? 'from' : 'to', box = t(r.loop && which === 'to' ? 'ask.loopCenter' : which + 'Label');
+      const message = ambiguity.includes(which) ? t('ask.choose', { box })
+        : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
+          : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
+      show(heard + message, 'warn');
+      const pick = (side, place) => {
+        const next = { ...r, [side]: place,
+          missing: missing.filter(s => s !== side), ambiguity: ambiguity.filter(s => s !== side),
+          candidates: { ...r.candidates, [side]: [] } };
+        const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
+        next.kind = remaining.length ? 'clarify' : next.to ? (next.loop ? 'loop' : 'route') : 'unclear';
+        next.which = remaining[0] || 'to';
+        next.name = null;
+        apply(next);
+      };
+      if (r.loop) askPointChoice = (which, place) => { pick(which === 'A' ? 'from' : 'to', place); return true; };
+      for (const side of ['from', 'to']) {
+        const candidates = (r.candidates && r.candidates[side]) || [];
+        if (!candidates.length) continue;
+        const label = document.createElement('p');
+        label.textContent = t(r.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label');
+        choices.append(label);
+        for (const place of candidates) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = place.name;
+          button.addEventListener('click', () => {
+            pick(side, place); // a verified candidate is applied locally; no extra Gemini request
+          });
+          choices.append(button);
+        }
+      }
+      choices.hidden = !choices.childElementCount;
+      if (!choices.hidden) choices.querySelector('button').focus();
+      else {
+        $(which).value = (r.queries && r.queries[which]) || r.name || '';
+        $(which).focus(); // opens manual suggestions on desktop and mobile
+      }
+      return;
+    }
 
     if (r.mode) setTravel(r.mode);
     if (r.at) setDeparture(r.at);
+    if (r.from_here && !r.from) clearPoint('A');
     setPoint('B', [r.to.lat, r.to.lon], r.to.name);
     const keepStart = !r.from && A && !r.from_here;
     if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);

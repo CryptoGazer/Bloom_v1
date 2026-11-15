@@ -24,6 +24,7 @@ const getJSON = (url, opts) => fetch(url, opts).then(async r => {
   if (!r.ok) {
     const e = new Error((body.detail && body.detail.message) || 'HTTP ' + r.status);
     e.detail = typeof body.detail === 'object' && !Array.isArray(body.detail) ? body.detail : {};
+    if (r.status === 404 && url.startsWith('/api/loop') && !e.detail.code) e.detail = { code: 'loop_api_missing' };
     e.status = r.status;
     throw e;
   }
@@ -145,6 +146,7 @@ let live = null, liveAt = 0, liveOff = 0, liveTimer = null, liveReq = 0;
 let anim = null, quietReveal = false, restoreTo = null;   // quietReveal: back from a language switch, no replay
 let loopMode = false;                         // the start screen collects the points of a loop walk
 const loopPts = [];                           // L.LatLng in visiting order; the loop comes back to the first
+let loopRequest = null;                       // an automatic circuit around a Gemini-resolved centre
 const LOOP_MAX = 10;                          // SETTINGS.loop_max_points on the server
 let calcReq = -1;                             // routeReq of the route being calculated; another value: none
 const seen = new Set();
@@ -236,6 +238,20 @@ function setPoint(which, latlng, label) {
   if (screen === 'home') renderHome();
   syncSearchFields();
 }
+function clearPoint(which) {
+  if (which === 'A') A = null; else B = null;
+  labels[which] = '';
+  drawAB();
+  syncSearchFields();
+}
+function clearAskRoute() {
+  ++routeReq;
+  calcReq = -1;
+  stopAnim(); stopLive();
+  plan = null; part = null;
+  for (const layer of [routeLayer, markLayer, lifeLayer, vehLayer, fadeLayer]) layer.clearLayers();
+  history.replaceState(history.state, '', location.pathname + location.search);
+}
 function drawAB() {
   abLayer.clearLayers();
   if (loopMode) { drawLoop(); return; }
@@ -251,7 +267,7 @@ function drawLoop() {
   }
   loopPts.forEach((p, i) => {
     const m = L.marker(p, { icon: MK.loop(i + 1), draggable: editing, interactive: editing, keyboard: false, zIndexOffset: 500 }).addTo(abLayer);
-    if (editing) m.on('dragend', () => { loopPts[i] = m.getLatLng(); saveHash(); drawAB(); });
+    if (editing) m.on('dragend', () => { askManual(); loopPts[i] = m.getLatLng(); saveHash(); renderHome(); drawAB(); });
   });
 }
 function setTravel(m) { mode = m; if (screen === 'home') renderHome(); }
@@ -265,11 +281,19 @@ function showMe(lat, lon, heading) {
   L.marker(myPos, { icon: MK.me(heading), keyboard: false, interactive: false }).addTo(meLayer);
 }
 function locate(thenCompute = true, stay = false) {
+  const pendingLoop = ask.res && ask.res.kind === 'clarify' && ask.res.response.loop;
+  const req = routeReq;
   if (!navigator.geolocation) { toast(t('m.noGeo')); openSearch('A'); return; }
   toast(t('locating'), 4000);
   navigator.geolocation.getCurrentPosition(pos => {
+    if (pendingLoop && req !== routeReq) return;
     hideToast();
     showMe(pos.coords.latitude, pos.coords.longitude);
+    if (pendingLoop) {
+      if (screen !== 'home') go('home', false);
+      askSelect('from', { lat: pos.coords.latitude, lon: pos.coords.longitude, name: t('myLocation') });
+      return;
+    }
     setPoint('A', [pos.coords.latitude, pos.coords.longitude], t('myLocation'));
     if (thenCompute && B) compute(stay); else if (screen === 'home') map.setView(A, Math.max(map.getZoom(), 16));
   }, err => {
@@ -363,7 +387,7 @@ ACT.legend = () => { legendOpen = !legendOpen; renderOverlay(); };
 ACT.closeOverlay = () => closeOverlays();
 ACT.searchA = () => openSearch('A');
 ACT.searchB = () => openSearch('B');
-ACT.locate = () => { askManual(); locate(true); };
+ACT.locate = () => { if (!(ask.res && ask.res.kind === 'clarify' && ask.res.response.loop)) askManual(); locate(true); };
 ACT.swap = () => {
   askManual();
   const old = { A, B, la: labels.A, lb: labels.B };
@@ -383,27 +407,28 @@ ACT.tpCancel = () => closeTimePicker(false);
 // ---------- loop walk: points tapped on the map, in that order and back to the first ----------
 function setLoop(on) {
   askCancel();
-  ask.view = 'form';
+  ask.view = 'form'; ask.res = null; ask.phase = 'idle';
   loopMode = on;
+  loopRequest = null;
   loopPts.length = 0;
   pickMode = null;
   if (on && mode === 'transit') mode = 'walk';
-  plan = null; part = null;
-  stopAnim(); stopLive(); hideToast();
-  routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); fadeLayer.clearLayers(); vehLayer.clearLayers();
+  clearAskRoute(); // switching modes also invalidates a route response still in flight
+  hideToast();
   saveHash();
   renderHome();
   drawAB();
 }
 ACT.loop = () => setLoop(!loopMode);
 ACT.loopExit = () => setLoop(false);
-ACT.loopUndo = () => { loopPts.pop(); saveHash(); renderHome(); drawAB(); };
+ACT.loopUndo = () => { askManual(); loopPts.pop(); saveHash(); renderHome(); drawAB(); };
 ACT.loopGo = () => compute();
 const loopTitle = n => t(n === 1 ? 'm.loopTitle1' : n < 5 ? 'm.loopTitle2' : 'm.loopTitle', { n });
 function loopSheet() {
   const n = loopPts.length;
   return `<section class="sheet" aria-labelledby="h-home">
     <div class="handle"></div>
+    ${ask.res && ask.res.kind === 'loop' ? askCard() : ''}
     <div class="row"><h1 id="h-home" class="h-title">${esc(n ? loopTitle(n) : t('m.loopTap'))}</h1>
       <div style="display: flex; gap: 8px">
         <button type="button" class="round" data-act="loopUndo" aria-label="${esc(t('m.loopUndo'))}"${n ? '' : ' disabled'}>${I.undo()}</button>
@@ -422,6 +447,8 @@ const ask = { on: false, mic: false, view: 'form', phase: 'idle', text: '', via:
 const ASK_MSG = {
   offtopic: [() => I.pin(), 'ask.offTopic'], unclear: [() => I.question(), 'ask.unclear'], ratelimit: [() => I.clock(18), 'm.askTooMany'],
   unavailable: [() => I.cloudOff(), 'm.askDown'], micdenied: [() => I.micOff(18), 'm.askMicOff'], silence: [() => I.wave(), 'ask.silent'],
+  looptransit: [() => I.question(), 'ask.loopTransit'],
+  looplimit: [() => I.question(), 'ask.loopTooMany'],
 };
 const askExamples = () => { const x = t('m.askEx'); return Array.isArray(x) ? x : []; };
 const askWaitText = () => t(ask.elapsed >= 8 ? 'm.askWaitLong' : 'ask.thinking');
@@ -439,7 +466,7 @@ function askRender(focus) {
   if (ta) { ta.focus({ preventScroll: true }); ta.setSelectionRange(ta.value.length, ta.value.length); }
 }
 // a change of the fields by hand: the request no longer describes them
-function askManual() { if (ask.res) { ask.res = null; ask.phase = 'idle'; } }
+function askManual() { loopRequest = null; if (ask.res) { ask.res = null; ask.phase = 'idle'; } }
 function askCancel() {
   clearInterval(ask.tick);
   ask.req++;
@@ -459,10 +486,25 @@ function askEntry() {
 }
 function askCard() {
   const r = ask.res;
-  if (r.kind === 'notfound') {
-    const text = esc(t('ask.notFound', { name: '\u0001', box: t(r.which === 'A' ? 'fromLabel' : 'toLabel') })).replace('\u0001', `<strong style="font-weight: 600">${esc(r.missing)}</strong>`);
+  if (r.kind === 'clarify_points') {
+    const response = r.response;
+    const issues = response.point_issues.map(issue => `<p>${esc(t('ask.loopPick', { n: issue.index + 1 }))}</p>` +
+      (issue.candidates || []).map((p, i) => `<button type="button" data-act="askPointChoice" data-index="${issue.index}" data-i="${i}">${esc(p.name)}</button>`).join('') +
+      `<button type="button" data-act="askFindPoint" data-index="${issue.index}">${esc(t('ask.loopPick', { n: issue.index + 1 }))}</button>`).join('');
+    return `<section class="ask-card miss"><span>${esc(BzAsk.loopLabel(response))}</span><div id="ask-choices" class="ask-choices">${issues}</div>
+      <button type="button" class="edit-link" data-act="askEdit">${esc(t('m.askEdit'))}</button></section>`;
+  }
+  if (r.kind === 'clarify') {
+    const response = r.response;
+    const choices = ['from', 'to'].map(side => {
+      const places = response.candidates && response.candidates[side] || [];
+      return places.length ? `<p>${esc(t(response.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label'))}</p>` + places.map((p, i) =>
+        `<button type="button" data-act="askChoose" data-side="${side}" data-i="${i}">${esc(p.name)}</button>`).join('') : '';
+    }).join('');
     return `<section class="ask-card miss" aria-label="${esc(t('m.askMissTitle'))}">
-      <p class="ask-line">${I.searchX()}<span>${text}</span></p>
+      <p class="ask-line">${I.searchX()}<span>${esc(r.message)}</span></p>
+      ${r.heard ? `<span class="small">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
+      ${choices ? `<div id="ask-choices" class="ask-choices" role="group" aria-label="${esc(t('ask.choices'))}">${choices}</div>` : ''}
       <button type="button" class="edit-link" data-act="askEdit" style="align-self: flex-end">${esc(t('m.askEdit'))}</button>
     </section>`;
   }
@@ -470,7 +512,8 @@ function askCard() {
   return `<section class="ask-card" aria-label="${esc(t('m.askGot'))}">
     <div class="top-row"><span class="sec" style="display: flex; align-items: center; gap: 8px">${I.check()}${esc(t('m.askGot'))}</span></div>
     <button type="button" class="edit-link" data-act="askEdit" style="position: absolute; right: 4px; top: 0">${esc(t('m.askEdit'))}</button>
-    <span class="h-route">${esc(r.a)} → ${esc(r.b)}</span>
+    <span class="h-route">${r.kind === 'loop' ? esc(r.title || t('ask.loopUnderstood', { center: r.center })) : `${esc(r.a)} → ${esc(r.b)}`}</span>
+    ${r.kind === 'loop' ? `<span class="small">${esc(t('ask.loopApprox'))}</span>` : ''}
     <span class="sec">${esc(askMeta())}</span>
     ${r.heard ? `<span class="small" style="color: var(--bz-ink-2)">${esc(t('ask.heard', { text: r.heard }))}</span>` : ''}
     ${r.kind === 'here' ? `<span class="small ask-line" style="font-size: 12px; gap: 6px; color: var(--bz-ink-2)">${SV('<circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 14, 2)}<span>${esc(t('m.askHere'))}</span></span>` : ''}
@@ -537,18 +580,49 @@ ACT.askEx = el => { ask.text = askExamples()[+el.dataset.i] || ''; ask.phase = '
 ACT.askFields = () => { ask.view = 'form'; ask.phase = 'idle'; ask.msg = null; ask.res = null; renderHome(); };
 ACT.askEdit = () => {
   routeReq++;                                           // a route still being calculated for this request is dropped
+  if (loopMode) { loopMode = false; loopRequest = null; loopPts.length = 0; drawAB(); }
   if (ask.via === 'voice' && ask.heard) ask.text = ask.heard;
   ask.res = null; ask.view = 'ask'; ask.phase = 'idle'; ask.msg = null;
   askRender(true);
 };
 // the box that was not understood: the search for that point, with the name already typed in
-ACT.askFind = () => {
-  const r = ask.res, inp = $(r.which === 'A' ? 'from' : 'to');
-  openSearch(r.which);
-  inp.value = r.missing;
+ACT.askFind = el => {
+  const r = ask.res, which = el.dataset.which || r.which, side = which === 'A' ? 'from' : 'to', inp = $(side);
+  openSearch(which);
+  inp.value = (r.response.queries && r.response.queries[side]) || (which === r.which ? r.missing : '') || '';
   inp.select();
   sQuery();
 };
+ACT.askChoose = el => {
+  const r = ask.res && ask.res.response, side = el.dataset.side;
+  const place = r && r.candidates && r.candidates[side] && r.candidates[side][+el.dataset.i];
+  if (!place) return;
+  askSelect(side, place);
+};
+function askSelectPoint(index, place) {
+  askApply(BzAsk.pickLoopPoint(ask.res.response, index, place));
+}
+ACT.askPointChoice = el => {
+  const issue = ask.res.response.point_issues.find(p => p.index === +el.dataset.index);
+  if (issue && issue.candidates[+el.dataset.i]) askSelectPoint(issue.index, issue.candidates[+el.dataset.i]);
+};
+ACT.askFindPoint = el => {
+  ask.pointIndex = +el.dataset.index;
+  const issue = ask.res.response.point_issues.find(p => p.index === ask.pointIndex);
+  openSearch('B');
+  $('to').value = issue.query || issue.name || '';
+  $('to').select(); sQuery();
+};
+function askSelect(side, place) {
+  const r = ask.res.response;
+  const next = { ...r, [side]: place, missing: (r.missing || []).filter(s => s !== side),
+    ambiguity: (r.ambiguity || []).filter(s => s !== side), candidates: { ...r.candidates, [side]: [] } };
+  const remaining = ['from', 'to'].filter(s => next.missing.includes(s) || next.ambiguity.includes(s));
+  next.kind = remaining.length ? 'clarify' : next.to ? (next.loop ? 'loop' : 'route') : 'unclear';
+  next.which = remaining[0] || 'to';
+  next.name = null;
+  askApply(next); // a place confirmed by the user needs no further Gemini request
+}
 ACT.askMic = () => {
   if (ask.phase === 'wait' || ask.starting) return;
   if (ask.phase === 'rec') { if (ask.rec) ask.rec.stop(); return; }
@@ -594,17 +668,16 @@ function askSend(payload, via) {
   askSay(t('ask.thinking'));
   clearInterval(ask.tick);
   ask.tick = setInterval(() => {
-    ask.elapsed = Math.min(20, ask.elapsed + 1);
+    ask.elapsed++;
     const segs = $('ask-wait-segs'), s = $('ask-wait-s'), tx = $('ask-wait-text');
     if (segs) [...segs.children].forEach((el, i) => { el.className = i < ask.elapsed ? 'on' : i === ask.elapsed ? 'now' : ''; });
     if (s) s.textContent = t('m.askWaitS', { s: ask.elapsed });
     if (tx) tx.textContent = askWaitText();
     if (ask.elapsed === 8) askSay(t('m.askWaitLong'));
   }, 1000);
-  // the server gives Gemini 20 s; a little more here, then the request counts as failed
-  const late = new Promise(res => setTimeout(() => res({ ok: false, code: 'timeout' }), 25000));
+  // BzAsk uses the same deadline on both pages, including the backend's retries and place-search rounds.
   const near = A ? `${A.lat.toFixed(5)},${A.lng.toFixed(5)}` : '';
-  Promise.race([BzAsk.send(payload, near), late]).then(res => {
+  BzAsk.send(payload, near).then(res => {
     if (id !== ask.req) return;
     clearInterval(ask.tick);
     if (res.ok) { askApply(res.body); return; }
@@ -617,23 +690,69 @@ function askSend(payload, via) {
 function askApply(r) {
   const heard = ask.via === 'voice' ? String(r.heard || '').trim() : '';
   ask.heard = heard;
-  if (r.kind !== 'route' && r.kind !== 'not_found') {
+  if (r.kind === 'off_topic' || r.kind === 'unsupported') {
     if (heard) ask.text = heard;                          // the transcript goes into the box, to be corrected
-    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : 'unclear';
+    ask.phase = 'msg'; ask.msg = r.kind === 'off_topic' ? 'offtopic' : r.reason === 'loop_points_limit' ? 'looplimit' : 'looptransit';
     renderHome();
     askSay(t(ASK_MSG[ask.msg][1]));
     return;
   }
+  clearAskRoute();
+  loopMode = false; loopRequest = null; loopPts.length = 0;
+  ask.res = null;
   ask.view = 'form'; ask.phase = 'done';
-  if (r.kind === 'not_found') {
-    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
-    ask.res = { kind: 'notfound', which: r.which === 'from' ? 'A' : 'B', missing: r.name || '', heard, tagA: !!r.from && r.which !== 'from', tagB: false };
+  if (r.point_issues && r.point_issues.length) {
+    clearPoint('A'); clearPoint('B');
+    ask.res = { kind: 'clarify_points', response: r, heard };
+    ask.pointIndex = r.point_issues[0].index;
+    renderHome(); askSay(t('ask.loopPick', { n: ask.pointIndex + 1 }));
+    return;
+  }
+  if (r.kind === 'loop') {
+    mode = r.mode || 'walk';
+    if (r.at) at = r.at;
+    clearPoint('A'); clearPoint('B');
+    loopMode = true; pickMode = null;
+    ask.res = { kind: 'loop', center: r.to ? r.to.name : t('myLocation'), title: BzAsk.loopLabel(r), heard };
+    const req = ++routeReq;
+    calcReq = req;
     renderHome();
-    askSay(t('ask.notFound', { name: ask.res.missing, box: t(ask.res.which === 'A' ? 'fromLabel' : 'toLabel') }));
+    askSay(ask.res.title);
+    BzAsk.loopParams(r).then(params => {
+      if (req !== routeReq) return;
+      loopRequest = params;
+      computeLoop(true);
+    }).catch(err => {
+      if (req !== routeReq) return;
+      calcReq = -1;
+      renderHome();
+      toast(t('geoError', { msg: err.message }));
+    });
+    return;
+  }
+  if (r.kind !== 'route') {
+    const missing = r.missing || [], ambiguity = r.ambiguity || [];
+    const unresolved = ['from', 'to'].filter(s => missing.includes(s) || ambiguity.includes(s));
+    for (const side of unresolved) clearPoint(side === 'from' ? 'A' : 'B');
+    if (r.from_here && !r.from) clearPoint('A');
+    if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
+    if (r.to) setPoint('B', [r.to.lat, r.to.lon], r.to.name);
+    if (['walk', 'bike', 'transit'].includes(r.mode)) mode = r.mode;
+    if (r.at) at = r.at;
+    const side = r.which === 'from' ? 'from' : 'to', box = t(r.loop && side === 'to' ? 'ask.loopCenter' : side + 'Label');
+    const message = ambiguity.includes(side) ? t('ask.choose', { box })
+      : r.kind === 'not_found' && r.name ? t('ask.notFound', { name: r.name, box })
+        : missing.length ? t('ask.missing', { box }) : t('ask.unclear');
+    ask.res = { kind: 'clarify', response: r, which: side === 'from' ? 'A' : 'B',
+      unresolved: unresolved.map(s => s === 'from' ? 'A' : 'B'), missing: r.name || '', message, heard,
+      tagA: !!r.from, tagB: !!r.to };
+    renderHome();
+    askSay(message);
     return;
   }
   if (['walk', 'bike', 'transit'].includes(r.mode)) mode = r.mode;
   if (r.at) at = r.at;
+  if (r.from_here && !r.from) clearPoint('A');
   setPoint('B', [r.to.lat, r.to.lon], r.to.name);
   const keepStart = !r.from && A && !r.from_here;
   if (r.from) setPoint('A', [r.from.lat, r.from.lon], r.from.name);
@@ -664,12 +783,12 @@ function renderHome() {
 function homeSheet() {
   const aLabel = A ? labels.A : t('m.myLocation'), r = ask.res;
   const tag = on => (on ? `<span class="from-ask">${esc(t('m.askFromReq'))}</span>` : '');
-  const miss = (which, pin, label) => `<button type="button" class="field miss" data-act="askFind" aria-label="${esc(t(label) + ': ' + t('m.askPickHere'))}">${pin}<span class="val">${esc(t('m.askPickHere'))}</span></button>`;
-  const aField = r && r.kind === 'notfound' && r.which === 'A' ? miss('A', '<span class="pin-a" aria-hidden="true">A</span>', 'fromLabel')
+  const miss = (which, pin, label) => `<button type="button" class="field miss" data-act="askFind" data-which="${which}" aria-label="${esc(t(label) + ': ' + t('m.askPickHere'))}">${pin}<span class="val">${esc(t('m.askPickHere'))}</span></button>`;
+  const aField = r && r.kind === 'clarify' && r.unresolved.includes('A') ? miss('A', '<span class="pin-a" aria-hidden="true">A</span>', 'fromLabel')
     : `<div class="field"><span class="pin-a" aria-hidden="true">A</span>
         <button type="button" class="fbtn" data-act="searchA" aria-label="${esc(t('fromLabel') + ': ' + aLabel)}">${esc(aLabel)}</button>${tag(r && r.tagA)}
         <button type="button" class="icon-in" data-act="locate" aria-label="${esc(t('locate'))}" style="color: var(--bz-ink-2)">${I.locate()}</button></div>`;
-  const bField = r && r.kind === 'notfound' && r.which === 'B' ? miss('B', '<span class="pin-b" aria-hidden="true">B</span>', 'toLabel')
+  const bField = r && r.kind === 'clarify' && r.unresolved.includes('B') ? miss('B', '<span class="pin-b" aria-hidden="true">B</span>', 'toLabel')
     : `<button type="button" class="field" data-act="searchB" aria-label="${esc(t('toLabel') + (B ? ': ' + labels.B : ''))}"><span class="pin-b" aria-hidden="true">B</span>
         <span class="${B ? 'val' : 'ph'}">${esc(B ? labels.B : t('toPlaceholder'))}</span>${tag(r && r.tagB)}</button>`;
   return `<section class="sheet" aria-label="${esc(t('m.where'))}">
@@ -798,6 +917,15 @@ function sRender(q = '') {
 }
 function sPick(r) {
   if (!r) return;
+  if (ask.res && ask.res.kind === 'clarify_points' && r.kind !== 'gps') {
+    go('home', false); askSelectPoint(ask.pointIndex, r); return;
+  }
+  if (ask.res && ask.res.kind === 'clarify' && ask.res.response.loop) {
+    if (r.kind === 'gps') { locate(true); return; }
+    go('home', false);
+    askSelect(searchFor === 'A' ? 'from' : 'to', r);
+    return;
+  }
   askManual();
   if (r.kind === 'gps') { go(B ? 'home' : 'search', false); locate(true); if (!B) openSearch('B'); return; }
   setPoint(searchFor, [r.lat, r.lon], r.name);
@@ -845,29 +973,38 @@ function compute(stay = false) {
       toast(text);
     });
 }
-function computeLoop() {
-  if (loopPts.length < 2) { go('home'); return; }
+function computeLoop(stay = false) {
+  if (!loopRequest && loopPts.length < 2) { go('home'); return; }
   const f = p => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`, req = ++routeReq;
   if (mode === 'transit') mode = 'walk';
   saveHash();
   stopAnim(); stopLive();
   plan = null; part = null;
   routeLayer.clearLayers(); markLayer.clearLayers(); lifeLayer.clearLayers(); vehLayer.clearLayers();
-  go('results');
-  fit(L.latLngBounds(loopPts).pad(0.2));
-  getJSON(`/api/loop?points=${encodeURIComponent(loopPts.map(f).join(';'))}&mode=${mode}${at ? '&at=' + encodeURIComponent(at) : ''}`)
+  calcReq = req;
+  if (stay) renderHome(); else go('results');
+  if (loopPts.length) fit(L.latLngBounds(loopPts).pad(0.2));
+  const query = loopRequest ? new URLSearchParams(loopRequest) : new URLSearchParams({ points: loopPts.map(f).join(';') });
+  query.set('mode', mode);
+  if (at) query.set('at', at);
+  getJSON(`/api/loop?${query}`)
     .then(d => {
       if (req !== routeReq) return;
+      calcReq = -1;
       plan = d; live = null;
+      loopPts.splice(0, loopPts.length, ...d.points.map(p => L.latLng(p.lat, p.lon)));
+      saveHash();
+      drawAB();
       if (screen !== 'results') go('results', false);
       reveal(false);
       restoreScreen();
     })
     .catch(err => {
       if (req !== routeReq) return;
+      calcReq = -1;
       const d = err.detail || {};
       const key = 'err.' + (d.code === 'no_route' ? 'no_route_' + (mode === 'bike' ? 'bike' : 'walk') : d.code);
-      const text = d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
+      const text = d.code === 'loop_api_missing' ? t('ask.loopApiMissing') : d.code === 'no_loop_area' ? t('ask.loopUnavailable') : d.code === 'outside_coverage' ? t('m.loopOutside', { n: d.point })
         : d.code && t(key) !== key ? t(key) : t('err.other', { code: d.code || err.message });
       go('home');
       toast(text);
@@ -1157,7 +1294,8 @@ function resultsTop() {
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
 }
 const isLoop = () => (plan ? !!plan.loop : loopMode);
-const tripTitle = () => (isLoop() ? loopTitle(plan ? plan.points.length : loopPts.length) : `${labels.A} → ${labels.B}`);
+const tripTitle = () => (isLoop() ? ask.res && ask.res.kind === 'loop' ? ask.res.title || t('ask.loopUnderstood', { center: ask.res.center })
+  : loopTitle(plan ? plan.points.length : loopPts.length) : `${labels.A} → ${labels.B}`);
 function routeSub() {
   const when = plan ? (at ? t('m.leaveAt', { time: leaveHM() }) : t('m.leaveNow', { time: leaveHM() })) : '';
   return `${t('m.mode.' + mode)}${when ? ' · ' + when : ''}`;
@@ -1427,6 +1565,14 @@ function legBar(w, width = 120) {
   const shares = ORDER.filter(k => w.by_status_m[k] > 0).map(k => t('m.legShare.' + k, { p: pct(w.by_status_m[k] / L0) })).join(' · ');
   return `<span style="display: flex; align-items: center; gap: 8px"><svg width="${width}" height="6" aria-hidden="true" style="flex: none">${out}</svg><span class="small" style="color: var(--bz-ink-2)">${esc(shares)}</span></span>`;
 }
+// How this line ran around this hour on a recent day (../hist.js, from Tiger Data): one sentence with the advice
+// under the live card, the day and source behind a tap. Nothing without data.
+function historyBox(rd) {
+  const h = historyParts(rd);
+  if (!h) return '';
+  return `<details class="hist"><summary>${I.chev(12, 'chev')}<span>${esc(h.sentence)}${h.advice ? ` <strong>${esc(h.advice)}</strong>` : ''}</span></summary>` +
+    `<p class="small">${esc(h.source)}</p></details>`;
+}
 function renderTransit() {
   const top = `<div class="top"><button type="button" class="round" data-act="home" aria-label="${esc(t('m.back'))}">${I.back()}</button><span class="grow"></span>` +
     `<button type="button" class="pill" data-act="legend" aria-expanded="${legendOpen}">${I.legend()}${esc(t('m.legend'))}</button></div>`;
@@ -1457,7 +1603,7 @@ function renderTransit() {
     ${timeChip()}
     ${tl}
     <button type="button" class="livecard" id="livecard" data-act="openStop"></button>
-    ${steps}${last}
+    ${historyBox(rd)}${steps}${last}
     <p class="small">${esc(t('transitSource', { feed: tr.feed || '?' }))}</p>
     <div class="actions"><button type="button" class="primary" data-act="start">${I.nav()}${esc(t('m.start'))}</button></div>
   </section>`;
@@ -1931,7 +2077,7 @@ map.on('click', e => {
   }
   if (loopMode && screen === 'home') {
     if (tip || legendOpen) { closeOverlays(); return; }
-    if (loopPts.length < LOOP_MAX) { loopPts.push(e.latlng); saveHash(); renderHome(); drawAB(); }
+    if (loopPts.length < LOOP_MAX) { askManual(); loopPts.push(e.latlng); saveHash(); renderHome(); drawAB(); }
     return;
   }
   if (tip || legendOpen) closeOverlays();
