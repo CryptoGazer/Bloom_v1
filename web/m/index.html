@@ -82,6 +82,14 @@ input::placeholder { color: var(--bz-ink-3); }
          padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: var(--bz-r-sheet) var(--bz-r-sheet) 0 0;
          background: var(--bz-panel); border-top: 1px solid var(--bz-line); display: flex; flex-direction: column; gap: 12px; }
 .sheet.tall { max-height: calc(100% - 200px); }
+.sheet { transition: transform .28s var(--bz-ease-out); }
+.sheet.min { transform: translateY(calc(100% - 64px)); overflow: hidden; }
+.sheet.dragging { transition: none; }
+/* the top edge of a sheet: a wide strip to drag or tap, over the drawn handle */
+.grip { position: absolute; left: 0; right: 0; top: 0; height: 30px; z-index: 2; padding: 0; border: 0; background: transparent; cursor: grab; touch-action: none; }
+.grip:active { cursor: grabbing; }
+.grip:focus-visible { outline-offset: -4px; }
+@media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
 .handle { align-self: center; width: 36px; height: 4px; flex: none; border-radius: 2px; background: var(--bz-line); }
 .full { position: absolute; inset: 0; z-index: 1200; background: var(--bz-bg); display: flex; flex-direction: column; overflow-y: auto; }
 h1, h2, p { margin: 0; }

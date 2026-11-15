@@ -63,8 +63,8 @@ def test_fastest_takes_the_dark_shortcut_and_lit_route_goes_around(net):
 
 def test_verdict_and_warning_follow_the_spec_thresholds(net):
     plan = net.plan(at(net, 0, 0), at(net, 200, 0))
-    # 120 m extra is under 5 minutes but 60% longer than the fastest route: over the 30% limit
-    assert plan["verdict"]["kind"] == "too_long"
+    # 120 m extra, 60% longer than the fastest route: the lit route is still offered, however much longer
+    assert plan["verdict"]["kind"] == "show"
     assert plan["verdict"]["extra_share"] == pytest.approx(0.6, abs=0.01)
     assert plan["routes"]["fastest"]["warn"] is True       # 200 m of "reported dark" in one stretch
     assert plan["routes"]["fastest"]["max_dark_run_m"] == pytest.approx(200, abs=0.5)
@@ -192,7 +192,7 @@ def test_api_route(client):
     assert r.status_code == 200
     body = r.json()
     assert body["routes"]["better_lit"]["length_m"] == pytest.approx(320, abs=0.5)
-    assert body["verdict"]["kind"] == "too_long" and body["data_as_of"] == "2026-11-14"
+    assert body["verdict"]["kind"] == "show" and body["data_as_of"] == "2026-11-14"
     assert body["from"]["snap_m"] == pytest.approx(0, abs=0.5)
 
 

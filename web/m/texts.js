@@ -2,6 +2,7 @@
 /* Texts of the phone layout (m.js), on top of ../i18n.js: I18N.<lang>.m. Romanian first; the word "safe" is never used.
    Romanian wording follows the design canvas; it still needs a native speaker's check. */
 Object.assign(I18N.ro, { m: {
+  sheetHide: 'Coborâți panoul', sheetShow: 'Ridicați panoul',
   askOr: 'sau pe câmpuri', askBack: 'Înapoi la câmpuri', askExamples: 'Exemple',
   askEx: ['de la Piața Victoriei la căminul C12 UVT, pe jos', 'de aici până la căminul C12 UVT'],
   askListenTag: 'Ascult', askVoice: 'Înregistrare vocală · {s} s', askWaitLong: 'Citesc cererea… Durează mai mult decât de obicei; cel mult 20 s.', askWaitS: '{s} s · max 20 s',
@@ -99,6 +100,7 @@ Object.assign(I18N.ro, { m: {
 } });
 
 Object.assign(I18N.en, { m: {
+  sheetHide: 'Lower the panel', sheetShow: 'Raise the panel',
   askOr: 'or use the boxes', askBack: 'Back to the boxes', askExamples: 'Examples',
   askEx: ['from Piața Victoriei to Căminul C12 UVT, on foot', 'from here to Căminul C12 UVT'],
   askListenTag: 'Listening', askVoice: 'Voice recording · {s} s', askWaitLong: 'Reading your request… This is taking longer than usual; 20 s at most.', askWaitS: '{s} s · 20 s max',
@@ -196,6 +198,7 @@ Object.assign(I18N.en, { m: {
 } });
 
 Object.assign(I18N.ru, { m: {
+  sheetHide: 'Свернуть панель', sheetShow: 'Развернуть панель',
   askOr: 'или через поля', askBack: 'Назад к полям', askExamples: 'Примеры',
   askEx: ['от Piața Victoriei до Căminul C12 UVT пешком', 'отсюда до Căminul C12 UVT'],
   askListenTag: 'Слушаю', askVoice: 'Запись голоса · {s} с', askWaitLong: 'Разбираю запрос… Это дольше обычного; не больше 20 с.', askWaitS: '{s} с · макс. 20 с',

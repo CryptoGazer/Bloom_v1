@@ -339,6 +339,7 @@ function go(name, push = true) {
   if (name === 'home' || name === 'search') routeReq++;   // back from a route: a late answer must not bring it back
   if (screen === 'nav' && name !== 'nav') stopNav();
   if (name !== 'results') stopAnim();
+  if (name !== screen) sheetMin = false;
   screen = name;
   $('scr-search').hidden = name !== 'search';
   $('screen').hidden = name === 'search';
@@ -2086,6 +2087,65 @@ map.on('moveend', () => { clearTimeout(map._netT); map._netT = setTimeout(refres
 // the phone's height changes when the browser hides its address bar (100dvh), or the tab was laid out while hidden
 const onResize = () => { map.invalidateSize(); placePlusChip(); refreshNet(); };
 if (window.ResizeObserver) new ResizeObserver(onResize).observe($('phone')); else window.addEventListener('resize', onResize);
+
+// ---------- the bottom sheet folds down: drag its top edge, or tap it (Enter/Space with the keyboard) ----------
+const SHEET_PEEK = 64;                        // px of a folded sheet that stay visible: the grip and the first line
+let sheetMin = false;                         // folded; a new screen opens unfolded
+function sheetSet(min) {
+  sheetMin = min;
+  const sh = document.querySelector('#screen > .sheet');
+  if (!sh) return;
+  sh.classList.toggle('min', min);
+  sh.style.transform = '';
+  const g = sh.querySelector('.grip');
+  if (g) { g.setAttribute('aria-expanded', String(!min)); g.setAttribute('aria-label', t(min ? 'm.sheetShow' : 'm.sheetHide')); }
+  if (min) sh.scrollTop = 0;
+  setTimeout(placePlusChip, 320);
+}
+// every screen redraws #screen: give its sheet a grip and its folded state again
+function sheetDecorate() {
+  const sh = document.querySelector('#screen > .sheet');
+  if (!sh || sh.querySelector('.grip')) return;
+  sh.classList.toggle('min', sheetMin);
+  const g = document.createElement('button');
+  g.type = 'button';
+  g.className = 'grip';
+  g.setAttribute('aria-expanded', String(!sheetMin));
+  g.setAttribute('aria-label', t(sheetMin ? 'm.sheetShow' : 'm.sheetHide'));
+  sh.prepend(g);
+  let start = null, moved = false;
+  const room = () => Math.max(0, sh.offsetHeight - SHEET_PEEK);
+  g.addEventListener('pointerdown', e => {
+    start = { y: e.clientY, from: sheetMin ? room() : 0, t: performance.now() };
+    moved = false;
+    g.setPointerCapture(e.pointerId);
+  });
+  g.addEventListener('pointermove', e => {
+    if (!start) return;
+    const dy = e.clientY - start.y;
+    if (!moved && Math.abs(dy) < 6) return;
+    moved = true;
+    sh.classList.add('dragging');
+    sh.style.transform = `translateY(${Math.min(room(), Math.max(0, start.from + dy))}px)`;
+  });
+  const end = e => {
+    if (!start) return;
+    const dy = e.clientY - start.y, speed = dy / Math.max(1, performance.now() - start.t), s = start;
+    start = null;
+    sh.classList.remove('dragging');
+    if (!moved) return;                                      // a tap: the click below folds or unfolds
+    g._dragEnd = performance.now();                          // the click a browser may send right after a drag is not a tap
+    const at = s.from + dy;
+    sheetSet(speed > 0.5 ? true : speed < -0.5 ? false : at > room() / 2);
+  };
+  g.addEventListener('pointerup', end);
+  g.addEventListener('pointercancel', end);
+  g.addEventListener('click', () => {
+    if (performance.now() - (g._dragEnd || 0) < 400) return;
+    sheetSet(!sheetMin);
+  });
+}
+new MutationObserver(sheetDecorate).observe($('screen'), { childList: true });
 
 // ---------- start ----------
 document.documentElement.lang = t('htmlLang');
